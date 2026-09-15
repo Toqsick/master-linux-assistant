@@ -863,5 +863,21 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "runFileQuestion": "Suoritetaanko \"{path}\"?",
+  "@runFileQuestion": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before an executable file from the search is run",
+    "type": "text"
+  },
+  "runFileWarning": "Tiedosto suoritetaan ohjelmana käyttöoikeuksillasi. Jatka vain, jos tiedät, mitä se tekee.",
+  "@runFileWarning": {
+    "placeholders": {},
+    "description": "Explains what confirming the dialog above does",
+    "type": "text"
   }
 }

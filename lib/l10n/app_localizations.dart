@@ -2111,6 +2111,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeModeDark;
+
+  /// Confirmation before an executable file from the search is run
+  ///
+  /// In en, this message translates to:
+  /// **'Run \"{path}\"?'**
+  String runFileQuestion(String path);
+
+  /// Explains what confirming the dialog above does
+  ///
+  /// In en, this message translates to:
+  /// **'The file will be executed as a program with your user rights. Only continue if you know what it does.'**
+  String get runFileWarning;
 }
 
 class _AppLocalizationsDelegate

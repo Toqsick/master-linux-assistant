@@ -1272,5 +1272,27 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "executeInTerminal": "Esegui nel terminale",
+  "@executeInTerminal": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "runFileQuestion": "Eseguire \"{path}\"?",
+  "@runFileQuestion": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before an executable file from the search is run",
+    "type": "text"
+  },
+  "runFileWarning": "Il file verrà eseguito come programma con i tuoi privilegi utente. Continua solo se sai cosa fa.",
+  "@runFileWarning": {
+    "placeholders": {},
+    "description": "Explains what confirming the dialog above does",
+    "type": "text"
   }
 }

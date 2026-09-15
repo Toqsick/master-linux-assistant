@@ -1292,5 +1292,21 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "runFileQuestion": "\"{path}\" ausführen?",
+  "@runFileQuestion": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before an executable file from the search is run",
+    "type": "text"
+  },
+  "runFileWarning": "Die Datei wird als Programm mit deinen Benutzerrechten ausgeführt. Fahre nur fort, wenn du weißt, was sie tut.",
+  "@runFileWarning": {
+    "placeholders": {},
+    "description": "Explains what confirming the dialog above does",
+    "type": "text"
   }
 }

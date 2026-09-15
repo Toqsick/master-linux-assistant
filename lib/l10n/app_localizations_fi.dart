@@ -1162,4 +1162,13 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Tumma';
+
+  @override
+  String runFileQuestion(String path) {
+    return 'Suoritetaanko \"$path\"?';
+  }
+
+  @override
+  String get runFileWarning =>
+      'Tiedosto suoritetaan ohjelmana käyttöoikeuksillasi. Jatka vain, jos tiedät, mitä se tekee.';
 }

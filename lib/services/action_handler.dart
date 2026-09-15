@@ -23,6 +23,73 @@ import 'package:linux_assistant/services/main_search_loader.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class ActionHandler {
+  /// Checks whether a file is executable (injectable for tests).
+  static Future<bool> Function(String filePath) _executableChecker =
+      Linux.isFileExecutable;
+
+  /// Runs an executable file in a terminal (injectable for tests).
+  static Future<void> Function(String filePath) _terminalRunner =
+      Linux.runExecutableInTerminal;
+
+  /// Opens a file with its default application (injectable for tests).
+  static Future<void> Function(String exec, List<String> arguments)
+      _fileOpener = _defaultFileOpener;
+
+  /// Overrides the calls the `openfile:` branch makes. Tests only!
+  ///
+  /// Unlike `AppLauncher.debugOverride`, an override replaces only the
+  /// functions actually passed. A partial override would otherwise reset the
+  /// remaining seams to the real process starts and open a terminal during the
+  /// test run.
+  static void debugOverride({
+    Future<bool> Function(String filePath)? executableChecker,
+    Future<void> Function(String filePath)? terminalRunner,
+    Future<void> Function(String exec, List<String> arguments)? fileOpener,
+  }) {
+    if (executableChecker != null) _executableChecker = executableChecker;
+    if (terminalRunner != null) _terminalRunner = terminalRunner;
+    if (fileOpener != null) _fileOpener = fileOpener;
+  }
+
+  /// Resets the test overrides.
+  static void resetOverrides() {
+    _executableChecker = Linux.isFileExecutable;
+    _terminalRunner = Linux.runExecutableInTerminal;
+    _fileOpener = _defaultFileOpener;
+  }
+
+  static Future<void> _defaultFileOpener(
+      String exec, List<String> arguments) async {
+    await Linux.runCommandWithCustomArguments(exec, arguments);
+  }
+
+  /// Asks before an executable file picked from the search is started.
+  ///
+  /// The full path is part of the question on purpose: the terminal window that
+  /// opens next only shows which file is running once it already is.
+  static Future<bool> _confirmExecution(
+      BuildContext context, String filePath) async {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final bool? answer = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.runFileQuestion(filePath)),
+        content: Text(l10n.runFileWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.executeInTerminal),
+          ),
+        ],
+      ),
+    );
+    return answer ?? false;
+  }
+
   /// The callback is usually the clear function.
   static Future<void> handleActionEntry(ActionEntry actionEntry,
       VoidCallback callback, BuildContext context) async {
@@ -146,18 +213,16 @@ class ActionHandler {
 
     if (actionEntry.action.startsWith("openfile:")) {
       String file = actionEntry.action.replaceFirst("openfile:", "");
-      bool isExecutable = await Linux.isFileExecutable(file);
+      bool isExecutable = await _executableChecker(file);
       if (isExecutable) {
-        // TODO: Ask the user, if the file should be run (possible security risk).
-        // TODO: Ask the user, if the file should be run in a terminal.
-
-        // Run the file without terminal.
-        //Linux.runCommand(file);
-
-        // Run the file in a terminal (default for now).
-        unawaited(Linux.runExecutableInTerminal(file));
+        // The search surfaces recent files and favorites, so this would run a
+        // file the user did not name by hand. Ask before starting it — and on a
+        // decline return before the callback, which leaves the search list up.
+        if (!context.mounted) return;
+        if (!await _confirmExecution(context, file)) return;
+        unawaited(_terminalRunner(file));
       } else {
-        unawaited(Linux.runCommandWithCustomArguments("xdg-open", [file]));
+        unawaited(_fileOpener("xdg-open", [file]));
       }
 
       callback();

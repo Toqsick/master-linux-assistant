@@ -887,7 +887,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Updates or installations can no longer be carried out? Try the automatic repair of the package management.';
 
   @override
-  String get executeInTerminal => 'Execute in terminal';
+  String get executeInTerminal => 'Esegui nel terminale';
 
   @override
   String get setupSnap => 'Set up Snap';
@@ -1170,4 +1170,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Scuro';
+
+  @override
+  String runFileQuestion(String path) {
+    return 'Eseguire \"$path\"?';
+  }
+
+  @override
+  String get runFileWarning =>
+      'Il file verrà eseguito come programma con i tuoi privilegi utente. Continua solo se sai cosa fa.';
 }

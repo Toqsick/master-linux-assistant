@@ -1152,4 +1152,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeModeDark => 'Dark';
+
+  @override
+  String runFileQuestion(String path) {
+    return 'Run \"$path\"?';
+  }
+
+  @override
+  String get runFileWarning =>
+      'The file will be executed as a program with your user rights. Only continue if you know what it does.';
 }

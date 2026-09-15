@@ -1258,5 +1258,21 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "runFileQuestion": "Run \"{path}\"?",
+  "@runFileQuestion": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before an executable file from the search is run",
+    "type": "text"
+  },
+  "runFileWarning": "The file will be executed as a program with your user rights. Only continue if you know what it does.",
+  "@runFileWarning": {
+    "placeholders": {},
+    "description": "Explains what confirming the dialog above does",
+    "type": "text"
   }
 }
