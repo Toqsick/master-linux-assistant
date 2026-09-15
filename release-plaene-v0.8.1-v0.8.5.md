@@ -1,6 +1,6 @@
-# Die 5 Release-Pläne V0.8.1 – V0.8.5 — Linux Master Assistant
+# Die Release-Pläne V0.8.1 – V0.8.5 (+ V0.8.2.5 Security-Pass) — Linux Master Assistant
 
-> Zerlegung des V0.8.X-Implementierungsplans (Deep-Research-Auswertung 2026-09-11) in fünf eigenständige Releases.
+> Zerlegung des V0.8.X-Implementierungsplans (Deep-Research-Auswertung 2026-09-11) in fünf eigenständige Releases — seit 2026-09-15 ergänzt um den Security-Pass V0.8.2.5 (RepoLens-Audit-Triage, Ausarbeitung in `security-fixplan-42-50.md`).
 > Jedes Release erbt die globalen Randbedingungen: Referenzsystem Zorin OS 18.1, Branch `hardening/0.8.x-browser-xdg`, Security-Invarianten unangetastet (Command-Queue, zwei polkit-Actions), jedes Commit mit `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`. Ohne Bastis ausdrückliches OK: kein Push, kein PR, kein Versions-Bump, kein Release.
 
 ## Globale CI-Gates (gelten für jedes Release)
@@ -49,6 +49,24 @@ Blockiert nichts Externes; V0.8.2–V0.8.5 setzen diesen Branch voraus.
 ### Warum die .desktop-Prüfung nötig ist
 Detached Starts liefern keinen Exit-Code — ohne Prüfung würde eine veraltete Desktop-ID als Erfolg gemeldet, obwohl sich nichts öffnet. Ein nicht-detached `gtk-launch` hingegen würde an der geerbten Pipe hängen.
 
+**Fix-Plan-Bezug:** In diesem Release einweben: **WP-B1** (#47, Boundary-Validation für `preferred_browser` — Teil des app_launcher-Neubaus) und **WP-B2** (#45, Icon-Loader `runInShell: false` + Quote-Shim-Entfernung als gekoppeltes Paar, nur nach RV-1). Details: `security-fixplan-42-50.md`.
+
+---
+
+## Release V0.8.2.5 — „Security-Pass"
+
+**Ziel:** Die beiden echten Security-Findings sind geschlossen und die Hygiene-Familie (Shell-Quoting/Boundary) ist konsistent gezogen, bevor V0.8.3 das Paket einfriert. Grundlage: RepoLens-Audit-Triage (`~/20-Workspace/RepoLens/logs/20260912T004309Z-c22e3a62/final/TRIAGE-2026-09-15.md`), Ausarbeitung: `security-fixplan-42-50.md`.
+
+### Inhalt
+1. **RV-1 (falls noch nicht erledigt):** Re-Verify von #45/#50/#42 über die gebaute App — entscheidet die finale Severity, vor WP-B2.
+2. **WP-S1 (top priority, #49):** Bestätigungs-Dialog vor `openfile:`-Exec (`action_handler.dart:147-160`, Muster `_confirmDeletion`), TDD.
+3. **WP-S2 (#44):** Root-Queue-Env härten (LD_*/BASH_ENV/ENV/IFS-Strip, argv[0]-Kanonisierung + Guard, env-Transparenz in `displayCommand`), TDD in `additional/python/tests/`.
+4. **WP-S3 (#42+#50+#46):** Hygiene-Bundle — `runInShell: false` an den Disk-Analyzer-Launches + Default-Flip in der Command-Layer + Kommentar-Fix :1496; Depth-Klemme für `folder_recursion_depth`.
+
+### Gates
+- Globale CI-Gates; je Paket eigene Gates (TDD-Reihenfolge RED→GREEN, manuelle Proben) — Details im Fix-Plan.
+- Reihenfolge WP-S3 nach WP-B2 (beide fassen runInShell-Stellen an).
+
 ---
 
 ## Release V0.8.3 — „Packaging: Depends & Abhängigkeitslisten"
@@ -64,6 +82,8 @@ Detached Starts liefern keinen Exit-Code — ohne Prüfung würde eine veraltete
 - **Test:** `bash tool/check-versions.sh` → OK.
 - **Verify (Pflicht):** `bash build-deb.sh && dpkg-deb -f linux-assistant.deb Depends` endet auf `xdg-utils, libgtk-3-bin, libglib2.0-bin`; `grep -rn "wmctrl\|libkeybinder-3.0-0-dev" README.md docs/wiki` → kein Treffer.
 - Commit: „build(deb): depend on xdg-utils, libgtk-3-bin and libglib2.0-bin".
+
+**Fix-Plan-Bezug:** In diesem Release einweben: **WP-P1** (#43, `jfiles.copy_file` → `shutil.copy2`) und **WP-P2** (#48, `jessentials` wget/unzip auf argv-Listen), beide mit Unittests + Upstream-Hinweis (Jean28518/jtools-unix-python — Basti-Task). Details: `security-fixplan-42-50.md`.
 
 ---
 
@@ -103,7 +123,7 @@ Detached Starts liefern keinen Exit-Code — ohne Prüfung würde eine veraltete
 ## Reihenfolge & Basti-Aufgaben
 
 ```text
-V0.8.1 (Basis) → V0.8.2 (Code) → V0.8.3 (Paket) → V0.8.4 (Scope) → V0.8.5 (Abschluss)
+V0.8.1 (Basis) → V0.8.2 (Code) → V0.8.2.5 (Security-Pass) → V0.8.3 (Paket) → V0.8.4 (Scope) → V0.8.5 (Abschluss)
 ```
 
 **Bleibt bei Basti (nicht Teil der Releases):** TT-Budgets anlegen, Kommentar in Upstream-#253 (Hypothese mit Link `eb1dfb5`), privater Maintainer-Kontakt, `bash install.sh` (sudo), Gate-Abhaken. `~/.hermes/` wird nicht angefasst; `.zcode/` bleibt untracked.
