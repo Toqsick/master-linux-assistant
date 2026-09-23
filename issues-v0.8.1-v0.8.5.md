@@ -1,11 +1,11 @@
-# Issues V0.8.1 – V0.8.5 — Linux Master Assistant
+# Issues V0.8.1 – V0.8.5 — Master Linux Assistant (MLA)
 
 > 11 Issues, je mit Titel, Meilenstein, Labels und fertigem Body (1:1 kopierbar).
 > Labels müssen vorher existieren (siehe `github-setup-linux-master-assistant.sh`): `bug`, `documentation` existieren bereits; neu: `deep-research`, `xdg-launcher`, `packaging`, `roadmap`, `release-process`, `gate:test`, `gate:verify`, `gate:manual`.
 
 ---
 
-## Issue 1 — [V0.8.1] Memory aktualisieren: „Linux Master Assistant"
+## Issue 1 — [V0.8.1] Memory aktualisieren: „Master Linux Assistant"
 
 **Meilenstein:** V0.8.1 · **Labels:** `documentation`, `deep-research`, `gate:manual`
 
@@ -13,11 +13,11 @@
 
 ```markdown
 ## Scope
-Task 0 des V0.8.X-Implementierungsplans: Die Projekt-Memory wird komplett neu gefasst, damit der Name **„Linux Master Assistant"** und die seit 2026-09-11 geltende Richtung (persönliches Cockpit für das Referenzsystem Zorin OS 18.1) für alle Sessions greifen.
+Task 0 des V0.8.X-Implementierungsplans: Die Projekt-Memory wird komplett neu gefasst, damit der Name **„Master Linux Assistant"** und die seit 2026-09-11 geltende Richtung (persönliches Cockpit für das Referenzsystem Zorin OS 18.1) für alle Sessions greifen.
 
 ## Dateien (außerhalb des Repos)
 - `~/.claude/projects/-home-bratan--claude/memory/linux-master-assistant-projekt.md` (komplett ersetzen)
-- `~/.claude/projects/-home-bratan--claude/memory/MEMORY.md` (nur die Zeile „Linux Master Assistant")
+- `~/.claude/projects/-home-bratan--claude/memory/MEMORY.md` (nur die Zeile „Master Linux Assistant")
 
 ## Kerninhalte der neuen Memory
 - Fork `Toqsick/linux-assistant` (Upstream `Jean28518/linux-assistant`), lokal `~/10-Projekte/10-active/linux-assistant/`
@@ -316,7 +316,7 @@ _Quelle: Implementierungsplan V0.8.X, Abschnitt „Verifikation (Ende-zu-Ende)".
 
 | # | Titel | Meilenstein | Labels |
 |---|---|---|---|
-| 1 | [V0.8.1] Memory aktualisieren: „Linux Master Assistant" | V0.8.1 | documentation, deep-research, gate:manual |
+| 1 | [V0.8.1] Memory aktualisieren: „Master Linux Assistant" | V0.8.1 | documentation, deep-research, gate:manual |
 | 2 | [V0.8.1] Branch anlegen & ZCode-Fremd-Diff committen | V0.8.1 | documentation, deep-research, gate:manual, gate:verify |
 | 3 | [V0.8.2] TDD: Failing Tests für die XDG-Kette schreiben | V0.8.2 | bug, xdg-launcher, gate:test |
 | 4 | [V0.8.2] XDG-Stufe in AppLauncher implementieren + Snackbar-Feedback + Doku | V0.8.2 | bug, xdg-launcher, gate:test, gate:verify |

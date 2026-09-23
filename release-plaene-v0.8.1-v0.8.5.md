@@ -1,4 +1,4 @@
-# Die Release-Pläne V0.8.1 – V0.8.5 (+ V0.8.2.5 Security-Pass) — Linux Master Assistant
+# Die Release-Pläne V0.8.1 – V0.8.5 (+ V0.8.2.5 Security-Pass) — Master Linux Assistant (MLA)
 
 > Zerlegung des V0.8.X-Implementierungsplans (Deep-Research-Auswertung 2026-09-11) in fünf eigenständige Releases — seit 2026-09-15 ergänzt um den Security-Pass V0.8.2.5 (RepoLens-Audit-Triage, Ausarbeitung in `security-fixplan-42-50.md`).
 > Jedes Release erbt die globalen Randbedingungen: Referenzsystem Zorin OS 18.1, Branch `hardening/0.8.x-browser-xdg`, Security-Invarianten unangetastet (Command-Queue, zwei polkit-Actions), jedes Commit mit `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`. Ohne Bastis ausdrückliches OK: kein Push, kein PR, kein Versions-Bump, kein Release.

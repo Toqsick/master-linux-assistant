@@ -1,4 +1,4 @@
-# Issues V0.8.6 – V1.0 — Linux Master Assistant
+# Issues V0.8.6 – V1.0 — Master Linux Assistant (MLA)
 
 > 31 Issues, je mit Titel, Meilenstein, Labels und fertigem Body (1:1 kopierbar).
 > Labels müssen vorher existieren: vorhanden sind `gate:*`, `roadmap`, `documentation` u. a.; neu: `epic:fu` … `epic:qa` (10), `tier:core`, `tier:qol`, `tier:n2h`, `size:S`, `size:M`, `size:L`.

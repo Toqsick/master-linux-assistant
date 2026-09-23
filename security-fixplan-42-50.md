@@ -1,4 +1,4 @@
-# Security-Fix-Plan: RepoLens-Issues #42–#50 — Linux Master Assistant
+# Security-Fix-Plan: RepoLens-Issues #42–#50 — Master Linux Assistant (MLA)
 
 > Fix-Plan für die 9 security/injection-Findings des RepoLens-Audit-Runs
 > `20260912T004309Z-c22e3a62` (Triage 2026-09-15:

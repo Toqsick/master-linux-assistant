@@ -1,4 +1,4 @@
-# Meilensteine V0.8.1 – V0.8.5 — Linux Master Assistant
+# Meilensteine V0.8.1 – V0.8.5 — Master Linux Assistant (MLA)
 
 > Repo: `Toqsick/linux-assistant` (wird: `Toqsick/linux-master-assistant`)
 > Quelle: Implementierungsplan V0.8.X (Deep-Research-Auswertung 2026-09-11)
@@ -10,7 +10,7 @@
 
 **Beschreibung:**
 
-Task 0+1 des V0.8.X-Plans: Memory neu fassen („Linux Master Assistant", Cockpit-Richtung für Zorin OS 18.1), Branch `hardening/0.8.x-browser-xdg` von `main` anlegen, ZCode-Fremd-Diff (AGENTS.md, MANIFEST.md, roadmap.md, features.csv — 170+/63−) unverändert committen.
+Task 0+1 des V0.8.X-Plans: Memory neu fassen („Master Linux Assistant", Cockpit-Richtung für Zorin OS 18.1), Branch `hardening/0.8.x-browser-xdg` von `main` anlegen, ZCode-Fremd-Diff (AGENTS.md, MANIFEST.md, roadmap.md, features.csv — 170+/63−) unverändert committen.
 
 **Erfolgskriterium:** Branch existiert, Fremd-Diff ist committet, Memory greift — die Basis für alle folgenden Releases steht.
 

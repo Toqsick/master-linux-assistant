@@ -1,6 +1,8 @@
-# linux-assistant
+# Master Linux Assistant (MLA)
 
 A linux application which is a daily linux helper with powerful integrated search, routines checks and admninistrative tasks. The Project is built with flutter and python.
+
+The product name is **Master Linux Assistant (MLA)**; the package and binary name stays `linux-assistant` — this is a maintained fork of [Jean28518/linux-assistant](https://github.com/Jean28518/linux-assistant).
 
 ## Install
 

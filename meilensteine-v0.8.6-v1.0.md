@@ -1,4 +1,4 @@
-# Meilensteine V0.8.6 – V1.0 — Linux Master Assistant
+# Meilensteine V0.8.6 – V1.0 — Master Linux Assistant (MLA)
 
 > Repo: `Toqsick/linux-assistant`
 > Quelle: Ausbauplan V0.8.6–V1.0 (Master-Plan 2026-09-23, `ausbauplan-v0.8.6-v1.0.md`)
