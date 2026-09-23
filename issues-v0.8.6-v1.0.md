@@ -3,7 +3,7 @@
 > 31 Issues, je mit Titel, Meilenstein, Labels und fertigem Body (1:1 kopierbar).
 > Labels müssen vorher existieren: vorhanden sind `gate:*`, `roadmap`, `documentation` u. a.; neu: `epic:fu` … `epic:qa` (10), `tier:core`, `tier:qol`, `tier:n2h`, `size:S`, `size:M`, `size:L`.
 > Issue-Bodies unterliegen dem Leak-Grep aus V0.8.5 Task 7 (keine Hosts, IPs, Ports, `/home`-Pfade).
-> Die Nummern 1–31 sind Anlege-Reihenfolge; die echten GitHub-Nummern werden nach dem Anlegen in der Zuordnungstabelle nachgetragen.
+> Die Nummern 1–31 sind Anlege-Reihenfolge; GitHub-Nummern (#58–#88, angelegt 2026-09-23) stehen in der Zuordnungstabelle.
 
 ---
 
@@ -756,47 +756,47 @@ _Quelle: Ausbauplan V0.8.6–V1.0, „Parkliste — Neubewertung 2026-09-23"._
 
 | Nr | Typ | Aktion |
 |---|---|---|
-| #27 | Issue | Kommentar: läuft als FU1 weiter (Modul-Registry, erweitert um Probes/Suchanbieter/Aktionen, ohne Panel/Dock) → verlinken |
-| #25 | Issue | Kommentar: läuft in DS2 (l10n) weiter → verlinken |
-| #29 | Issue | Kommentar: läuft in DS1 (Token-Einheit) weiter → verlinken |
-| #30 | Issue | Kommentar: läuft in DS3 (Goldens + Tastatur) weiter → verlinken |
-| #10 | PR | Kommentar: Tokens-Thema läuft im Fork über DS1/#29 weiter (PR #10 bleibt davon unberührt) |
+| #27 | Issue | Kommentar: läuft als FU1 weiter → **#60** (Modul-Registry, erweitert um Probes/Suchanbieter/Aktionen, ohne Panel/Dock); Kommentar gesetzt |
+| #25 | Issue | Kommentar: läuft in DS2 (l10n) weiter → **#72**; Kommentar gesetzt |
+| #29 | Issue | Kommentar: läuft in DS1 (Token-Einheit) weiter → **#65**; Kommentar gesetzt |
+| #30 | Issue | Kommentar: läuft in DS3 (Goldens + Tastatur) weiter → **#79**; Kommentar gesetzt |
+| #10 | PR | Kommentar: Tokens-Thema läuft im Fork über DS1/#29 weiter → **#65** (PR #10 bleibt davon unberührt); Kommentar gesetzt |
 | #26 | Issue | Label `roadmap` + Kommentar: zurückgestuft auf **optional** — `systemctl … -o json` (systemd 255) reicht für Status und User-Unit-Start; D-Bus erst bei echtem Bedarf an Live-Signalen |
 | #28 | Issue | Kommentar: Schließkriterium „nach WP-S2" (0.8.0 hat Queue + zwei präzise polkit-Actions; WP-S2 bringt argv[0]-Guard und Env-Filter — ein weiterer Helper wäre eine dritte Root-Naht). **Jetzt nicht schließen.** |
-| #31, #32 | Issues | Schließen als erledigt: V0.8.1 ist belegt (Branch `hardening/0.8.x-browser-xdg` existiert, Memory aktualisiert 2026-09-15) |
+| #31, #32 | Issues | Schließen als erledigt: V0.8.1 ist belegt (Branch `hardening/0.8.x-browser-xdg` existiert, Memory aktualisiert 2026-09-15) — **geschlossen 2026-09-23** |
 
 ## Zusammenfassung
 
-| # | Titel | Meilenstein | Labels |
-|---|---|---|---|
-| 1 | [V0.8.6] Welle 1 „Sofort-Nutzen": Q1–Q7 | V0.8.6 | tier:core, size:M |
-| 2 | [V0.9] FU2 Reiner Dart-Kern `packages/la_core` | V0.9 | epic:fu, tier:core, size:L |
-| 3 | [V0.9] FU1 Modul-Registry (#27) | V0.9 | epic:fu, tier:core, size:M |
-| 4 | [V0.9] FU3 Fehlerrahmen | V0.9 | epic:fu, tier:core, size:S |
-| 5 | [V0.9] LB1 Lagebild-Leiste | V0.9 | epic:lb, tier:core, size:M |
-| 6 | [V0.9] LB2 Backup-Cockpit | V0.9 | epic:lb, tier:qol, size:M |
-| 7 | [V0.9] QA1 Gate-Automatisierung, Spike | V0.9 | epic:qa, size:S |
-| 8 | [V0.9] DS1 Token-Einheit (#29/#10) | V0.9 | epic:ds, tier:qol, size:L |
-| 9 | [V0.10] LB3 Wächter | V0.10 | epic:lb, tier:qol, size:M |
-| 10 | [V0.10] DI1 Dienste & Timer | V0.10 | epic:di, tier:qol, size:M |
-| 11 | [V0.10] DI2 Docker & Compose | V0.10 | epic:di, tier:qol, size:M |
-| 12 | [V0.10] DI3 Agenten-Tile | V0.10 | epic:di, tier:n2h, size:M |
-| 13 | [V0.10] TE1 Such-Index-Cache | V0.10 | epic:te, tier:core, size:M |
-| 14 | [V0.10] QA2 Release-Workflow | V0.10 | epic:qa, size:M |
-| 15 | [V0.10] DS2 l10n (#25) | V0.10 | epic:ds, tier:qol, size:M |
-| 16 | [V0.11] TE2 Befehlspalette + eigene Aktionen | V0.11 | epic:te, tier:core, size:M |
-| 17 | [V0.11] TE3 Suchanbieter & Kleinigkeiten | V0.11 | epic:te, tier:qol, size:M |
-| 18 | [V0.11] WZ2 Quick Notes | V0.11 | epic:wz, tier:core, size:S |
-| 19 | [V0.11] ST1 Boot- & Stabilitätsbericht | V0.11 | epic:st, tier:qol, size:M |
-| 20 | [V0.11] ST2 Änderungs-Zeitleiste | V0.11 | epic:st, tier:qol, size:M |
-| 21 | [V0.11] ST3 App-Doctor + Support-Bericht | V0.11 | epic:st, tier:core, size:M |
-| 22 | [V0.11] DS3 Goldens + Tastatur (#30) | V0.11 | epic:ds, tier:qol, size:M |
-| 23 | [V0.12] SI1 Expositions-Check + UFW | V0.12 | epic:si, tier:core, size:M |
-| 24 | [V0.12] SI2 Aktions-Journal (#151) | V0.12 | epic:si, tier:core, size:M |
-| 25 | [V0.12] SI3 Update-Radar | V0.12 | epic:si, tier:core, size:M |
-| 26 | [V0.12] SP1 Trend & Prognose | V0.12 | epic:sp, tier:qol, size:M |
-| 27 | [V0.12] SP2 Kategorien & Aufräumen | V0.12 | epic:sp, tier:qol, size:M |
-| 28 | [V0.12] WZ1 Systemmonitor ausbauen | V0.12 | epic:wz, tier:core, size:M |
-| 29 | [V0.12] DS4 Navigation | V0.12 | epic:ds, tier:qol, size:S |
-| 30 | [V1.0] QA3 Fixture-Bibliothek | V1.0 | epic:qa, size:M |
-| 31 | [V1.0] Parkliste — Wiedervorlage nur mit Beleg | V1.0 | roadmap |
+| # | GitHub | Titel | Meilenstein | Labels |
+|---|---|---|---|---|
+| 1 | #58 | [V0.8.6] Welle 1 „Sofort-Nutzen": Q1–Q7 | V0.8.6 | tier:core, size:M |
+| 2 | #59 | [V0.9] FU2 Reiner Dart-Kern `packages/la_core` | V0.9 | epic:fu, tier:core, size:L |
+| 3 | #60 | [V0.9] FU1 Modul-Registry (#27) | V0.9 | epic:fu, tier:core, size:M |
+| 4 | #61 | [V0.9] FU3 Fehlerrahmen | V0.9 | epic:fu, tier:core, size:S |
+| 5 | #62 | [V0.9] LB1 Lagebild-Leiste | V0.9 | epic:lb, tier:core, size:M |
+| 6 | #63 | [V0.9] LB2 Backup-Cockpit | V0.9 | epic:lb, tier:qol, size:M |
+| 7 | #64 | [V0.9] QA1 Gate-Automatisierung, Spike | V0.9 | epic:qa, size:S |
+| 8 | #65 | [V0.9] DS1 Token-Einheit (#29/#10) | V0.9 | epic:ds, tier:qol, size:L |
+| 9 | #66 | [V0.10] LB3 Wächter | V0.10 | epic:lb, tier:qol, size:M |
+| 10 | #67 | [V0.10] DI1 Dienste & Timer | V0.10 | epic:di, tier:qol, size:M |
+| 11 | #68 | [V0.10] DI2 Docker & Compose | V0.10 | epic:di, tier:qol, size:M |
+| 12 | #69 | [V0.10] DI3 Agenten-Tile | V0.10 | epic:di, tier:n2h, size:M |
+| 13 | #70 | [V0.10] TE1 Such-Index-Cache | V0.10 | epic:te, tier:core, size:M |
+| 14 | #71 | [V0.10] QA2 Release-Workflow | V0.10 | epic:qa, size:M |
+| 15 | #72 | [V0.10] DS2 l10n (#25) | V0.10 | epic:ds, tier:qol, size:M |
+| 16 | #73 | [V0.11] TE2 Befehlspalette + eigene Aktionen | V0.11 | epic:te, tier:core, size:M |
+| 17 | #74 | [V0.11] TE3 Suchanbieter & Kleinigkeiten | V0.11 | epic:te, tier:qol, size:M |
+| 18 | #75 | [V0.11] WZ2 Quick Notes | V0.11 | epic:wz, tier:core, size:S |
+| 19 | #76 | [V0.11] ST1 Boot- & Stabilitätsbericht | V0.11 | epic:st, tier:qol, size:M |
+| 20 | #77 | [V0.11] ST2 Änderungs-Zeitleiste | V0.11 | epic:st, tier:qol, size:M |
+| 21 | #78 | [V0.11] ST3 App-Doctor + Support-Bericht | V0.11 | epic:st, tier:core, size:M |
+| 22 | #79 | [V0.11] DS3 Goldens + Tastatur (#30) | V0.11 | epic:ds, tier:qol, size:M |
+| 23 | #80 | [V0.12] SI1 Expositions-Check + UFW | V0.12 | epic:si, tier:core, size:M |
+| 24 | #81 | [V0.12] SI2 Aktions-Journal (#151) | V0.12 | epic:si, tier:core, size:M |
+| 25 | #82 | [V0.12] SI3 Update-Radar | V0.12 | epic:si, tier:core, size:M |
+| 26 | #83 | [V0.12] SP1 Trend & Prognose | V0.12 | epic:sp, tier:qol, size:M |
+| 27 | #84 | [V0.12] SP2 Kategorien & Aufräumen | V0.12 | epic:sp, tier:qol, size:M |
+| 28 | #85 | [V0.12] WZ1 Systemmonitor ausbauen | V0.12 | epic:wz, tier:core, size:M |
+| 29 | #86 | [V0.12] DS4 Navigation | V0.12 | epic:ds, tier:qol, size:S |
+| 30 | #87 | [V1.0] QA3 Fixture-Bibliothek | V1.0 | epic:qa, size:M |
+| 31 | #88 | [V1.0] Parkliste — Wiedervorlage nur mit Beleg | V1.0 | roadmap |
