@@ -51,14 +51,22 @@ class LinuxCommand {
 
   /// Rendering for the command table the user can unfold before confirming.
   ///
-  /// Presentation only — nothing parses this back.
+  /// Presentation only — nothing parses this back. The environment is part
+  /// of the command the queue will run, so it is rendered in front of it
+  /// (`env KEY=VALUE …`) instead of staying invisible in the table.
   String get displayCommand {
-    if (useShell) {
-      return argv.length == 1
-          ? "bash -c ${_quoted(argv.first)}"
-          : "bash -c ${_quoted(argv.first)} -- ${argv.skip(1).map(_quoted).join(" ")}";
+    final String command = useShell
+        ? (argv.length == 1
+            ? "bash -c ${_quoted(argv.first)}"
+            : "bash -c ${_quoted(argv.first)} -- ${argv.skip(1).map(_quoted).join(" ")}")
+        : argv.map(_quoted).join(" ");
+    final Map<String, String> env = environment ?? const <String, String>{};
+    if (env.isEmpty) {
+      return command;
     }
-    return argv.map(_quoted).join(" ");
+    final String assignments =
+        env.entries.map((e) => _quoted("${e.key}=${e.value}")).join(" ");
+    return "env $assignments $command";
   }
 
   static final RegExp _needsQuoting = RegExp(r'[^A-Za-z0-9_@%+=:,./-]');

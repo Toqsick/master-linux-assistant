@@ -50,6 +50,58 @@ class BuildArgv(unittest.TestCase):
         self.assertIn(HOSTILE, built[4:])
 
 
+class BuildEnvironment(unittest.TestCase):
+    """The env the runner hands to a command (WP-S2: strip linker env for root).
+
+    The runner executes as root via pkexec, so a command running as uid 0 is
+    the case where `ld.so` still honours LD_PRELOAD and friends (uid == euid):
+    a hostile environment must not survive into the child.
+    """
+
+    def setUp(self):
+        # build_environment() merges over the real os.environ — inject a
+        # hostile inherited value so the filter is exercised on both halves
+        # of the merge, not just the queue-supplied one.
+        os.environ["LD_LIBRARY_PATH"] = "/tmp/injected.so"
+        self.addCleanup(os.environ.pop, "LD_LIBRARY_PATH", None)
+
+    def test_root_commands_drop_linker_and_shell_env_keys(self):
+        env = command_queue.build_environment(
+            {
+                "LD_PRELOAD": "/tmp/evil.so",
+                "BASH_ENV": "/tmp/evil.bash",
+                "ENV": "/tmp/evil.sh",
+                "IFS": "x",
+            },
+            uid=0,
+        )
+        for key in ("LD_PRELOAD", "LD_LIBRARY_PATH", "BASH_ENV", "ENV", "IFS"):
+            self.assertNotIn(key, env, key)
+
+    def test_root_commands_keep_ordinary_variables(self):
+        env = command_queue.build_environment(
+            {"DEBIAN_FRONTEND": "noninteractive", "LC_ALL": "C"}, uid=0
+        )
+        self.assertEqual(env["DEBIAN_FRONTEND"], "noninteractive")
+        self.assertEqual(env["LC_ALL"], "C")
+        self.assertIn("PATH", env, "PATH was not inherited")
+        self.assertIn("HOME", env, "HOME was not inherited")
+
+    def test_non_root_commands_inherit_everything(self):
+        # ld.so ignores LD_* when the command's uid differs from the runner's
+        # euid, so the filter deliberately only applies to uid 0.
+        env = command_queue.build_environment(
+            {"LD_PRELOAD": "/tmp/evil.so"}, uid=1000
+        )
+        self.assertEqual(env["LD_PRELOAD"], "/tmp/evil.so")
+        self.assertEqual(env["LD_LIBRARY_PATH"], "/tmp/injected.so")
+
+    def test_without_a_uid_the_merge_stays_unfiltered(self):
+        env = command_queue.build_environment({"LA_TEST_MARKER": "set"})
+        self.assertEqual(env["LA_TEST_MARKER"], "set")
+        self.assertEqual(env["LD_LIBRARY_PATH"], "/tmp/injected.so")
+
+
 class ParseCommand(unittest.TestCase):
     def valid(self, **overrides):
         entry = {"uid": 0, "argv": ["/bin/true"], "env": {}, "shell": False}
@@ -88,6 +140,22 @@ class ParseCommand(unittest.TestCase):
     def test_rejects_a_non_boolean_shell_flag(self):
         with self.assertRaises(command_queue.QueueFormatError):
             command_queue.parse_command(self.valid(shell="true"), 1)
+
+    def test_rejects_a_bare_executable_name(self):
+        # The runner resolves argv[0] through PATH as root before dropping
+        # privileges — a bare name is a PATH hijack, not a convenience.
+        with self.assertRaises(command_queue.QueueFormatError):
+            command_queue.parse_command(self.valid(argv=["rm", "/etc/fstab"]), 1)
+
+    def test_rejects_a_relative_executable_path(self):
+        with self.assertRaises(command_queue.QueueFormatError):
+            command_queue.parse_command(self.valid(argv=["bin/rm", "x"]), 1)
+
+    def test_shell_entries_are_exempt_their_argv0_is_a_script(self):
+        uid, argv, env, shell = command_queue.parse_command(
+            self.valid(argv=["echo $1", "value"], shell=True), 1
+        )
+        self.assertEqual((uid, shell), (0, True))
 
 
 class Execution(unittest.TestCase):

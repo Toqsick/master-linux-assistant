@@ -46,7 +46,7 @@ class TimeshiftCleanWidget extends StatelessWidget {
                       }
 
                       Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
-                        "timeshift",
+                        "/usr/bin/timeshift",
                         "--delete",
                         "--snapshot",
                         timeshiftSnapshot

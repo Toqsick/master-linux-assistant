@@ -895,7 +895,7 @@ class Linux {
   static Future<void> setUpFlatpak() async {
     await ensureApplicationInstallation(["flatpak"]);
     commandQueue.add(LinuxCommand(userId: 0, argv: [
-      "flatpak",
+      "/usr/bin/flatpak",
       "remote-add",
       "--if-not-exists",
       "flathub",
@@ -1562,7 +1562,7 @@ class Linux {
     }
     if (installNvidiaDriversAutomatically) {
       commandQueue.add(LinuxCommand(userId: 0, argv: [
-        "python3",
+        "/usr/bin/python3",
         "${executableFolder}additional/python/install_nvidia_driver.py"
       ]));
     }
@@ -1578,7 +1578,7 @@ class Linux {
         await ensureApplicationInstallation(
             ["yast2-online-update-configuration"]);
         commandQueue.add(LinuxCommand(userId: 0, argv: [
-          "ln",
+          "/usr/bin/ln",
           "-s",
           "/usr/lib/YaST2/bin/online_update",
           "/etc/cron.daily/"
@@ -1586,14 +1586,14 @@ class Linux {
         break;
       default:
         commandQueue.add(LinuxCommand(userId: 0, argv: [
-          "python3",
+          "/usr/bin/python3",
           "${executableFolder}additional/python/setup_automatic_updates_debian.py"
         ]));
         if (currentenvironment.distribution == DISTROS.LINUX_MINT) {
           /// Set com.linuxmint.updates auto-update-cinnamon-spices true
           commandQueue.add(
               LinuxCommand(userId: currentenvironment.currentUserId, argv: [
-            "gsettings",
+            "/usr/bin/gsettings",
             "set",
             "com.linuxmint.updates",
             "auto-update-cinnamon-spices",
@@ -1601,15 +1601,14 @@ class Linux {
           ]));
 
           /// Set com.linuxmint.updates auto-update-flatpaks true
-          commandQueue.add(LinuxCommand(
-              userId: currentenvironment.currentUserId,
-              argv: [
-                "gsettings",
-                "set",
-                "com.linuxmint.updates",
-                "auto-update-flatpaks",
-                "true"
-              ]));
+          commandQueue.add(
+              LinuxCommand(userId: currentenvironment.currentUserId, argv: [
+            "/usr/bin/gsettings",
+            "set",
+            "com.linuxmint.updates",
+            "auto-update-flatpaks",
+            "true"
+          ]));
         }
     }
   }
@@ -1623,7 +1622,7 @@ class Linux {
       additional = "--daily";
     }
     commandQueue.add(LinuxCommand(userId: 0, argv: [
-      "python3",
+      "/usr/bin/python3",
       "${executableFolder}additional/python/setup_automatic_snapshots.py",
       additional
     ]));
@@ -2756,7 +2755,7 @@ class Linux {
       } else {
         commandQueue.add(LinuxCommand(
           userId: currentenvironment.currentUserId,
-          argv: ["k4dirstat", "$path"],
+          argv: ["/usr/bin/k4dirstat", "$path"],
         ));
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
@@ -2771,7 +2770,7 @@ class Linux {
       } else {
         commandQueue.add(LinuxCommand(
           userId: currentenvironment.currentUserId,
-          argv: ["baobab", "$path"],
+          argv: ["/usr/bin/baobab", "$path"],
         ));
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
@@ -2999,7 +2998,7 @@ class Linux {
     if (currentenvironment.distribution == DISTROS.LINUX_MINT) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        argv: ["rm", "/etc/apt/preferences.d/nosnap.pref"],
+        argv: ["/usr/bin/rm", "/etc/apt/preferences.d/nosnap.pref"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
@@ -3023,7 +3022,7 @@ class Linux {
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        argv: ["ln", "-s", "/var/lib/snapd/snap", "/snap"],
+        argv: ["/usr/bin/ln", "-s", "/var/lib/snapd/snap", "/snap"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
@@ -3063,7 +3062,7 @@ class Linux {
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        argv: ["ln", "-s", "/var/lib/snapd/snap", "/snap"],
+        argv: ["/usr/bin/ln", "-s", "/var/lib/snapd/snap", "/snap"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
@@ -3281,7 +3280,7 @@ class Linux {
     if (value.isEmpty) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        argv: ["sed", "-i", "/$keyPattern/d", path],
+        argv: ["/usr/bin/sed", "-i", "/$keyPattern/d", path],
       ));
       return;
     }
@@ -3311,7 +3310,7 @@ class Linux {
       commandQueue.add(LinuxCommand(
         userId: 0,
         argv: [
-          "sed",
+          "/usr/bin/sed",
           "-i",
           "s/$keyPattern=.*/$keyPattern=${sedEscapeReplacement(value)}/",
           path

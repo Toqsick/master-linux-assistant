@@ -142,6 +142,40 @@ void main() {
         startsWith("bash -c "),
       );
     });
+
+    test("the environment is shown in front of the command", () {
+      expect(
+        LinuxCommand(
+          userId: 0,
+          argv: const ["/usr/bin/apt", "upgrade"],
+          environment: {"DEBIAN_FRONTEND": "noninteractive"},
+        ).displayCommand,
+        "env DEBIAN_FRONTEND=noninteractive /usr/bin/apt upgrade",
+      );
+    });
+
+    test("a hostile environment value is quoted like an argument", () {
+      final String shown = LinuxCommand(
+        userId: 0,
+        argv: const ["/bin/true"],
+        environment: {"MARKER": hostile},
+      ).displayCommand;
+
+      expect(shown, startsWith("env "));
+      expect(shown, contains("'MARKER="),
+          reason: "the KEY=VALUE token needed quoting");
+    });
+
+    test("a shell command with an environment shows both", () {
+      final String shown = LinuxCommand(
+        userId: 0,
+        useShell: true,
+        argv: const ["a | b"],
+        environment: {"PATH": "/usr/bin"},
+      ).displayCommand;
+
+      expect(shown, "env PATH=/usr/bin bash -c 'a | b'");
+    });
   });
 
   test("a command without an executable is rejected", () {

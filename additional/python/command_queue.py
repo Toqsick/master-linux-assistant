@@ -44,6 +44,12 @@ def parse_command(raw, line_number):
     if not isinstance(use_shell, bool):
         raise QueueFormatError(f"Line {line_number} has a non-boolean shell flag.")
 
+    if not use_shell and not os.path.isabs(argv[0]):
+        raise QueueFormatError(
+            f"Line {line_number} has a non-absolute executable: {argv[0]!r}. "
+            "The runner resolves it through PATH as root — queue an absolute path."
+        )
+
     if use_shell and len(argv) < 1:
         raise QueueFormatError(f"Line {line_number} asks for a shell without a script.")
 
@@ -62,14 +68,34 @@ def build_argv(argv, use_shell):
     return ["/bin/bash", "-c", argv[0], "linux-assistant"] + list(argv[1:])
 
 
-def build_environment(env):
+#: Variables the dynamic linker or an invoked shell would honour when the
+#: command runs as root — the one case where uid == euid, so `ld.so` still
+#: acts on LD_PRELOAD and friends (WP-S2 in security-fixplan-42-50.md).
+_ROOT_ENV_DENY_PREFIXES = ("LD_",)
+_ROOT_ENV_DENY_KEYS = frozenset({"BASH_ENV", "ENV", "IFS"})
+
+
+def build_environment(env, uid=None):
     """Command environment merged over the inherited one.
 
     The previous runner replaced the environment with just what the app passed,
     so a command that needed PATH had to carry its own copy of it.
+
+    For uid 0 the merged result drops the linker and shell injection
+    variables — whether they arrived through the inherited environment or
+    through the queue entry itself. When the command's uid differs from the
+    runner's euid, `ld.so` ignores LD_* on its own, so nothing is stripped.
     """
     environment = dict(os.environ)
     environment.update(env)
+    if uid == 0:
+        for key in [
+            key
+            for key in environment
+            if key.startswith(_ROOT_ENV_DENY_PREFIXES)
+            or key in _ROOT_ENV_DENY_KEYS
+        ]:
+            del environment[key]
     return environment
 
 
@@ -81,7 +107,7 @@ def run_command(uid, argv, env, use_shell, stream=None):
         build_argv(argv, use_shell),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        env=build_environment(env),
+        env=build_environment(env, uid),
         user=uid,
     )
     with process.stdout:
