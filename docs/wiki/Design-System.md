@@ -67,4 +67,6 @@ Zugriff im Code: `final t = HermesTokens.of(context);`
 
 PR B (#10) migriert Dashboard-Widgets auf die `MintYColors`-ThemeExtension.
 Sonderfall aus dem Audit: der Dark-Mode-Mutations-Hack in
-`single_bar_chart.dart` muss **ersetzt**, nicht ergänzt werden.
+`single_bar_chart.dart` wurde **ersetzt** — die Farben werden pro `build()`
+aufgelöst; die hartcodierten `Color.fromARGB`-Dark-Fallbacks stehen noch
+zur Token-Migration an.

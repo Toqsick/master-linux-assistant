@@ -1,6 +1,6 @@
 # AGENTS.md — `linux-assistant`
 
-Last verified: 2026-09-11.
+Last verified: 2026-09-18.
 
 Deeper instructions override `~/AGENTS.md` for this subtree.
 
@@ -20,7 +20,7 @@ cd ~/10-Projekte/10-active/linux-assistant
 flutter pub get
 dart format --output=none --set-exit-if-changed lib test  # CI gate
 flutter analyze        # CI gate: zero findings expected
-flutter test           # 14 files, ~154 cases — real coverage
+flutter test           # 15 files, ~177 cases — real coverage
 (cd additional/python && python3 -m unittest discover -s tests -t .)
 bash build-deb.sh      # the only maintained packaging path
 ```
@@ -55,7 +55,8 @@ futures in `unawaited(...)`; log through `lib/services/logger.dart`, never
 
 **Release:** follow `docs/wiki/Release-Process.md` — bump `version`, commit,
 tag `vX.Y.Z`, `bash build-deb.sh` (the alias artifact `linux-assistant.deb`
-is what CI uploads and the in-app updater expects).
+is what the CI artifact upload expects; the in-app updater selects its
+asset by `content_type`, not by filename).
 `tool/check-versions.sh` fails if `version` and `pubspec.yaml` diverge or if
 the tracked `deb/DEBIAN/control` carries Version/Installed-Size fields
 (those are stamped at build time). Root `.deb` files are gitignored local

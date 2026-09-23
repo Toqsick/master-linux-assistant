@@ -13,8 +13,14 @@
 | `hermes_tokens_test.dart` | Token-Konsistenz | Unit |
 | `hermes_widgets_test.dart` | Hermes-Widgets | Widget-Tests |
 | `widget_test.dart` | App-Smoke | Widget-Test |
+| `action_handler_test.dart` | openfile: Bestätigung vor Ausführung (recent/favorites) | Widget-Tests |
+| `command_queue_test.dart` | CommandQueue-Serialisierung (JSON-Zeilen, Sonderzeichen) | Unit |
+| `config_handler_test.dart` | ConfigHandler: Defaults, Laden, Zurücklesen | Unit |
+| `l10n_test.dart` | l10n-Vollständigkeit der `.arb`-Dateien | Unit |
+| `quick_notes_widget_test.dart` | E2 QuickNotes-Widget (Save-Race, Fehler-State) | Widget-Tests |
+| `security_check_outcome_test.dart` | `classifySecurityCheck` (Exit-Code-Deutung) | Unit |
 
-Ausführen: `flutter test` (aktuell: 128 Tests).
+Ausführen: `flutter test` (aktuell: 177 Tests in 15 Dateien).
 
 ## Etablierte Patterns
 
@@ -66,7 +72,7 @@ Dateimanager, Systemmonitor) sollen danach Baselines bekommen.
 
 ## CI
 
-`.github/workflows/build.yml` (ubuntu-24.04 gepinnt): `flutter test` läuft
-**vor** den Packaging-Schritten – ein roter Test failt früh. `flutter analyze`
-läuft bewusst nicht (189 pre-existing Findings; siehe Commit `1e90957` -
-Wiedereinführung erst nach Backlog-Abbau).
+`.github/workflows/build.yml` (ubuntu-24.04 gepinnt): `dart format`- und
+`flutter analyze`-Gates laufen vor `flutter test` – ein roter Test failt
+früh. `flutter analyze` ist seit dem 0.8.0-Hardening scharf geschaltet
+(0 Findings, `unawaited_futures` aktiv; Commits `8ec042f`, `210e456`).

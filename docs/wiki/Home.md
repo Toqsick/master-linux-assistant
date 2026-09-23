@@ -19,9 +19,9 @@ eingebetteten Werkzeugen in der Sidebar.
 | [[Admin-Hub]] | Die vier Werkzeuge (Browser, Quick Notes, Dateimanager, Systemmonitor) |
 | [[Design-System]] | Mint-Y/Hermes-Tokens, Widget-Katalog, Regeln |
 | [[Testing]] | Suite-Überblick, Test-Patterns, Golden-Status |
-| [[Release-Process]] | Versionierung, Packaging (deb/rpm), CI |
+| [[Release-Process]] | Versionierung, Packaging (deb), CI |
 | [[Contributing]] | PR-Workflow, Code-Konventionen, Commit-Stil |
-| [[Roadmap]] | v0.7.2-Gate, v0.7.3-Kandidaten, parallele Tracks |
+| [[Roadmap]] | v0.8.0-Stand, Kandidaten, parallele Tracks |
 
 ## Kern-Dokumente (docs/design/)
 

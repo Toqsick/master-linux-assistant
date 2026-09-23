@@ -5,7 +5,6 @@
 ```
 lib/
 ├── main.dart                  Einstieg, Theme, Distro-Farben
-├── main_search_loader.dart    Lädt Aktionskatalog → öffnet Hub
 ├── layouts/                   Screens
 │   ├── hub/                   HubShell, DashboardSection, StorageSection, HubGrid
 │   ├── tools/                 QuickNotesPage, FileManagerPage, SystemMonitorPage
@@ -20,6 +19,7 @@ lib/
 │   ├── system_monitor_service.dart E3: Parser + Sampling
 │   ├── system_stats_service.dart  Geteilter 3-s-Poller
 │   ├── linux.dart, config_handler.dart, action_entry_list_service.dart, …
+│   ├── main_search_loader.dart     Lädt Aktionskatalog → öffnet Hub
 ├── linux/                     System-Zugriff: linux_system, linux_process,
 │                              linux_filesystem (df-Parser)
 ├── widgets/hermes/            Hermes-Widgets (Card, StatTile, Sparkline,
@@ -93,7 +93,8 @@ so dazu). Unbekannte Distros fallen über `ID_LIKE` auf ihre Familie zurück
 
 ## L10n
 
-`flutter gen-l10n` aus `lib/l10n/*.arb` (de/en). Übergangsweise nutzt die
+`flutter gen-l10n` aus `lib/l10n/*.arb` (de/en/it/fi; Finnisch heißt die
+Datei `linuxassistant_fi.arb`). Übergangsweise nutzt die
 Werkzeuge-Sektion einen `_tr()`-Helper – Ablösung ist in
 `docs/design/admin-hub-followups.md` §2 geplant.
 

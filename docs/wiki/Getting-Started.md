@@ -5,13 +5,13 @@
 Zum Bauen:
 
 ```bash
-sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-0-dev wmctrl
+sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev
 ```
 
 Zum Ausführen eines installierten Pakets reichen die Laufzeit-Bibliotheken –
-das `.deb` deklariert sie (`libgtk-3-0`, `libkeybinder-3.0-0`, `wmctrl`,
-`python3`, `python3-gi`, `gir1.2-gtk-3.0`, `python3-apt`, `mesa-utils`,
-`pkexec`), `apt` zieht sie automatisch.
+das `.deb` deklariert sie (`libgtk-3-0`, `libkeybinder-3.0-0`, `python3`,
+`python3-gi`, `gir1.2-gtk-3.0`, `python3-apt`, `mesa-utils`,
+`pkexec | policykit-1`), `apt` zieht sie automatisch.
 
 Flutter: `>=3.27.0` (pubspec.yaml). Der Grund: `Color.withValues(alpha:)`
 wird in den Design-Tokens genutzt.
@@ -43,10 +43,13 @@ cd build/linux/x64/release/bundle/
 bash ./build-deb.sh
 sudo apt install ./linux-assistant_*_amd64.deb
 
-# Fedora/openSUSE:
-bash ./build-rpm.sh
+# Fedora/openSUSE (im Fork unmaintained — die Spec entspricht zuletzt 0.6.2;
+# siehe packaging/unmaintained/README.md):
+bash packaging/unmaintained/build-rpm.sh
 
-# Arch (nur auf Arch-basierten Systemen):
+# Arch (im Fork unmaintained — das PKGBUILD liegt unter
+# packaging/unmaintained/ bei pkgver=0.5.3, während build-arch-pkg.sh es
+# neben sich erwartet; nur auf Arch-basierten Systemen):
 bash ./build-arch-pkg.sh
 sudo pacman -U linux-assistant-*.pkg.tar.zst
 ```
@@ -56,8 +59,11 @@ sudo pacman -U linux-assistant-*.pkg.tar.zst
 
 ## Hotkey
 
-Der globale Hotkey **Super+Q** öffnet das Suchfeld direkt. Er wird beim Setup
-in die Desktop-Konfiguration geschrieben (`additional/python/setup_keybinding.py`,
+Der globale Hotkey öffnet das Suchfeld direkt: standardmäßig **Super+Q**, auf
+**KDE**, **Pop!_OS**, **Ubuntu** und **Zorin OS** hingegen **Alt+Q** (Quelle:
+`lib/services/linux.dart`, `getHotkeyModifier()`). Unter X11 grabbt die App
+den Hotkey selbst über libkeybinder; unter Wayland wird er in die
+Desktop-Konfiguration geschrieben (`additional/python/setup_keybinding.py`,
 unterstützt Cinnamon, GNOME, XFCE, KDE).
 
 ## Deinstallation

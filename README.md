@@ -96,7 +96,9 @@ cd build/linux/x64/release/bundle/
 bash ./build-deb.sh
 sudo apt install ./linux-assistant_*_amd64.deb
 # build-deb.sh produces linux-assistant_<version>_<arch>.deb and also
-# copies it to the legacy name linux-assistant.deb for the in-app updater.
+# copies it to the legacy name linux-assistant.deb, which the CI artifact
+# upload expects (the in-app updater picks its asset by content_type,
+# not by filename).
 # The build no longer mutates the tracked deb/DEBIAN/control in place —
 # Version and Installed-Size are stamped into a staging dir under build/.
 
