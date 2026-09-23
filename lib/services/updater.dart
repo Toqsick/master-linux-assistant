@@ -18,7 +18,7 @@ class LinuxAssistantUpdater {
   /// build with an unhardened one the moment upstream passes it. Change this
   /// back to "Jean28518/linux-assistant" only together with the version
   /// scheme.
-  static const String releaseRepository = "Toqsick/linux-assistant";
+  static const String releaseRepository = "Toqsick/master-linux-assistant";
 
   static Map? newestVersionInformation;
 

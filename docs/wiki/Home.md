@@ -36,7 +36,7 @@ eingebetteten Werkzeugen in der Sidebar.
 
 ```bash
 # Entwickeln
-git clone https://github.com/Toqsick/linux-assistant.git
+git clone https://github.com/Toqsick/master-linux-assistant.git
 cd linux-assistant && flutter pub get
 flutter run -d linux
 

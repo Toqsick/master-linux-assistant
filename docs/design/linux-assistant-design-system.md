@@ -1,5 +1,5 @@
 # Linux Assistant Design System
-## „Mint-Y / Hermes" – Extrahiert aus Toqsick/linux-assistant (Flutter, Material 3)
+## „Mint-Y / Hermes" – Extrahiert aus Toqsick/master-linux-assistant (Flutter, Material 3)
 
 > Quelle: `lib/layouts/mint_y.dart`, `lib/main.dart`, `lib/widgets/*`, `lib/layouts/hermes_tokens.dart` (Fork),
 > `linux/my_application.cc`. Alle Werte wurden direkt aus dem Code verifiziert.

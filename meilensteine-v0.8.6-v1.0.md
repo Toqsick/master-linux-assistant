@@ -1,6 +1,6 @@
 # Meilensteine V0.8.6 – V1.0 — Master Linux Assistant (MLA)
 
-> Repo: `Toqsick/linux-assistant`
+> Repo: `Toqsick/master-linux-assistant`
 > Quelle: Ausbauplan V0.8.6–V1.0 (Master-Plan 2026-09-23, `ausbauplan-v0.8.6-v1.0.md`)
 > Anlegen: fortlaufend ab Nummer 6 (1–5 = V0.8.1–V0.8.5, teils offen), via Web-UI (Issues → Milestones → New milestone) oder per Skript (siehe Ausbauplan, „Überführung" Schritt 3). Issue-Bodies stehen in `issues-v0.8.6-v1.0.md`.
 

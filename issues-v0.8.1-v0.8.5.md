@@ -20,7 +20,7 @@ Task 0 des V0.8.X-Implementierungsplans: Die Projekt-Memory wird komplett neu ge
 - `~/.claude/projects/-home-bratan--claude/memory/MEMORY.md` (nur die Zeile „Master Linux Assistant")
 
 ## Kerninhalte der neuen Memory
-- Fork `Toqsick/linux-assistant` (Upstream `Jean28518/linux-assistant`), lokal `~/10-Projekte/10-active/linux-assistant/`
+- Fork `Toqsick/master-linux-assistant` (Upstream `Jean28518/linux-assistant`), lokal `~/10-Projekte/10-active/linux-assistant/`
 - Richtung seit dem Grill 2026-09-11: persönliches Cockpit für Zorin OS 18.1; Core = Release-Blocker nur dort; fremde Backends (TokenTelemetry, Hermes, Odysseus) sind nie Core
 - `bash install.sh [--purge]` braucht sudo → Basti führt es selbst aus
 - Tote dconf-Schlüssel `custom0`–`custom4` alter `<Alt>Q`-Kürzel liegen inert (Stand 2026-07-30)

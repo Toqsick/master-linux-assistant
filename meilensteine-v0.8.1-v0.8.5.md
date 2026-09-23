@@ -1,6 +1,6 @@
 # Meilensteine V0.8.1 – V0.8.5 — Master Linux Assistant (MLA)
 
-> Repo: `Toqsick/linux-assistant` (wird: `Toqsick/linux-master-assistant`)
+> Repo: `Toqsick/master-linux-assistant` (2026-09-23 umbenannt, alte URLs leiten um)
 > Quelle: Implementierungsplan V0.8.X (Deep-Research-Auswertung 2026-09-11)
 > Anlegen via Web-UI (Issues → Milestones → New milestone) oder mit dem Skript `github-setup-linux-master-assistant.sh`.
 

@@ -1,6 +1,6 @@
 # Ausbauplan „Master Linux Assistant (MLA)" — V0.8.6 bis V1.0 (Master-Plan)
 
-> Repo: `Toqsick/linux-assistant` · Quelle: Master-Plan-Session 2026-09-23 (Brainstorming + read-only geprüfter Evidenz-Schnappschuss)
+> Repo: `Toqsick/master-linux-assistant` · Quelle: Master-Plan-Session 2026-09-23 (Brainstorming + read-only geprüfter Evidenz-Schnappschuss)
 > Zerlegung in Meilensteine und Issues: `meilensteine-v0.8.6-v1.0.md` · `issues-v0.8.6-v1.0.md`
 > Globale Randbedingungen wie die V0.8.1–V0.8.5-Serie: Referenzsystem Zorin OS 18.1, Security-Invarianten unangetastet, kein Push/PR/Versions-Bump/Tag ohne Bastis ausdrückliches OK.
 
@@ -11,7 +11,7 @@
 ## Kontext
 
 **Warum:** Basti will nach der laufenden V0.8.x-Härtungsserie wissen, welche Follow-ups und
-Weiterentwicklungen sich für seinen Fork `Toqsick/linux-assistant` lohnen. Die Ideen sollen „cool,
+Weiterentwicklungen sich für seinen Fork `Toqsick/master-linux-assistant` lohnen. Die Ideen sollen „cool,
 sinnvoll, hilfreich" sein und als ein großer Plan vorliegen, der in einzelne Pläne zerfällt.
 
 **Stand 2026-09-23 (verifiziert):**
@@ -553,7 +553,7 @@ Der Status bleibt **geparkt**. Eine Mini-Variante wird nur mit Bastis Go zu eine
    - Lokal auf `hardening/0.8.x-browser-xdg`, getrennt von H1: „docs(planning): Ausbauplan V0.8.6–V1.0 …".
    - Kein Push ohne OK.
    - Die Memory `linux-master-assistant-projekt.md` bekommt einen Zeiger auf den Ausbauplan.
-3. **GitHub (Toqsick/linux-assistant):**
+3. **GitHub (Toqsick/master-linux-assistant):**
    - Milestones: V0.8.6, V0.9, V0.10, V0.11, V0.12, V1.0.
    - Labels: `epic:{fu,lb,di,te,st,si,sp,wz,ds,qa}`, `tier:{core,qol,n2h}`, `size:{S,M,L}`, dazu die
      vorhandenen `gate:*`.
