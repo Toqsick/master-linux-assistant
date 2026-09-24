@@ -17,14 +17,16 @@ Die Sidebar hat seit v0.7.2 eine Sektion **WERKZEUGE** mit vier Einträgen:
 ## Browser (E1)
 
 Klick startet den Browser als **detached Prozess** – die Hub-Section ändert
-sich nicht. Fallback-Kette in `lib/services/app_launcher.dart`:
+sich nicht. Start-Kette in `lib/services/app_launcher.dart` (seit V0.8.2):
 
 ```
-brave → brave-browser → xdg-open https://
+preferred_browser (Allowlist-geprüft) → XDG-Standardbrowser
+(xdg-settings + .desktop-Prüfung; gtk-launch bzw. xdg-open für URLs)
+→ bekannte Browser-Binaries (brave → … → falkon)
 ```
 
-Feedback: still bei Erfolg, Info-Snackbar beim xdg-open-Fallback,
-Fehler-Snackbar wenn gar kein Browser gefunden wurde.
+Feedback: still bei preferred/XDG-Start, Info-Snackbar beim Binary-Listen-
+Fallback, Fehler-Snackbar wenn gar kein Browser gefunden wurde.
 
 ## Quick Notes (E2)
 
