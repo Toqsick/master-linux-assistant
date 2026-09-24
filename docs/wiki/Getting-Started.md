@@ -11,7 +11,8 @@ sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev
 Zum Ausführen eines installierten Pakets reichen die Laufzeit-Bibliotheken –
 das `.deb` deklariert sie (`libgtk-3-0`, `libkeybinder-3.0-0`, `python3`,
 `python3-gi`, `gir1.2-gtk-3.0`, `python3-apt`, `mesa-utils`,
-`pkexec | policykit-1`), `apt` zieht sie automatisch.
+`pkexec | policykit-1`, `xdg-utils`, `libgtk-3-bin`, `libglib2.0-bin`),
+`apt` zieht sie automatisch.
 
 Flutter: `>=3.27.0` (pubspec.yaml). Der Grund: `Color.withValues(alpha:)`
 wird in den Design-Tokens genutzt.
