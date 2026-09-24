@@ -8,15 +8,23 @@ as long the free (alternative) is well adapted in the community and has similar 
 The installation of Linux Assistant should be very easy. 
 As few dependencies as possible should be used.
 
+> **Fork note (removable derivation):** this repository is first a personal
+> cockpit for Zorin OS 18.1. The upstream mission above stands unchanged;
+> the tiers below are measured on the reference system only.
+
 ## Feature tiers
 
 To keep the mission focused, features are grouped into three tiers.
 Every feature in `features.csv` carries its tier in the `Category` column.
 
 **Core** — Functions the mission depends on: the daily helper (search,
-environment recognition) and administrative tasks (package management,
-updates, security and health checks, system setup). These deserve the
-broadest distribution support; a broken core function is a release blocker.
+environment recognition), administrative tasks (package management,
+updates, security and health checks, system setup) and the shipped hub
+tools (browser launcher, quick notes, file manager, system monitor).
+A broken core function is a release blocker on the reference system.
+Integrations with foreign backends (TokenTelemetry, Hermes, Odysseus,
+weather APIs) are never Core; system components (apt, systemd, Restic,
+Docker) may be.
 
 **Quality of Life (QoL)** — Functions that make daily use noticeably more
 convenient without adding new mission scope. Rules of thumb:
@@ -34,11 +42,19 @@ convenient without adding new mission scope. Rules of thumb:
 - They may be invisible on many distributions without hurting the product.
 - Removing one is legitimate whenever its maintenance cost exceeds its value.
 
+**Frozen distro matrix:** the distribution and desktop columns of
+`features.csv` are frozen at the upstream state — only the reference
+system (Zorin OS 18.1, GNOME) is verified by this fork.
+
 Kurzfassung (DE):
 
-- **Core:** Kern der Mission — täglicher Helfer plus Admin-Aufgaben;
-  breiter Distro-Support ist Pflicht, ein Bruch ist Release-Blocker.
+- **Core:** Kern der Mission — täglicher Helfer, Admin-Aufgaben und die
+  mitgelieferten Hub-Werkzeuge; am Referenzsystem (Zorin OS 18.1) ist ein
+  Bruch Release-Blocker. Fremd-Backend-Integrationen sind nie Core,
+  Systemkomponenten (apt, systemd, Restic, Docker) dürfen.
 - **QoL:** Alltagskomfort ohne neue Missions-Scope — keine neuen
   Abhängigkeiten, folgt dem Design-System, darf auf Distros fehlen.
 - **n2h:** Optionale Extras — nur mit kleinem Abhängigkeits-Fußabdruck und
   unangetasteten Security-Invarianten; Entfernung ist legitim.
+- **Eingefroren:** Die Distro-/Desktop-Spalten der `features.csv` stehen auf
+  Upstream-Stand; verifiziert wird nur das Referenzsystem.

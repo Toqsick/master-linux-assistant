@@ -40,3 +40,7 @@ Hub dashboard,Core,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,y
 Live system tiles (CPU/RAM/disk),QoL,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
 Theme switching without restart,QoL,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
 Read-only security findings,Core,?,yes,yes,yes,yes,yes,yes,yes,yes,yes *,yes *,yes,yes,yes,-,-,-,-,*) checker script does not report an update count on these distributions
+Browser launcher,Core,?,?,?,?,?,?,?,yes,?,?,?,?,?,?,yes,?,?,?,fork hub tool; verified on the reference system only
+Quick notes,Core,?,?,?,?,?,?,?,yes,?,?,?,?,?,?,yes,?,?,?,fork hub tool; verified on the reference system only
+File manager,Core,?,?,?,?,?,?,?,yes,?,?,?,?,?,?,yes,?,?,?,fork hub tool; verified on the reference system only
+System monitor,Core,?,?,?,?,?,?,?,yes,?,?,?,?,?,?,yes,?,?,?,fork hub tool; verified on the reference system only
