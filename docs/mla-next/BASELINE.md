@@ -118,10 +118,99 @@ Beide Läufe starteten ohne sudo als normaler Nutzer; die Laufprotokolle
 - [ ] Hell/Dunkel-Umschaltung
 - [ ] Skalierung 100 % / 125 % / 150 %
 
-## §4 Repo-Gates (folgt — Task 3/A0)
+## §4 Repo-Gates (Task 3/A0, 2026-09-29)
 
-## §5 Evidence-Map (folgt — Task 3/A0)
+Lokal im Repo-Root auf `feature/mla-gtk-scaffold` (Working Tree sauber vor dem
+Lauf), Reihenfolge wie CI. Umgebung siehe §1 (Dart 3.13.4, Flutter 3.47.5,
+Python 3.12.3). Alle fünf Gates grün.
 
-## §6 Offene Punkte (folgt — Task 3/A0)
+| Gate | Kommando | Exit | Kernausgabe |
+| --- | --- | --- | --- |
+| Version-Konsistenz | `bash tool/check-versions.sh` | 0 | `version 0.8.0 is consistent` |
+| Dart-Format | `dart format --output=none --set-exit-if-changed lib test` | 0 | `Formatted 118 files (0 changed) in 0.30 seconds.` |
+| Analyzer | `flutter analyze` | 0 | `No issues found! (ran in 9.5s)` |
+| Dart-Tests | `flutter test` | 0 | `00:02 +184: All tests passed!` |
+| Python-Tests | `cd additional/python && python3 -m unittest discover -s tests -t .` | 0 | `Ran 49 tests in 0.052s` / `OK` |
+
+Rohausgaben 1:1 (Exit-Zeile jeweils ergänzt):
+
+```text
+$ bash tool/check-versions.sh
+version 0.8.0 is consistent
+(EXIT=0)
+
+$ dart format --output=none --set-exit-if-changed lib test
+Formatted 118 files (0 changed) in 0.30 seconds.
+(EXIT=0)
+
+$ flutter analyze
+Upgrading analysis_options.yaml to exclude build and platform directories.
+Analyzing linux-assistant...
+No issues found! (ran in 9.5s)
+(EXIT=0)
+
+$ flutter test
+…
+00:02 +183: …/test/quick_notes_widget_test.dart: a failing load shows an error state, not an endless spinner
+00:02 +184: All tests passed!
+(EXIT=0)
+
+$ cd additional/python && python3 -m unittest discover -s tests -t .
+Ran 49 tests in 0.052s
+
+OK
+(EXIT=0)
+```
+
+Anmerkungen:
+
+- Gemessene Dart-Testanzahl: **184** (Zähler `+184: All tests passed!`) —
+  deckt sich mit der Handoff-Referenz von 184.
+- `flutter analyze` modifizierte bei dem Lauf eigenmächtig
+  `analysis_options.yaml` (fügte `analyzer.exclude: build/**, linux/**`
+  ein; Meldung „Upgrading analysis_options.yaml …"). Die Änderung wurde
+  unmittelbar nach dem Lauf per `git checkout -- analysis_options.yaml`
+  zurückgenommen; der Commit dieses Tasks enthält nur diese Datei. Ob das
+  Exclude fest übernommen werden sollte, ist ein offener Punkt (§6).
+
+## §5 Evidence-Map (Task 3/A0, 2026-09-29)
+
+Jede Zeile: Aussage → konkreter Beleg (Kommando + Kernausgabe bzw. Abschnitt
+dieser Datei).
+
+| Aussage | Beleg |
+| --- | --- |
+| PR #89 ist OPEN, Draft und MERGEABLE | `gh pr view 89 -R Toqsick/master-linux-assistant --json state,isDraft,mergeable` → `{"isDraft":true,"mergeable":"MERGEABLE","state":"OPEN"}` (2026-09-29) |
+| Issues #59, #60, #63 sind offen und auf Milestone „V0.9 – Fundament & Lagebild" | `gh issue view 59/60/63 -R Toqsick/master-linux-assistant --json number,title,state,milestone` → jeweils `"state":"OPEN"`, Milestone Nr. 7 „V0.9 – Fundament & Lagebild"; Titel: #59 „FU2 Reiner Dart-Kern packages/la_core", #60 „FU1 Modul-Registry (#27)", #63 „LB2 Backup-Cockpit" |
+| CI ist auf `feature/mla-gtk-scaffold` grün (PR-Run) | `gh run list -R Toqsick/master-linux-assistant --limit 3` → Run 36631724173, `completed success`, `pull_request`, Branch `feature/mla-gtk-scaffold`, 2026-09-29T21:12:38Z; die beiden älteren Runs (2026-09-24, `main`/`hardening/0.8.x-browser-xdg`) ebenfalls `success` |
+| `version` ↔ `pubspec.yaml` ↔ `deb/DEBIAN/control` konsistent (0.8.0) | §4, Zeile Version-Konsistenz: `bash tool/check-versions.sh` → Exit 0, `version 0.8.0 is consistent` |
+| Formatierungs-Gate erfüllt (118 Dateien, 0 geändert) | §4, Zeile Dart-Format: `dart format --output=none --set-exit-if-changed lib test` → Exit 0, `Formatted 118 files (0 changed)` |
+| Analyzer ohne Befunde | §4, Zeile Analyzer: `flutter analyze` → Exit 0, `No issues found! (ran in 9.5s)` |
+| Dart-Testsuite grün mit 184 Tests | §4, Zeile Dart-Tests: `flutter test` → Exit 0, `00:02 +184: All tests passed!` |
+| Python-Testsuite des Root-Runners grün mit 49 Tests | §4, Zeile Python-Tests: `python3 -m unittest discover -s tests -t .` → Exit 0, `Ran 49 tests`, `OK` |
+| Umgebung: Zorin OS 18.1, Wayland, GTK 4.14.5, Adw 1.5.0, Dart 3.13.4, Flutter 3.47.5 | §1 (Rohausgaben 1:1, 2026-09-29) |
+| GTK-Scaffold kompiliert und startet unter Wayland und X11 (je ≥ 3 s am Leben, stderr leer) | §2 „Gate 0" inkl. Zusammenfassungstabelle; X11 mit direktem `ps`-Beleg (PID 157124), Wayland-Life-Beleg indirekt (siehe §2-Anmerkung) |
+| Scaffold ist Fixture-Only (keine Systemaktionen) | §2 Belegabsatz zu VERIFY-Box 5 + `prototype/gtk/mla_app.py` (Docstring: „Demo-Daten, keine Systemaktionen") |
+
+## §6 Offene Punkte (Stand 2026-09-29)
+
+1. **GTK-Laufzeit nur Smoke-getestet:** verifiziert ist ausschließlich der
+   3 s-Lebenstest (§2) — Wayland ohne direkten `ps`-Beleg während des Laufs,
+   X11 mit. Keine Interaktion (Klicks, Fokus, Themewechsel, Skalierung) —
+   die manuelle Checkliste §3 bleibt Basti vorbehalten und ist offen.
+2. **Wayland-Screenshot-Lücke:** kein Bild des Wayland-Laufs
+   (`gnome-screenshot` fehlt, D-Bus-API verweigert, §2); belegt ist nur der
+   X11-Screenshot. Nachholen nur manuell.
+3. **`-dev`-Pakete fehlen:** `gtk4.pc`/`libadwaita-1.pc` nicht installiert
+   (§1) — für den PyGObject-Lauf irrelevant, für künftige C-Builds
+   (GSettings-Schemas, Compile) relevant.
+4. **`analysis_options.yaml`-Auto-Änderung:** `flutter analyze` fügt bei
+   jedem Lauf `analyzer.exclude: build/**, linux/**` ein (§4); im A0-Lauf
+   zurückgenommen. Entscheidung offen: Exclude dauerhaft übernehmen oder
+   Analyzer-Verhalten ignorieren — vor dem nächsten Gate-Lauf klären, sonst
+   bleibt der Working Tree nicht sauber.
+5. **Messbasis 0.0.3 offen:** der Flutter-vs-GTK-Vergleich (Roadmap
+   0.0.3/0.4.x) hat noch keine `la_probe`-Messwerte; §7 bleibt bis Gate 1
+   Platzhalter. Diese Baseline (§1, §2, §4) ist die Vergleichsgrundlage.
 
 ## §7 la_probe-Messung (folgt — Gate 1)
