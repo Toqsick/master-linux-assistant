@@ -74,4 +74,110 @@ class ModuleRegistry {
       visit(id, []);
     }
   }
+
+  Future<void> activate(String id) {
+    if (!_modules.containsKey(id)) {
+      throw ModuleRegistryError('unknown module id: $id');
+    }
+    if (!_validated) validate();
+    return _inflight[id] ??= _activateSubtree(id);
+  }
+
+  Future<void> _activateSubtree(String id) async {
+    for (final depId in _dependenciesOf(id)) {
+      if (_states[depId] != ModuleState.started) {
+        await (_inflight[depId] ??= _activateSubtree(depId));
+      }
+    }
+    if (_states[id] == ModuleState.started) return;
+    _states[id] = ModuleState.starting;
+    try {
+      await _activator.start(_modules[id]!);
+      _states[id] = ModuleState.started;
+      _activationOrder.add(id);
+    } finally {
+      _inflight.remove(id);
+    }
+  }
+
+  List<String> _dependenciesOf(String id) {
+    final out = <String>[];
+    void collect(String m, Set<String> seen) {
+      for (final dep in _modules[m]!.requires) {
+        if (seen.add(dep)) {
+          collect(dep, seen);
+          out.add(dep);
+        }
+      }
+    }
+
+    collect(id, {id});
+    return out;
+  }
+
+  Future<void> deactivate(String id) {
+    if (!_modules.containsKey(id)) {
+      throw ModuleRegistryError('unknown module id: $id');
+    }
+    return _inflight[id] ??= _deactivateWithDependents(id);
+  }
+
+  Future<void> _deactivateWithDependents(String id) async {
+    // Snapshot: _stopModule entfernt aus _activationOrder (lazy .reversed
+    // wuerde sonst Concurrent Modification werfen).
+    for (final active in List.of(_activationOrder).reversed) {
+      if (active == id) break;
+      if (_states[active] == ModuleState.started &&
+          _transitivelyDependsOn(active, id)) {
+        await (_inflight[active] ??= _stopModule(active));
+      }
+    }
+    // Direkt stoppen: _inflight[id] enthaelt bereits die Future DIESES
+    // Deactivate-Laufs (Eintrag in deactivate()); `??=` wuerde sonst auf
+    // uns selbst warten -> Deadlock. Single-Flight bleibt am EntryPoint
+    // von deactivate() gewaehrleistet.
+    if (_states[id] == ModuleState.started) {
+      await _stopModule(id);
+    } else {
+      _inflight.remove(id);
+    }
+  }
+
+  Future<void> _stopModule(String id) async {
+    _states[id] = ModuleState.stopping;
+    try {
+      await _activator.stop(_modules[id]!);
+      _states[id] = ModuleState.stopped;
+      _activationOrder.remove(id);
+    } finally {
+      _inflight.remove(id);
+    }
+  }
+
+  bool _transitivelyDependsOn(String m, String target, [Set<String>? seen]) {
+    seen ??= {};
+    for (final dep in _modules[m]!.requires) {
+      if (dep == target ||
+          (seen.add(dep) && _transitivelyDependsOn(dep, target, seen))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> deactivateAll() async {
+    for (final id in List.of(_activationOrder).reversed) {
+      if (_states[id] == ModuleState.started) {
+        await (_inflight[id] ??= _stopModule(id));
+      }
+    }
+  }
+
+  void setVisible(String id, bool visible) {
+    if (_states[id] != ModuleState.started) {
+      throw ModuleRegistryError(
+          'setVisible($id, $visible): module not started');
+    }
+    _visible[id] = visible;
+  }
 }
