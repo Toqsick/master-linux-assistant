@@ -213,4 +213,101 @@ dieser Datei).
    0.0.3/0.4.x) hat noch keine `la_probe`-Messwerte; §7 bleibt bis Gate 1
    Platzhalter. Diese Baseline (§1, §2, §4) ist die Vergleichsgrundlage.
 
-## §7 la_probe-Messung (folgt — Gate 1)
+## §7 la_probe-Messung (Task 4/#59-Spike, 2026-09-30)
+
+Erste Messbasis für `la_probe` (Spike `packages/la_core`, Issue #59). Aufgenommen
+am **2026-09-30 00:11 CEST** auf dem Zielrechner (§1-Umgebung). Toolchain:
+`dart compile exe` mit dem Dart aus dem Flutter-SDK —
+`dart --version` → `Dart SDK version: 3.13.4 (stable) (Tue Sep 15 01:01:15 2026 -0700) on "linux_x64"`,
+`flutter --version | head -1` → `Flutter 3.47.5 • channel stable` (beide via
+snap; Dart 3.13.4 ist die dem Flutter-3.47.5-Stand beiliegende SDK-Version).
+
+### Paket-Gates (`cd packages/la_core`)
+
+| Gate | Kommando | Exit | Kernausgabe |
+| --- | --- | --- | --- |
+| Abhängigkeiten | `dart pub get` | 0 | `Got dependencies!` |
+| Tests (RED-Mutation) | `mv lib/src/probe.dart lib/src/probe.dart.bak && dart test` | 1 | `Error when reading 'lib/src/probe.dart': No such file or directory` … `Some tests failed.` |
+| Tests (GREEN) | `dart test` (nach Restore) | 0 | `00:00 +3: All tests passed!` |
+| Analyzer | `dart analyze` | 0 | `No issues found!` |
+| Format | `dart format --output=none --set-exit-if-changed .` | 0 | `Formatted 4 files (0 changed) in 0.02 seconds.` |
+
+RED-Nachweis (Mutation statt klassischem RED, da die Implementation aus dem
+unterbrochenen Vorlauf bereits existierte) — Auszug 1:1:
+
+```text
+$ mv lib/src/probe.dart lib/src/probe.dart.bak && dart test
+00:00 +0: loading test/probe_test.dart
+00:00 +0 -1: loading test/probe_test.dart [E]
+  Failed to load "test/probe_test.dart":
+  lib/la_core.dart:1:1: Error: Error when reading 'lib/src/probe.dart': No such file or directory
+  export 'src/probe.dart';
+  ^
+  test/probe_test.dart:6:34: Error: Undefined name 'ProbeLevel'.
+  …
+00:00 +0 -1: Some tests failed.
+(EXIT=1)
+```
+
+GREEN 1:1:
+
+```text
+$ dart test
+00:00 +0: loading test/probe_test.dart
+00:00 +0: test/probe_test.dart: ProbeResult.describe enthaelt Level und Key
+00:00 +1: test/probe_test.dart: ProbeLevel deckt ok/warn/crit/unknown ab
+00:00 +2: test/probe_test.dart: SelfProbe liefert ok mit key probe.self
+00:00 +3: All tests passed!
+(EXIT=0)
+```
+
+### Kompilieren + Headless-Lauf
+
+```text
+$ cd packages/la_core && dart compile exe bin/la_probe.dart -o /tmp/la_probe
+Generated: /tmp/la_probe
+(EXIT=0)
+
+$ env -u DISPLAY -u WAYLAND_DISPLAY /tmp/la_probe --version
+la_probe 0.0.1-spike.1 (dart 3.13.4 (stable) (Tue Sep 15 01:01:15 2026 -0700) on "linux_x64")
+(EXIT=0)
+
+$ env -u DISPLAY -u WAYLAND_DISPLAY /tmp/la_probe
+ok:probe.self @ 2026-09-30T00:11:41.458200
+(EXIT=0)
+```
+
+Kein Display nötig (DISPLAY und WAYLAND_DISPLAY entfernt) — der AOT-Binary
+läuft headless; reiner Dart-Kern, keine GTK-/Flutter-Typen.
+
+### Messwerte
+
+| Messgröße | Wert |
+| --- | --- |
+| Binärgröße (`stat -c '%s' /tmp/la_probe`) | **6 547 240 Bytes** (≈ 6,24 MiB) |
+| Startzeit (`--version`, 5 Läufe, je frischer Prozess) | 3 / 3 / 3 / 3 / 3 ms |
+| **Median-Startzeit** | **3 ms** |
+| Datum/Uhrzeit der Messung | 2026-09-30 00:11:50 CEST |
+| Dart-Version (compile + Lauf) | 3.13.4 (stable), linux_x64 |
+
+Rohausgaben 1:1:
+
+```text
+$ stat -c '%s' /tmp/la_probe
+6547240
+
+$ s=$(date +%s%N); env -u DISPLAY -u WAYLAND_DISPLAY /tmp/la_probe --version >/dev/null; e=$(date +%s%N); echo $(( (e-s)/1000000 )) ms
+3 ms   # run1
+3 ms   # run2
+3 ms   # run3
+3 ms   # run4
+3 ms   # run5
+```
+
+Einordnung: Die 6,2-MiB-Binärgröße ist der AOT-Runtime-Overhead eines
+minimalen Dart-Executables (Fixturm-Basis für die 0.0.3/0.4.x-Vergleiche);
+die 3-ms-Startzeit bestätigt die Headless-Tauglichkeit des reinen Dart-Kerns.
+Die Messwerte sind die Vergleichsbasis für Gate 1 (Registry #60) und die
+Flutter-vs-GTK-Messbasis (löst den offenen Punkt 5 aus §6 teilweise ein — die
+`la_probe`-Messwerte existieren nun; der Flutter/GTK-Vergleich selbst bleibt
+offen).
