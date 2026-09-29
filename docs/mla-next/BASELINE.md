@@ -55,10 +55,19 @@ Kommando: `python3 mla_app.py >/tmp/mla-gate0-wayland.stdout 2>/tmp/mla-gate0-wa
 danach `sleep 3` und `kill -0`.
 
 - Kriterium „3 s am Leben": **erfüllt** — Meldung `lebt (Wayland, PID 154921)`.
-  Anmerkung zur Messung: `$!` erfasste in diesem ersten Lauf die Wrapper-Shell
-  statt direkt python3 (App-Prozess war python3, PID 154923); der App-Prozess lief
-  nachweislich über die 3 s hinaus und wurde anschließend per gespeicherter PID
-  beendet. Der X11-Lauf unten misst die python3-PID direkt.
+  Anmerkung zu Messung und Beleglage: `$!` erfasste in diesem ersten Lauf die
+  Wrapper-Shell statt direkt python3; `kill -0` belegte zum Prüfpunkt also das
+  Leben der Wrapper-Shell (PID 154921), für das Child nur den indirekten Schluss.
+  Die python3-PID (154923) ist im Implementer-Report
+  (`.superpowers/sdd/task-2-report.md`) geführt, jedoch ohne `ps`-Zitat — ein
+  direkter Prozessbeleg für den Wayland-Lauf liegt nicht vor. Nachträgliche
+  Kontrollprüfung per `pgrep -af mla_app.py` (2026-09-29): kein
+  `mla_app.py`-Prozess mehr aktiv — einziger Treffer war der Self-Match der
+  prüfenden Shell; kein Restprozess. Die Aussage „der App-Prozess lief die
+  vollen 3 s als python3" beruht damit auf dem X11-Direktbeleg unten (gleiche
+  App; python3-PID 157124 per `ps` bestätigt) plus leerem stderr, nicht auf
+  direktem `ps` während des Wayland-Laufs. Der X11-Lauf misst die python3-PID
+  direkt.
 - stderr: **0 Byte (leer) — kein Traceback.** stdout: 0 Byte.
 - Screenshot: **nicht möglich.** `gnome-screenshot` ist nicht installiert; der
   D-Bus-Fallback `org.gnome.Shell.Screenshot.Screenshot` wird von GNOME (≥ 41)
@@ -88,6 +97,15 @@ danach `sleep 3` und `kill -0`.
 | py_compile | PASS (Exit 0, keine Ausgabe) |
 | Wayland-Start | PASS (≥ 3 s am Leben, stderr leer); Screenshot-Lücke dokumentiert |
 | X11-Start | PASS (≥ 3 s am Leben, stderr leer, Screenshot vorhanden) |
+
+Beleg zu VERIFY-Box 5 („unprivilegierter Start als normaler Nutzer,
+Fixture-Only, Screenshots nur /tmp"): `prototype/gtk/mla_app.py` ist reine
+Demo-Ware — ausschließlich Demo-Daten und GTK-/Adw-Widget-Aufbau, keine
+Systemaufrufe im Code (Docstring dort: „Demo-Daten, keine Systemaktionen").
+Beide Läufe starteten ohne sudo als normaler Nutzer; die Laufprotokolle
+(Kommandos, PIDs, leere stdout/stderr) stehen oben bzw. in
+`.superpowers/sdd/task-2-report.md`. Screenshots liegen ausschließlich in
+`/tmp` (siehe Kopf dieser Datei).
 
 ## §3 Manuelle Checkliste (Basti) — offen
 
