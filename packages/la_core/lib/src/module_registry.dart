@@ -61,7 +61,8 @@ class ModuleRegistry {
       if (m == 2) return;
       if (m == 1) {
         throw ModuleRegistryError(
-            'dependency cycle: ${[...path, id].join(' -> ')}');
+          'dependency cycle: ${[...path, id].join(' -> ')}',
+        );
       }
       mark[id] = 1;
       for (final dep in _modules[id]!.requires) {
@@ -176,7 +177,8 @@ class ModuleRegistry {
   void setVisible(String id, bool visible) {
     if (_states[id] != ModuleState.started) {
       throw ModuleRegistryError(
-          'setVisible($id, $visible): module not started');
+        'setVisible($id, $visible): module not started',
+      );
     }
     _visible[id] = visible;
   }

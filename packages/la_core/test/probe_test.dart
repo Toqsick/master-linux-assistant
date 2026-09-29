@@ -8,8 +8,10 @@ void main() {
   });
 
   test('ProbeLevel deckt ok/warn/crit/unknown ab', () {
-    expect(ProbeLevel.values.map((l) => l.name),
-        containsAll(<String>['ok', 'warn', 'crit', 'unknown']));
+    expect(
+      ProbeLevel.values.map((l) => l.name),
+      containsAll(<String>['ok', 'warn', 'crit', 'unknown']),
+    );
   });
 
   test('SelfProbe liefert ok mit key probe.self', () async {

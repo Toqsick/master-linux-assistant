@@ -23,10 +23,7 @@ void main() {
   test('register wirft bei doppelter ID', () {
     final r = ModuleRegistry(activator: _NoopActivator());
     r.register(mod('a'));
-    expect(
-      () => r.register(mod('a')),
-      throwsA(isA<ModuleRegistryError>()),
-    );
+    expect(() => r.register(mod('a')), throwsA(isA<ModuleRegistryError>()));
   });
 
   test('validate wirft bei unbekannter Abhaengigkeit ghost', () {
@@ -48,14 +45,10 @@ void main() {
     final r = ModuleRegistry(activator: _NoopActivator());
     r.register(mod('a', requires: {'b'}));
     r.register(mod('b', requires: {'a'}));
-    expect(
-      () => r.validate(),
-      throwsA(isA<ModuleRegistryError>()),
-    );
+    expect(() => r.validate(), throwsA(isA<ModuleRegistryError>()));
   });
 
-  test(
-      'nach validate ist neue Registrierung moeglich und erneutes validate '
+  test('nach validate ist neue Registrierung moeglich und erneutes validate '
       'wirft nicht', () {
     final r = ModuleRegistry(activator: _NoopActivator());
     r.register(mod('a'));
