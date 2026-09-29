@@ -7,6 +7,14 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
+#
+# The excludes below are what `flutter analyze`/`flutter test` auto-write on
+# every run since Flutter 3.47 ("Upgrading analysis_options.yaml"); adopted
+# 2026-09-30 so automated gate runs leave a clean tree.
+analyzer:
+  exclude:
+    - build/**
+    - linux/**
 include: package:flutter_lints/flutter.yaml
 
 linter:
