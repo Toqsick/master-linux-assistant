@@ -132,6 +132,11 @@ Python 3.12.3). Alle fünf Gates grün.
 | Dart-Tests | `flutter test` | 0 | `00:02 +184: All tests passed!` |
 | Python-Tests | `cd additional/python && python3 -m unittest discover -s tests -t .` | 0 | `Ran 49 tests in 0.052s` / `OK` |
 
+Frischlauf 2026-09-30: alle 5 Gates erneut Exit 0 (`flutter test` +184,
+49 Python-Tests, Format/Analyze/check-versions ohne Befunde) — Details im
+Task-7a-Report (Scratch, `.superpowers/sdd/task-7a-report.md`, nicht Teil
+des Repos).
+
 Rohausgaben 1:1 (Exit-Zeile jeweils ergänzt):
 
 ```text
@@ -209,9 +214,10 @@ dieser Datei).
    zurückgenommen. Entscheidung offen: Exclude dauerhaft übernehmen oder
    Analyzer-Verhalten ignorieren — vor dem nächsten Gate-Lauf klären, sonst
    bleibt der Working Tree nicht sauber.
-5. **Messbasis 0.0.3 offen:** der Flutter-vs-GTK-Vergleich (Roadmap
-   0.0.3/0.4.x) hat noch keine `la_probe`-Messwerte; §7 bleibt bis Gate 1
-   Platzhalter. Diese Baseline (§1, §2, §4) ist die Vergleichsgrundlage.
+5. **Messbasis 0.0.3 (aufgelöst 2026-09-30, teils):** die `la_probe`-Messwerte
+   liegen vor (§7, Task-4/#59-Spike — §7 ist kein Platzhalter mehr); offen
+   bleibt der Flutter-vs-GTK-Vergleich selbst (Roadmap 0.0.3/0.4.x). Diese
+   Baseline (§1, §2, §4) ist die Vergleichsgrundlage.
 
 ## §7 la_probe-Messung (Task 4/#59-Spike, 2026-09-30)
 

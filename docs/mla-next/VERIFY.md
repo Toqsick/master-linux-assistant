@@ -1,6 +1,6 @@
 # MLA-Next: Verifikation und Handoff
 
-Stand dieses Branchs: keine hier dokumentierten GTK-Laufzeit-, Zorin-, IPC- oder Performance-Tests ausgeführt. Der Scaffold-Commit ist **kein** Release-Gate.
+Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (Wayland- und X11-Start — Gate 0, BASELINE §2; manuelle Checks offen), la_core-Spike und Registry sind getestet inkl. Performance-Messwerten (Gate 1, BASELINE §7). Weiterhin nicht ausgeführt: IPC-/Gate-2-Tests, Flutter-vs-GTK-Vergleichsmessung (Roadmap 0.0.3), manuelle Gate-0-Checks (BASELINE §3). Der Scaffold-Commit ist **kein** Release-Gate.
 
 ## Gate 0: Scaffold
 
