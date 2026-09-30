@@ -126,12 +126,13 @@ void main() {
 
       final memory = MemoryInfo.parseFreeOutput(output)!;
 
-      expect(memory.totalMb, 16066996);
-      expect(memory.usedMb, 10558324);
-      expect(memory.swapTotalMb, 16421880);
-      expect(memory.swapUsedMb, 7950396);
+      // Captured with `free -m`: the fixture's figures are mebibytes.
+      expect(memory.totalMb, 15690);
+      expect(memory.usedMb, 8578);
+      expect(memory.swapTotalMb, 16036);
+      expect(memory.swapUsedMb, 5437);
       expect(memory.hasSwap, isTrue);
-      expect(memory.usedRatio, closeTo(10558324 / 16066996, 0.0001));
+      expect(memory.usedRatio, closeTo(8578 / 15690, 0.0001));
     });
 
     test("handles a machine without swap", () {

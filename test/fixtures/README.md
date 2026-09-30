@@ -28,13 +28,25 @@ im Betrieb verwendet (Quellen in Klammern). Nicht abwandeln — insbesondere die
 | `zorin_df.txt` | `df -h` (ohne LC_ALL — Produktionsdefault) | `lib/linux/linux_filesystem.dart:9` |
 | `zorin_ps.txt` | `ps -eo pcpu,args --sort=-pcpu` | `lib/linux/linux_process.dart:10` (metric=pcpu) |
 | `zorin_uptime.txt` | `LC_ALL=C /usr/bin/uptime` | `lib/linux/linux_system.dart:22` |
-| `zorin_free.txt` | `LC_ALL=C /usr/bin/free` | `lib/linux/linux_system.dart:11` |
+| `zorin_free.txt` | `LC_ALL=C /usr/bin/free -m` | `lib/linux/linux_system.dart:11` |
 | `zorin_loadavg.txt` | `cat /proc/loadavg` | `lib/linux/linux_system.dart:53` |
 
 Dokumentierte Abweichung: `zorin_ps.txt` wurde auf die ersten 60 Zeilen
 gekürzt (das Capture hatte 682; die Top-Liste braucht der Parser nur in
 Ausschnitten, und weniger Zeilen bedeuten weniger Schwärzungsfläche). Alle
 anderen `zorin_*`-Dateien sind vollständig.
+
+Bug-Notiz (`zorin_free.txt`, neu aufgezeichnet am 2026-09-30): Der erste
+Capture lief ohne `-m` und enthielt KiB-Werte, während `MemoryInfo.*Mb`
+(Doku: „free -m, in mebibytes") und die Formatter (`/1024`, MiB→GiB)
+Mebibytes erwarten — auf diesem Capture-Pfad wären alle RAM-/Swap-Werte
+1024× zu hoch angezeigt worden. Der Produktionsaufruf in
+`lib/linux/linux_system.dart:11` wurde auf `/usr/bin/free -m` korrigiert und
+die Fixture damit neu aufgezeichnet (Follow-up aus dem #94-Review-Minor zu
+MemoryInfo MiB/KiB + Ad-hoc-Befund 2026-09-30). Der Dashboard-Poller
+(`lib/services/system_stats_service.dart`) führte `free -m` bereits korrekt;
+der Fix beseitigt den letzten KiB-Capture und stellt die
+Produktions-Parität dieser Fixture wieder her.
 
 ## Schwärzungsregeln
 
@@ -148,7 +160,7 @@ Lese-Konvention; in `prototype/gtk/` existiert dazu bewusst noch kein Code.
 | `zorin_df.txt` | echt | `df -h`, deutsches Locale, inkl. `/run/user/1000` |
 | `zorin_ps.txt` | echt | `ps -eo pcpu,args --sort=-pcpu`, erste 60 Zeilen, geschwärzt |
 | `zorin_uptime.txt` | echt | `LC_ALL=C /usr/bin/uptime` |
-| `zorin_free.txt` | echt | `LC_ALL=C /usr/bin/free` (Maschine mit Swap) |
+| `zorin_free.txt` | echt | `LC_ALL=C /usr/bin/free -m` (Maschine mit Swap, MiB) |
 | `zorin_loadavg.txt` | echt | `cat /proc/loadavg` |
 | `df_duplicate_device.txt` | synthetisch | doppeltes Gerät (`/dev/sda2` zweimal) wird auf einen Eintrag reduziert |
 | `df_mountpoint_spaces.txt` | synthetisch | Mountpoint mit Leerzeichen (`/media/user/USB Stick`) |
