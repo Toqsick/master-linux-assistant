@@ -1269,6 +1269,30 @@
     "description": "Confirmation before an executable file from the search is run",
     "type": "text"
   },
+  "browser": "Browser",
+  "@browser": {
+    "placeholders": {},
+    "description": "Sidebar label for the browser launcher",
+    "type": "text"
+  },
+  "quickNotes": "Quick Notes",
+  "@quickNotes": {
+    "placeholders": {},
+    "description": "Sidebar label for the quick notes tool",
+    "type": "text"
+  },
+  "fileManager": "File manager",
+  "@fileManager": {
+    "placeholders": {},
+    "description": "Sidebar label for the file manager tool",
+    "type": "text"
+  },
+  "systemMonitor": "System monitor",
+  "@systemMonitor": {
+    "placeholders": {},
+    "description": "Sidebar label for the system monitor tool",
+    "type": "text"
+  },
   "runFileWarning": "The file will be executed as a program with your user rights. Only continue if you know what it does.",
   "@runFileWarning": {
     "placeholders": {},

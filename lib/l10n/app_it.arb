@@ -1289,6 +1289,30 @@
     "description": "Confirmation before an executable file from the search is run",
     "type": "text"
   },
+  "browser": "Browser",
+  "@browser": {
+    "placeholders": {},
+    "description": "Sidebar label for the browser launcher",
+    "type": "text"
+  },
+  "quickNotes": "Note rapide",
+  "@quickNotes": {
+    "placeholders": {},
+    "description": "Sidebar label for the quick notes tool",
+    "type": "text"
+  },
+  "fileManager": "Gestore file",
+  "@fileManager": {
+    "placeholders": {},
+    "description": "Sidebar label for the file manager tool",
+    "type": "text"
+  },
+  "systemMonitor": "Monitor di sistema",
+  "@systemMonitor": {
+    "placeholders": {},
+    "description": "Sidebar label for the system monitor tool",
+    "type": "text"
+  },
   "runFileWarning": "Il file verrà eseguito come programma con i tuoi privilegi utente. Continua solo se sai cosa fa.",
   "@runFileWarning": {
     "placeholders": {},

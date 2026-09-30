@@ -1169,6 +1169,18 @@ class AppLocalizationsFi extends AppLocalizations {
   }
 
   @override
+  String get browser => 'Selain';
+
+  @override
+  String get quickNotes => 'Pikamuistiinpanot';
+
+  @override
+  String get fileManager => 'Tiedostoselain';
+
+  @override
+  String get systemMonitor => 'Järjestelmän seuranta';
+
+  @override
   String get runFileWarning =>
       'Tiedosto suoritetaan ohjelmana käyttöoikeuksillasi. Jatka vain, jos tiedät, mitä se tekee.';
 }

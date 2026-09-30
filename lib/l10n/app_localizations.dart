@@ -2118,6 +2118,30 @@ abstract class AppLocalizations {
   /// **'Run \"{path}\"?'**
   String runFileQuestion(String path);
 
+  /// Sidebar label for the browser launcher
+  ///
+  /// In en, this message translates to:
+  /// **'Browser'**
+  String get browser;
+
+  /// Sidebar label for the quick notes tool
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Notes'**
+  String get quickNotes;
+
+  /// Sidebar label for the file manager tool
+  ///
+  /// In en, this message translates to:
+  /// **'File manager'**
+  String get fileManager;
+
+  /// Sidebar label for the system monitor tool
+  ///
+  /// In en, this message translates to:
+  /// **'System monitor'**
+  String get systemMonitor;
+
   /// Explains what confirming the dialog above does
   ///
   /// In en, this message translates to:

@@ -109,6 +109,11 @@ class SystemStatsService {
   @visibleForTesting
   int get subscriberCount => _subscribers;
 
+  /// Read-only view of the section flag, so the coupling between a hub module
+  /// and this service can be asserted without spawning `ps`/`df`/`free`.
+  @visibleForTesting
+  bool get sectionActive => _sectionActive;
+
   /// Registers interest.
   void acquire() {
     _subscribers++;

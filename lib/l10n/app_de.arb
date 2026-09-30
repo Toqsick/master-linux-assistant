@@ -1303,6 +1303,30 @@
     "description": "Confirmation before an executable file from the search is run",
     "type": "text"
   },
+  "browser": "Browser",
+  "@browser": {
+    "placeholders": {},
+    "description": "Sidebar label for the browser launcher",
+    "type": "text"
+  },
+  "quickNotes": "Quick Notes",
+  "@quickNotes": {
+    "placeholders": {},
+    "description": "Sidebar label for the quick notes tool",
+    "type": "text"
+  },
+  "fileManager": "Dateimanager",
+  "@fileManager": {
+    "placeholders": {},
+    "description": "Sidebar label for the file manager tool",
+    "type": "text"
+  },
+  "systemMonitor": "Systemmonitor",
+  "@systemMonitor": {
+    "placeholders": {},
+    "description": "Sidebar label for the system monitor tool",
+    "type": "text"
+  },
   "runFileWarning": "Die Datei wird als Programm mit deinen Benutzerrechten ausgeführt. Fahre nur fort, wenn du weißt, was sie tut.",
   "@runFileWarning": {
     "placeholders": {},
