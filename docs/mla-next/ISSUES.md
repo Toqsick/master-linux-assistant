@@ -181,16 +181,16 @@ _Quelle: `docs/mla-next/AGENT_PLAN.md` (A3), `docs/mla-next/VERIFY.md` (Gate 1).
 Eine Fixture-Bibliothek, die Flutter- und GTK-Track gemeinsam nutzen (echte, geschwärzte Zorin-Ausgaben; Ablageort legt der Spec fest — `test/fixtures/` existiert noch nicht). Dazu Fehler- und Stale-Modelle: `unknown`, `stale`, `failed`, `running`, `ok` sind getrennte Zustände; `stale` ist UI-/Transportstatus und wird nie stillschweigend zu `ok` (`IPC_CONTRACT.md`).
 
 ## Abnahme
-- [ ] Fixtures liegen an einem Ort; beide Tracks lesen sie, kein Duplikat
-- [ ] Schwärzung dokumentiert; Leak-Check (keine Hosts, IPs, Ports, `/home`-Pfade) auf allen Fixtures leer
-- [ ] Tests für jeden Zustand, den Übergang ok → stale und den Fehlerpfad
-- [ ] Abgrenzung zu QA3 (#87, V1.0): dieser Task liefert die Basis, QA3 konsolidiert den Bestand
+- [x] Fixtures liegen an einem Ort; beide Tracks lesen sie, kein Duplikat — 2026-09-30: `test/fixtures/` (5 echte + 7 synthetische), App- und la_core-Suite laden jede der 12 Dateien, keine Inline-Multi-Zeilen-Samples mehr (Review Task 3 B, eigenständig reproduziert)
+- [x] Schwärzung dokumentiert; Leak-Check (keine Hosts, IPs, Ports, `/home`-Pfade) auf allen Fixtures leer — 2026-09-30: `test/fixtures/README.md`; `additional/python/tests/test_fixture_leak_check.py` läuft mit jedem CI-Lauf, leer auf allen `*.txt`; TLD-Lücke `.ai` dokumentiert, manuelle Durchsicht blieb Pflicht und fing eine Konto-URL
+- [x] Tests für jeden Zustand, den Übergang ok → stale und den Fehlerpfad — 2026-09-30: `packages/la_core/test/probe_status_test.dart` (8 Tests: Invarianten je Zustand, ok→stale behält data/observedAt, markStale wirft außerhalb ok, Fehlerpfad mit error)
+- [x] Abgrenzung zu QA3 (#87, V1.0): dieser Task liefert die Basis, QA3 konsolidiert den Bestand — 2026-09-30: `test/system_monitor_service_test.dart` (synthetische `/proc`-Konstanten) unberührt gelassen; Bestandskonsolidierung bleibt #87
 
 ## Handoff (Pflicht je Aufgabe, aus `docs/mla-next/VERIFY.md`)
-- [ ] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest
-- [ ] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft
-- [ ] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt
-- [ ] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe
+- [x] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest — 2026-09-30: SDD-Plan `docs/superpowers/plans/2026-09-30-mla-94-fixtures-state-models.md` (Basis `e4c1346`, Briefs je Task)
+- [x] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft — 2026-09-30: je Task zwei parallele Reviewer (A Korrektheit/B Vollständigkeit) + Secrets-Sicht, Verlauf im Abschnitt „Handoff #94"; Task 4 mit Fix-Runde und Re-Review
+- [x] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt — 2026-09-30: VERIFY.md „Handoff #94"-Gatetabelle (flutter 200/200, la_core 60/60, Python 53/53, check-versions ok); rot nur geplante TDD-REDs; Rückfallplan `git revert` dokumentiert
+- [x] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe — 2026-09-30: Branch `feature/mla-94-fixtures` nicht gepusht; Merge/Freigabe ausstehend
 
 ## Abhängigkeiten
 Blockiert durch: #93
