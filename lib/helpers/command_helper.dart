@@ -1,49 +1,40 @@
 import 'dart:io';
 
-class CommandResult {
-  final String error;
-  final String output;
-  final bool success;
+import 'package:la_core/la_core.dart' as core;
 
-  /// The process' exit code, or -1 if it could not be started.
-  final int exitCode;
+// `export` does not import into the declaring library (Falle 2): callers still
+// get `CommandResult`/`CommandRunner` from *this* file, so both are imported
+// above for use here and re-exported below for them.
+export 'package:la_core/la_core.dart' show CommandResult, CommandRunner;
 
-  const CommandResult(this.success, this.output, this.error,
-      [this.exitCode = 0]);
-}
-
-/// The one place in the app that starts a process.
+/// The process-backed [core.CommandRunner] — the app's one place that starts a
+/// process.
 ///
-/// [Linux.runCommandWithCustomArguments] delegates here, so the Flatpak
-/// indirection, the environment handling and the exit code all live in a
-/// single implementation instead of two that had drifted apart.
-abstract class CommandHelper {
+/// The Flatpak indirection, the pkexec prefix, the environment handling and
+/// the exit code all live in a single implementation instead of two that had
+/// drifted apart.
+///
+/// `runningInFlatpak` is an instance field now: [CommandHelper.processRunner]
+/// is the instance `Linux.init()` flips.
+class ProcessCommandRunner implements core.CommandRunner {
   /// Set by `Linux.init()` when the app itself runs inside a Flatpak sandbox.
   ///
   /// Commands then have to be handed to the host through `flatpak-spawn`.
-  static bool runningInFlatpak = false;
+  bool runningInFlatpak = false;
 
-  static Future<CommandResult> run(String cmd,
-      {Map<String, String>? env,
-      bool asRoot = false,
-      bool hostOnFlatpak = true,
-      bool runInShell = false}) async {
-    return await runWithArguments(cmd, const [],
-        env: env,
-        asRoot: asRoot,
-        hostOnFlatpak: hostOnFlatpak,
-        runInShell: runInShell);
-  }
-
-  static Future<CommandResult> runWithArguments(String cmd, List<String> args,
-      {Map<String, String>? env,
-      bool asRoot = false,
-      bool hostOnFlatpak = true,
-      bool runInShell = false}) async {
+  @override
+  Future<core.CommandResult> run(
+    String command,
+    List<String> arguments, {
+    Map<String, String>? environment,
+    bool asRoot = false,
+    bool hostOnFlatpak = true,
+    bool runInShell = false,
+  }) async {
     // A copy. Both this method and its counterpart in Linux used to insert
     // their prefixes into the list the caller passed in, so calling either one
     // twice with the same list produced "pkexec pkexec …".
-    final List<String> argv = [cmd, ...args];
+    final List<String> argv = [command, ...arguments];
 
     if (asRoot) {
       argv.insert(0, "pkexec");
@@ -59,10 +50,10 @@ abstract class CommandHelper {
       final ProcessResult result = await Process.run(
         argv.first,
         argv.sublist(1),
-        environment: env,
+        environment: environment,
         runInShell: runInShell,
       );
-      return CommandResult(
+      return core.CommandResult(
         result.exitCode == 0,
         result.stdout.toString(),
         result.stderr.toString(),
@@ -71,8 +62,50 @@ abstract class CommandHelper {
     } on ProcessException catch (e) {
       // A missing executable is a normal answer here — "is zypper installed"
       // is asked by trying to run it — so it is reported, not thrown.
-      return CommandResult(false, "", e.message, -1);
+      return core.CommandResult(false, "", e.message, -1);
     }
+  }
+}
+
+/// The app-side facade over a [core.CommandRunner].
+///
+/// [Linux.runCommandWithCustomArguments] delegates here, and the static call
+/// surface ([run], [runWithArguments], [succeeds]) is kept so the many call
+/// sites stay untouched. Every call is delegated to [runner] instead of being
+/// executed here, so a test can swap in a fake.
+abstract class CommandHelper {
+  /// The process-backed implementation the app uses by default.
+  static final ProcessCommandRunner processRunner = ProcessCommandRunner();
+
+  /// The injection seam. Defaults to [processRunner]; tests replace it.
+  static core.CommandRunner runner = processRunner;
+
+  static Future<core.CommandResult> run(String cmd,
+      {Map<String, String>? env,
+      bool asRoot = false,
+      bool hostOnFlatpak = true,
+      bool runInShell = false}) async {
+    // Delegated through the instance on purpose: an unqualified call to
+    // `runWithArguments` in here would bind to this class's own static method
+    // and recurse (Falle 1).
+    return await runner.run(cmd, const [],
+        environment: env,
+        asRoot: asRoot,
+        hostOnFlatpak: hostOnFlatpak,
+        runInShell: runInShell);
+  }
+
+  static Future<core.CommandResult> runWithArguments(
+      String cmd, List<String> args,
+      {Map<String, String>? env,
+      bool asRoot = false,
+      bool hostOnFlatpak = true,
+      bool runInShell = false}) async {
+    return await runner.run(cmd, args,
+        environment: env,
+        asRoot: asRoot,
+        hostOnFlatpak: hostOnFlatpak,
+        runInShell: runInShell);
   }
 
   /// Convenience for the many checks that only ask "did this succeed".
@@ -81,10 +114,10 @@ abstract class CommandHelper {
   /// worrying about the user's locale.
   static Future<bool> succeeds(String cmd, List<String> args,
       {Map<String, String>? env}) async {
-    final CommandResult result = await runWithArguments(
+    final core.CommandResult result = await runner.run(
       cmd,
       args,
-      env: {"LC_ALL": "C", ...?env},
+      environment: {"LC_ALL": "C", ...?env},
     );
     return result.success;
   }
