@@ -60,6 +60,13 @@
  * zweiten Provider zugeschaltet (mla_app.py, Adw.StyleManager-Signal). */
 
 /* --- Anwendung (Shell) ---------------------------------------------- */
+
+/* @bg ist laut TOKENS.md §1 der Fensterhintergrund — libadwaita würde ohne
+ * diese Regel sein eigenes window_bg (#fafafb/#222226) zeigen. */
+window {
+  background-color: @bg;
+}
+
 .mla-nav {
   background-color: @sidebar;
 }
