@@ -374,6 +374,10 @@ in `deb/DEBIAN/control`, `la_core` nirgends installiert.
 | `python3 -m unittest discover -s tests -t .` (additional/python) | `Ran 53 tests` / `OK` (49 alt + 4 neu) |
 | `bash tool/check-versions.sh` | `version 0.8.0 is consistent` |
 
+Nach der Final-Review-Fix-Runde `8bddeb6` erneut ausgeführt und grün: Python `Ran 53 tests` / `OK`, `flutter test` `+200: All tests passed!`,
+la_core `dart test` `+60: All tests passed!` (Belege in `.superpowers/sdd/final-review-94-fix-report.md`; der Re-Review hat den Python-Lauf
+unabhängig reproduziert).
+
 **Rote/übersprungene Gates.** Rot nur die geplanten TDD-REDs (Task 1 `FixturesClean`, Task 2 Compile-Fehler). Übersprungen: `build-deb.sh` (kein Paketbezug — `la_probe`-Kompilat direkt geprüft; CI baut beim PR), CI für den Branch (läuft mit dem späteren PR), manuelle Gate-0-Checks (unverändert offen, von #94 nicht berührt).
 
 **Manuelle Zorin-Prüfung.** Für #94 nicht erforderlich (keine UI-Änderung); die Captures stammen von diesem Zorin-Rechner (2026-09-30).
