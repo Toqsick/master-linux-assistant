@@ -10,3 +10,4 @@ export 'src/parsers/process.dart';
 export 'src/parsers/system.dart';
 export 'src/probe.dart';
 export 'src/probe_registry.dart';
+export 'src/probe_status.dart';
