@@ -114,7 +114,14 @@ IPC_CONTRACT.md:16).
   muted/bg, muted/surfaceSubtle, accentText/bg, accentText/accentBg,
   accentText/accentBgStrong, onAccent/accent, error/bg, success/bg,
   warning/bg, info/bg, codeText/codeBg.
-- **Non-Text: ≥ 3:1** — focusRing auf bg (Alpha 35 % auf bg vorgeblendet).
+- **focusRing (Non-Text): bekannte, dokumentierte Schwäche mit Hermes-Parität**
+  — kompositiert (35 % Akzent auf bg) ≈ 1,4:1 (light) bzw. ≈ 2,6:1 (dark),
+  also unter dem 3:1-Wert von WCAG 2.4.11 (Focus Appearance, AA erst ab
+  WCAG 2.2 gefordert). Der Wert kommt 1:1 aus `hermes_tokens.dart`
+  (Werte-Parität geht vor); Kompensation: 2-px-Outline mit 2-px-Offset, und
+  die Sichtbarkeit am lebenden System ist Teil der manuellen Gate-0-Prüfung
+  (§6, Basti). `test_tokens.py` rechnet beide Verhältnisse nach und pinnt
+  sie unter 3:1 fest — die Doku behauptet nichts, was der Rechner widerlegt.
 - Geprüft maschinell in `prototype/gtk/tests/test_tokens.py` (WCAG-2.2-
   Luminanz/Formel wie `hermes_tokens.dart:204-224`); Alpha-Farben werden vor
   der Prüfung auf bg kompositiert.
