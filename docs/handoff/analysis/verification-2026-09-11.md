@@ -36,14 +36,14 @@ Journal-Evidence (`journalctl`, User in `adm`):
 
 ```
 Sep 11 10:13:26 polkitd[1290]: Operator of unix-session:3 successfully authenticated as
-  unix-user:bratan to gain ONE-SHOT authorization for action
+  unix-user:<user> to gain ONE-SHOT authorization for action
   org.linux-assistant.read-security-report for unix-process:43860:154605
-  [/usr/lib/linux-assistant/linux-assistant] (owned by unix-user:bratan)
+  [/usr/lib/linux-assistant/linux-assistant] (owned by unix-user:<user>)
 Sep 11 10:13:26 pkexec[44569]: pam_unix(polkit-1:session): session opened for user
-  root(uid=0) by bratan(uid=1000)
-Sep 11 10:13:26 pkexec[44569]: bratan: Executing command [USER=root] [TTY=unknown]
+  root(uid=0) by <user>(uid=1000)
+Sep 11 10:13:26 pkexec[44569]: <user>: Executing command [USER=root] [TTY=unknown]
   [CWD=/tmp] [COMMAND=/usr/lib/linux-assistant/additional/python/read_security_report.py
-  --family=debian --home=/home/bratan]
+  --family=debian --home=/home/<user>]
 ```
 
 Das bestätigt drei Fix-Ebenen auf einmal: die dedizierte One-Shot-Polkit-Action
