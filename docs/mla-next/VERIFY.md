@@ -15,7 +15,7 @@ Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (
 - [x] Issue #59: `dart test` und `dart compile exe`; Probe ohne DISPLAY/WAYLAND_DISPLAY; Binärgröße/Startzeit messen. — 2026-09-30: `dart test` (damals 14/14, heute 30/30) in packages/la_core; `dart compile exe` + Headless-Lauf ohne DISPLAY/WAYLAND_DISPLAY; Binär 6 547 240 Bytes, Median-Startzeit 3 ms — siehe docs/mla-next/BASELINE.md §7
 - [x] Issue #60: IDs eindeutig, fehlende/zyklische Abhängigkeiten abgewiesen, Start/Stop/Lazy-Loading getestet; Flutter-Navigation unverändert. — Kern-Registry-Teil 2026-09-30: `dart test` 30/30 in packages/la_core (doppelte IDs, fehlende/zyklische Abhängigkeiten, Topo-Start/Rückwärts-Stop, Single-Flight); `git diff --stat 92bef60..HEAD -- lib/ additional/ deb/ linux/` leer (Exit 0). **Der Flutter-`HubModule`-Adapter samt Vollständigkeitstest ist nachgeliefert** — Belege im Abschnitt „Abnahme #60" unten (Root-`flutter test` +200)
 - [x] Bestehende Repo-Gates nach Scope tatsächlich ausführen: `tool/check-versions.sh`, `dart format`, `flutter analyze`, `flutter test`, Python-Tests. — 2026-09-30 frisch ausgeführt, alle Exit 0: `version 0.8.0 is consistent`; `Formatted 118 files (0 changed)`; `No issues found!`; `00:02 +184: All tests passed!`; `Ran 49 tests` / `OK` — vgl. docs/mla-next/BASELINE.md §4
-- [x] Issue #93, Schnitt 1 (Parser-Umzug nach `packages/la_core`): App-Test byte-identisch, alle Gates grün. — 2026-09-30: Handoff-Abschnitt unten. DI/Event-Vertrag bleibt offen (späterer Schnitt von #93); der Flutter-`HubModule`-Adapter ist mit #60 geliefert (Abschnitt unten).
+- [x] Issue #93, Schnitt 1 (Parser-Umzug nach `packages/la_core`): App-Test byte-identisch, alle Gates grün. — 2026-09-30: Handoff-Abschnitt unten. DI, Event-Vertrag und `la_probe`-Ablage sind in **Schnitt 2** geliefert (Abschnitt „Handoff #93 Schnitt 2" unten, alle Gates grün); der Flutter-`HubModule`-Adapter ist mit #60 geliefert (Abschnitt unten).
 
 ## Gate 2: IPC und Backup
 
@@ -260,6 +260,83 @@ die drei Snackbar-Varianten) · Sektions- und Tool-Wechsel im echten Fenster (3-
 Security und in Tool-Screens, startet beim Zurückwechseln wieder) · Minimieren/Wiederherstellen ·
 Sidebar-Kollaps an der 1000-px-Grenze beim echten Resize · **it/fi-Anzeige bestätigen** (Wortwahl ist
 Vorschlag, ggf. zu korrigieren) · Optik: keine Verschiebung außer den Labels.
+
+## Handoff #93 Schnitt 2 — DI, Event-Vertrag und `la_probe`-Ablage
+
+**Basis-SHA:** `6c5c625` (= `HEAD` auf `feature/mla-93-rest`; Squash-Merge von PR #89 = `main` nach dem
+#60-Adapter). Arbeitsbaum vor dem Schnitt sauber.
+**Status:** umgesetzt und **nicht committet** — Push/PR folgen; **Merge und Schließen von #93 erst nach
+gesonderter Freigabe**.
+
+**Scope (vier beabsichtigte `lib/`-Dateien + Paket + Doku; `git diff --stat 6c5c625 -- lib/ deb/ additional/ linux/`
+= genau `lib/helpers/command_helper.dart`, `lib/linux/linux_system.dart`, `lib/services/linux.dart`).**
+- **la_core (neu, Flutter-frei):** `src/command_runner.dart` (`CommandRunner`-Interface mit der geforderten
+  `run(...)`-Signatur, `CommandResult` byte-identisch aus `lib/helpers/command_helper.dart`, `CommandException`),
+  `src/core_logger.dart` (`CoreLogger` + `const NullLogger`), `src/event_bus.dart` (typisierte `Topic<T>`,
+  `CoreTopics.probeResult`/`moduleRegistered`, idempotentes `Subscription.cancel()`, `EventBus` mit
+  `onListenerError`, Publish über `List.of`-Snapshot), `src/cpu_info.dart` (`CpuInfo({required CommandRunner
+  runner})`, **Instanzfeld** `_cachedThreadCount`), `src/probe_registry.dart` (`ProbeRegistry({required EventBus
+  bus, CoreLogger logger})` — `register`/`probe`/`run`, `run` publiziert genau ein `ProbeResult`).
+  `module_registry.dart` um optionalen `EventBus? bus` erweitert (null → kein Publish). Barrel `la_core.dart` erweitert.
+- **App-Grenze:** `lib/helpers/command_helper.dart` — `ProcessCommandRunner implements core.CommandRunner`
+  (wörtlicher alter `runWithArguments`-Körper, `runningInFlatpak` als **Instanzfeld**), `CommandHelper` als
+  Fassade mit `static final processRunner` + `static core.CommandRunner runner` (Injektions-Seam); `CommandResult`
+  **sowohl** importiert (`as core`) **als auch** re-exportiert (Import-vs-Export-Falle aus Schnitt 1).
+  `lib/services/linux.dart` — **genau eine Zeile** (`CommandHelper.processRunner.runningInFlatpak = true;`).
+  `lib/linux/linux_system.dart` — `static int? _cachedThreadCount` entfernt, `getCpuThreadCount()` →
+  `CpuInfo.threadCount()`; `parse*`/`uptime`/`getCpuAverageLoad` unangetastet.
+- **Packaging:** `build-deb.sh` — nach dem Bundle-Copy `dart compile exe` von `packages/la_core/bin/la_probe.dart`
+  nach `$STAGE/usr/lib/linux-assistant/la_probe` + display-loser `--version`-Smoke, `command -v dart`-Guard;
+  **nicht** `/usr/bin`, **kein** `chmod +x`, **keine** polkit-Action, `deb/DEBIAN/control` unverändert.
+
+**Bewusste Grenze.** `lib/services/linux.dart` (~2600 Zeilen Statik) bleibt Service-Locator; volle
+Konstruktor-Injektion hätte das Minimal-Diff-Abnahmekriterium gesprengt. Kern = Konstruktor-Injektion,
+App-Grenze = ein einziger Seam + Instanzfelder.
+
+**Failing-Test/Fixture.** Keiner — reiner Zusatz im Flutter-freien Kern. Der Beweis liegt in den **22 neuen
+la_core-Tests** (30 → 52) plus der byte-identischen App-Suite (`test/system_parsers_test.dart` sha-identisch,
+kein App-Test angefasst).
+
+**Nicht ausgeführte Gates / Grenzen.** Kein echter Prozess-Spawn-Beweis für `pkexec`/`flatpak-spawn` (nur
+Codepfad wörtlich übernommen); CI für den Branch nicht getriggert; manuelle Gate-0-/Gate-1-Prüfungen auf Zorin
+bleiben Bastis Teil; polkit-Dreifaltigkeit (`_privilegedEntryPoints`, Policy-`exec.path`, die zwei `chmod +x`)
+bewusst **unberührt**.
+
+**Reviewer.** Adversarialer Workflow `mla-93-rest-verify` (3 Sonnet-Linsen + Synthese, 2026-09-30), Stand
+Arbeitsbaum auf `6c5c625`:
+- **Reviewer 1 (Funktion/Umfang/Regeln)** — PASS: polkit-Dreifaltigkeit unberührt (`.policy`-Diff leer,
+  `linux.dart` 1/1, kein neues `chmod +x`); `test/system_parsers_test.dart` sha-identisch (`d78d0141…`); kein
+  App-Test geändert.
+- **Reviewer 2 (Verträge/Korrektheit/Sicherheit)** — PASS: `CommandResult`-Signatur und Feldreihenfolge
+  deckungsgleich, `ProcessCommandRunner`-Körper wörtlich, keine unprefixten la_core-Importe (keine
+  Re-Export-Ambiguität), keine Secret-/`/home`-Pfade im Diff.
+- **Beweisqualität/Lens 3 (Tore/Fälschungssicherheit)** — PASS: alle Gate-Aussagen selbst reproduziert.
+  **Synthese: PASS ohne Blocker.**
+
+**Gates — tatsächlich ausgeführt (2026-09-30), alle Exit 0.**
+
+| Gate | Ausgabe |
+|---|---|
+| la_core `dart analyze` | `No issues found!` |
+| la_core `dart format --output=none --set-exit-if-changed .` | `Formatted 22 files (0 changed)` |
+| la_core `dart test` | `00:00 +52: All tests passed!` (30 alt + 22 neu) |
+| `dart compile exe bin/la_probe.dart` | `Generated: /tmp/la_probe` |
+| `env -u DISPLAY -u WAYLAND_DISPLAY /tmp/la_probe --version` | `la_probe 0.0.1-spike.1 (dart 3.13.4 … linux_x64)` |
+| `bash tool/check-versions.sh` | `version 0.8.0 is consistent` |
+| `dart format --output=none --set-exit-if-changed lib test` | `Formatted 122 files (0 changed)` |
+| `flutter analyze` | `No issues found! (ran in 2.4s)` |
+| `flutter test` (voller Lauf) | `00:04 +200: All tests passed!` |
+| `flutter test test/system_parsers_test.dart` | `00:00 +22: All tests passed!` |
+| `python3 -m unittest discover -s tests -t .` (additional/python) | `Ran 49 tests` / `OK` |
+| `bash -n build-deb.sh` | Exit 0 |
+
+**Neue Tests (22).** `command_runner_test` (Signatur/Fehlerpfad), `cpu_info_test` (**zwei `CpuInfo`-Instanzen
+teilen keinen Cache** = Beweis, dass das Static weg ist), `event_bus_test` (No-Op ohne Abonnenten, werfender
+Listener + `onListenerError`, Nutzung nach `dispose` → `EventBusError`), `probe_registry_test`
+(Duplikat/unbekannt/Publish/Log).
+
+**Rückfallplan.** `git revert` der Schnitt-2-Commits genügt: kein Migrationsschritt, kein Datenpfad, keine Unit
+in `deb/DEBIAN/control`, `la_core` nirgends installiert.
 
 ## Agenten-Handoff
 

@@ -148,17 +148,17 @@ Fortsetzung von #59 (Headless-Probe) und #60 (Registry), deren Kern im Branch `f
 Nicht: `linux.dart` komplett zerlegen; dynamische Fremdcode-Plugins.
 
 ## Abnahme
-- [ ] Parser mit Fixtures aus echten, geschwärzten Zorin-Ausgaben; `dart test` grün; die bestehenden Flutter-Parser-Tests (`test/system_parsers_test.dart`) laufen unverändert
-- [ ] DI und Event-Vertrag: Tests für Registrierung, Auflösung und Fehlerfälle
-- [ ] Flutter-Adapter bindet `la_core` ein; Root-`flutter test` bleibt grün (Stand 2026-09-29: +184)
-- [ ] `dart compile exe` und Lauf ohne DISPLAY/WAYLAND_DISPLAY bleiben grün (Gate 1)
-- [ ] `git diff --stat <Basis>..HEAD -- lib/ additional/ deb/ linux/` zeigt nur die beabsichtigten Adapter-Änderungen; der Spike selbst hatte hier einen leeren Diff — die Abweichung wird im Handoff begründet
+- [x] Parser mit Fixtures aus echten, geschwärzten Zorin-Ausgaben; `dart test` grün; die bestehenden Flutter-Parser-Tests (`test/system_parsers_test.dart`) laufen unverändert — Schnitt 1 (`080becf`): `test/system_parsers_test.dart` byte-identisch (sha `d78d0141…`).
+- [x] DI und Event-Vertrag: Tests für Registrierung, Auflösung und Fehlerfälle — Schnitt 2 (2026-09-30): `command_runner`/`cpu_info`/`event_bus`/`probe_registry`-Tests, la_core 30 → 52.
+- [x] Flutter-Adapter bindet `la_core` ein; Root-`flutter test` bleibt grün (Stand 2026-09-29: +184) — 2026-09-30: `+200: All tests passed!` (la_core als path-Dependency, keine App-Test-Änderung).
+- [x] `dart compile exe` und Lauf ohne DISPLAY/WAYLAND_DISPLAY bleiben grün (Gate 1) — 2026-09-30: `Generated: /tmp/la_probe`; `la_probe 0.0.1-spike.1 (dart 3.13.4 … linux_x64)` headless.
+- [x] `git diff --stat <Basis>..HEAD -- lib/ additional/ deb/ linux/` zeigt nur die beabsichtigten Adapter-Änderungen; der Spike selbst hatte hier einen leeren Diff — die Abweichung wird im Handoff begründet — 2026-09-30 gegen `6c5c625`: nur `lib/helpers/command_helper.dart`, `lib/linux/linux_system.dart`, `lib/services/linux.dart`.
 
 ## Handoff (Pflicht je Aufgabe, aus `docs/mla-next/VERIFY.md`)
-- [ ] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest
-- [ ] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft
-- [ ] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt
-- [ ] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe
+- [x] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest — Basis `6c5c625`; Abschnitt „Handoff #93 Schnitt 2" in `docs/mla-next/VERIFY.md`.
+- [x] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft — adversarialer Workflow `mla-93-rest-verify` (3 Sonnet-Linsen + Synthese): **PASS** ohne Blocker.
+- [x] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt — Gate-Tabelle im Handoff-Abschnitt; nicht ausgeführt: Prozess-Spawn-Beweis, CI, manuelle Zorin-Checks (benannt).
+- [x] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe — eingehalten: Schnitt 2 nur committet/gepusht, PR offen; Merge/Close von #93 wartet auf Freigabe.
 
 ## Abhängigkeiten
 Blockiert durch: #59 und #60 (Kern; Roadmap-Issues in V0.9)
