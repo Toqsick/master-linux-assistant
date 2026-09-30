@@ -27,7 +27,8 @@ Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (
 ## Handoff #93 Schnitt 1 — Parser-Umzug nach `packages/la_core`
 
 **Basis-SHA:** `513def150dbb37ff3883b2061396f7f326e4527b` (= `origin/feature/mla-gtk-scaffold` beim Start).
-**Commits:** `94b5ef8` (la_core), `755665c` (App) — **unpushed**.
+**Commits:** `94b5ef8` (la_core), `755665c` (App), `080becf` (dieser Nachweis) — **gepusht** nach
+`origin/feature/mla-gtk-scaffold` als Fast-Forward `513def1..080becf` (2026-09-30).
 
 **Scope.** Vier reine Parser und ihre Modelle wandern in den Flutter-/GTK-freien Kern; die App-Dateien
 werden zu delegierenden Fassaden. Die **Runner bleiben app-seitig** (`disks`, `processCount`,
@@ -126,9 +127,10 @@ Belegehrlichkeit, drei Einschränkungen dieser Runde (aus der Synthese übernomm
   konsistent (package_config 3.11 == pubspec `^3.11.0` == `pubspec.lock` `>=3.11.0`). **Regel für
   künftige Floor-Änderungen: erst `dart pub get`, dann `dart format` als Gate.**
 
-**Rückfallplan.** `git revert 755665c 94b5ef8` (oder `git reset --hard 513def1` bei ungeteiltem Branch)
-genügt: kein Migrationsschritt, kein Datenpfad, keine Unit, kein Packaging berührt; `la_core` ist nirgends
-installiert. Die fünf neu aufgelösten Transitiven in `pubspec.lock` (`intl` 0.20.3, `test_api` 0.7.12,
+**Rückfallplan.** `git revert 080becf 755665c 94b5ef8` genügt: kein Migrationsschritt, kein Datenpfad,
+keine Unit, kein Packaging berührt; `la_core` ist nirgends installiert. Der Branch ist seit 2026-09-30
+geteilt (gepusht), deshalb ist `git reset --hard 513def1` hier **kein** gangbarer Weg mehr — er bräuchte
+einen Force-Push. Die fünf neu aufgelösten Transitiven in `pubspec.lock` (`intl` 0.20.3, `test_api` 0.7.12,
 `matcher` 0.12.20, `meta` 1.19.0, `vector_math` 2.4.3) kommen durch die installierte Flutter 3.47.5 ohnehin
 wieder — die Lockdatei war ihr gegenüber veraltet.
 
