@@ -1,14 +1,10 @@
 import 'dart:io';
 
+import 'package:la_core/la_core.dart' as core;
 import 'package:linux_assistant/helpers/command_helper.dart';
 import 'package:linux_assistant/services/logger.dart';
 
-class Uptime {
-  final String unit;
-  final int value;
-
-  const Uptime(this.unit, this.value);
-}
+export 'package:la_core/la_core.dart' show Uptime;
 
 abstract class LinuxSystem {
   static Future<bool> hasSwap() async {
@@ -22,7 +18,7 @@ abstract class LinuxSystem {
   }
 
   /// Might be inaccurate
-  static Future<Uptime> uptime() async {
+  static Future<core.Uptime> uptime() async {
     var cmdResult =
         await CommandHelper.run("/usr/bin/uptime", env: {"LC_ALL": "C"});
 
@@ -33,29 +29,8 @@ abstract class LinuxSystem {
     return parseUptime(cmdResult.output);
   }
 
-  /// Pure parser for `uptime` output, split out so it can be tested without
-  /// shelling out.
-  static Uptime parseUptime(String output) {
-    var values = output.replaceAll(RegExp(r" +"), " ").trim().split(" ");
-    if (values[2].contains(":")) {
-      var arr = values[2].split(":");
-      int hourValue = int.parse(arr[0]);
-      int minuteValue = int.parse(arr[1].replaceAll(",", ""));
-      return hourValue == 0 ? Uptime("m", minuteValue) : Uptime("h", hourValue);
-    } else {
-      // The new uptime output could be: 1 day,  1:23
-      if (output.contains("min")) {
-        return Uptime("m", int.parse(values[2]));
-      }
-      if (output.contains("day")) {
-        return Uptime("d", int.parse(values[2]));
-      }
-      if (output.contains("hour")) {
-        return Uptime("h", int.parse(values[2]));
-      }
-      return Uptime("m", int.parse(values[2]));
-    }
-  }
+  /// Delegates to the pure parser in `la_core` (#93).
+  static core.Uptime parseUptime(String output) => core.parseUptime(output);
 
   /// Cached: the CPU thread count cannot change while the app is running, and
   /// the polling dashboard would otherwise fork `nproc` on every tick.
@@ -88,7 +63,7 @@ abstract class LinuxSystem {
     return load / cpuCount;
   }
 
-  /// The one-minute figure from the first column of `/proc/loadavg`.
-  static double parseLoadAvg(String content) =>
-      double.parse(content.trim().split(" ")[0]);
+  /// Delegates to the pure parser in `la_core` (#93): the one-minute figure
+  /// from the first column of `/proc/loadavg`.
+  static double parseLoadAvg(String content) => core.parseLoadAvg(content);
 }
