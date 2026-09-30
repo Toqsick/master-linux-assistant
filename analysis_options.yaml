@@ -7,6 +7,18 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
+#
+# The excludes below are what `flutter analyze`/`flutter test` auto-write on
+# every run since Flutter 3.47 ("Upgrading analysis_options.yaml"); adopted
+# 2026-09-30 so automated gate runs leave a clean tree. `packages/**` is a
+# deliberate monorepo addition: nested packages (la_core) own their
+# analysis_options and run their own `dart analyze` gate — from the root
+# context their imports (package:test, package:la_core) do not resolve.
+analyzer:
+  exclude:
+    - build/**
+    - linux/**
+    - packages/**
 include: package:flutter_lints/flutter.yaml
 
 linter:

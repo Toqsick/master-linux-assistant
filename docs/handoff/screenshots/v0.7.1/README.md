@@ -32,7 +32,7 @@ Laufende Instanz danach im Normalzustand (Wayland) wiederhergestellt.
 ## Der dokumentierte Bug (Kern-Evidence)
 
 `04b` zeigt den Zustand **nach erfolgreicher Passwort-Eingabe**: polkit-Auth
-erfolgreich (journal 21:53:19: „successfully authenticated as unix-user:bratan"),
+erfolgreich (journal 21:53:19: „successfully authenticated as unix-user:<user>"),
 `check_security.py` lief als Root, crashte ~1 s später mit `IndexError` an der
 deb822-Datei `/etc/apt/sources.list.d/graphics-drivers-ubuntu-ppa-noble.sources`,
 und die UI zeigt danach falsch:

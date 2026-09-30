@@ -1168,6 +1168,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get browser => 'Browser';
+
+  @override
+  String get quickNotes => 'Quick Notes';
+
+  @override
+  String get fileManager => 'Dateimanager';
+
+  @override
+  String get systemMonitor => 'Systemmonitor';
+
+  @override
   String get runFileWarning =>
       'Die Datei wird als Programm mit deinen Benutzerrechten ausgeführt. Fahre nur fort, wenn du weißt, was sie tut.';
 }

@@ -1,0 +1,14 @@
+name: la_core
+description: Master Linux Assistant - reiner Dart-Kern (Spike #59, Registry #60). Keine Flutter-/GTK-Typen.
+version: 0.0.1
+publish_to: none
+
+environment:
+  # Aligned with the committed lockfile (>=3.11.0) — see bf4942b3. The bound also
+  # decides which formatter style `dart format` applies to this package, so
+  # lowering it silently reformats files rather than being a no-op.
+  sdk: ^3.11.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0

@@ -1,7 +1,7 @@
 # Plan: Linux-Assistant V0.7.1 → V0.8.0 — Handoff, UI/UX-Analyse, Admin-Hub-Roadmap, Release
 
 **Datum:** 2026-09-10 · **Freigegeben von:** Basti (Toqsick) · **Ausführung:** ZCode/GLM, superpowers-SDD
-**Repo:** `/home/bratan/10-Projekte/10-active/linux-assistant` (Flutter/Linux, Fork `Toqsick/linux-assistant`, 44 ahead / 0 behind Upstream; Upstream dormat bei 0.6.2)
+**Repo:** `$HOME/10-Projekte/10-active/linux-assistant` (Flutter/Linux, Fork `Toqsick/linux-assistant`, 44 ahead / 0 behind Upstream; Upstream dormat bei 0.6.2)
 
 ## Ausgangslage (5-Agenten-Recon, 2026-09-10)
 

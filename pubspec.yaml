@@ -58,6 +58,10 @@ dependencies:
   logger: ^2.5.0
   mutex: ^3.1.0
 
+  # Flutter-free core (parsers, probe contract). See packages/la_core.
+  la_core:
+    path: packages/la_core
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

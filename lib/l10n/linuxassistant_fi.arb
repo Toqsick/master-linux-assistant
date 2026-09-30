@@ -874,6 +874,30 @@
     "description": "Confirmation before an executable file from the search is run",
     "type": "text"
   },
+  "browser": "Selain",
+  "@browser": {
+    "placeholders": {},
+    "description": "Sidebar label for the browser launcher",
+    "type": "text"
+  },
+  "quickNotes": "Pikamuistiinpanot",
+  "@quickNotes": {
+    "placeholders": {},
+    "description": "Sidebar label for the quick notes tool",
+    "type": "text"
+  },
+  "fileManager": "Tiedostoselain",
+  "@fileManager": {
+    "placeholders": {},
+    "description": "Sidebar label for the file manager tool",
+    "type": "text"
+  },
+  "systemMonitor": "Järjestelmän seuranta",
+  "@systemMonitor": {
+    "placeholders": {},
+    "description": "Sidebar label for the system monitor tool",
+    "type": "text"
+  },
   "runFileWarning": "Tiedosto suoritetaan ohjelmana käyttöoikeuksillasi. Jatka vain, jos tiedät, mitä se tekee.",
   "@runFileWarning": {
     "placeholders": {},

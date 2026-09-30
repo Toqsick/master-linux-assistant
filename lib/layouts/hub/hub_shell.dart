@@ -1,51 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:linux_assistant/layouts/hermes_tokens.dart';
-import 'package:linux_assistant/layouts/hub/dashboard_section.dart';
-import 'package:linux_assistant/layouts/hub/storage_section.dart';
-import 'package:linux_assistant/layouts/linux_health/overview.dart';
+import 'package:linux_assistant/layouts/hub/hub_module.dart';
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
-import 'package:linux_assistant/layouts/security_check/overview.dart';
 import 'package:linux_assistant/layouts/settings/settings_start.dart';
-import 'package:linux_assistant/layouts/tools/file_manager.dart';
-import 'package:linux_assistant/layouts/tools/quick_notes.dart';
-import 'package:linux_assistant/layouts/tools/system_monitor.dart';
 import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/services/app_launcher.dart';
+import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
 import 'package:linux_assistant/services/theme_controller.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_nav_item.dart';
 import 'package:window_manager/window_manager.dart';
 
-/// The sections reachable from the sidebar.
-enum HubSection { dashboard, search, storage, health, security }
-
-/// Quick-access tools in the sidebar's "Werkzeuge" section.
-///
-/// Two kinds live here: [HubTool.browser] fires a detached process launch and
-/// never changes the active section, while screen-based tools
-/// ([HubTool.quickNotes], [HubTool.fileManager], [HubTool.systemMonitor])
-/// render inside the hub frame like a section – the frame then tracks them in
-/// [_screenTool].
-enum HubTool { browser, quickNotes, fileManager, systemMonitor }
-
-/// Whether a section displays live system stats.
-///
-/// Sections that do not are told to the [SystemStatsService] so it can stop
-/// polling instead of collecting numbers nobody is looking at.
-bool _sectionUsesStats(HubSection section) {
-  switch (section) {
-    case HubSection.dashboard:
-    case HubSection.storage:
-    case HubSection.health:
-      return true;
-    case HubSection.search:
-      // The search screen carries the memory/disk status row.
-      return true;
-    case HubSection.security:
-      return false;
-  }
-}
+// Issue #60 moved both enums into the registry and replaced this file's
+// navigation switches with lookups. The enums are re-exported because they are
+// part of this file's public surface (`HubShell.initialSection`).
+export 'package:linux_assistant/layouts/hub/hub_module.dart'
+    show HubSection, HubTool;
 
 /// The persistent frame of the hub: sidebar, top bar and the active section.
 ///
@@ -67,7 +38,8 @@ class HubShell extends StatefulWidget {
 }
 
 class _HubShellState extends State<HubShell>
-    with WindowListener, WidgetsBindingObserver {
+    with WindowListener, WidgetsBindingObserver
+    implements HubNavigator {
   static const double _sidebarWidth = 260;
   static const double _railWidth = 56;
 
@@ -99,7 +71,7 @@ class _HubShellState extends State<HubShell>
     // manager that reports the state change, and the Flutter lifecycle state
     // is not delivered by every desktop either.
     WidgetsBinding.instance.addObserver(this);
-    SystemStatsService().setSectionActive(_sectionUsesStats(_section));
+    SystemStatsService().setSectionActive(hubModuleOf(_section).usesStats);
   }
 
   @override
@@ -145,8 +117,13 @@ class _HubShellState extends State<HubShell>
       _section = section;
       _screenTool = null;
     });
-    SystemStatsService().setSectionActive(_sectionUsesStats(section));
+    SystemStatsService().setSectionActive(hubModuleOf(section).usesStats);
   }
+
+  /// What a screen may ask the shell to do ([HubNavigator]): the dashboard's
+  /// storage and security tiles use it, and so will the tier navigation of #86.
+  @override
+  void openSection(HubSection section) => _select(section);
 
   /// Hands the content area to a screen-based tool. The underlying section
   /// stays selected underneath, so returning to it loses no state.
@@ -192,116 +169,19 @@ class _HubShellState extends State<HubShell>
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _titleOf(BuildContext context, HubSection section) {
-    final l10n = AppLocalizations.of(context)!;
-    switch (section) {
-      case HubSection.dashboard:
-        return l10n.dashboard;
-      case HubSection.search:
-        return l10n.hubSearch;
-      case HubSection.storage:
-        return l10n.hubStorage;
-      case HubSection.health:
-        return l10n.linuxHealth;
-      case HubSection.security:
-        return l10n.securityCheck;
-    }
-  }
-
-  IconData _iconOf(HubSection section) {
-    switch (section) {
-      case HubSection.dashboard:
-        return Icons.dashboard_outlined;
-      case HubSection.search:
-        return Icons.search;
-      case HubSection.storage:
-        return Icons.storage;
-      case HubSection.health:
-        return Icons.favorite_outline;
-      case HubSection.security:
-        return Icons.shield_outlined;
-    }
-  }
-
-  IconData _iconOfTool(HubTool tool) {
-    switch (tool) {
-      case HubTool.browser:
-        return Icons.public;
-      case HubTool.quickNotes:
-        return Icons.edit_note;
-      case HubTool.fileManager:
-        return Icons.folder_open;
-      case HubTool.systemMonitor:
-        return Icons.monitor_heart;
-    }
-  }
-
-  String _titleOfTool(BuildContext context, HubTool tool) {
-    switch (tool) {
-      case HubTool.browser:
-        return _tr(context, de: 'Browser', en: 'Browser');
-      case HubTool.quickNotes:
-        return _tr(context, de: 'Quick Notes', en: 'Quick Notes');
-      case HubTool.fileManager:
-        return _tr(context, de: 'Dateimanager', en: 'File manager');
-      case HubTool.systemMonitor:
-        return _tr(context, de: 'Systemmonitor', en: 'System monitor');
-    }
-  }
-
-  /// Minimal de/en lookup for the Werkzeuge section.
+  /// Minimal de/en lookup.
   ///
-  /// TODO(l10n): Move these strings into the .arb files
-  /// (`tools`, `browser`, `quickNotes`, `fileManager`, `systemMonitor`) and
-  /// regenerate with `flutter gen-l10n`. The .arb files are ~40 KB each and
-  /// were not editable via API at implementation time.
+  /// TODO(l10n): The nine module titles come from the .arb files now
+  /// (`l10n.browser` and friends, #60). What is left here are the "WERKZEUGE"
+  /// section header and the two browser snackbars — neither is a module title.
   static String _tr(BuildContext context,
       {required String de, required String en}) {
     return Localizations.localeOf(context).languageCode == 'de' ? de : en;
   }
 
-  Widget _buildSection(HubSection section) {
-    switch (section) {
-      case HubSection.dashboard:
-        return DashboardSection(
-          onOpenStorage: () => _select(HubSection.storage),
-          onOpenSecurity: () => _select(HubSection.security),
-        );
-      case HubSection.search:
-        return MainSearch(embedded: true);
-      case HubSection.storage:
-        return const StorageSection();
-      case HubSection.health:
-        return const Padding(
-          padding: EdgeInsets.all(HermesTokens.space4),
-          child: LinuxHealthContent(),
-        );
-      case HubSection.security:
-        return const SecurityCheckContent();
-    }
-  }
-
-  Widget _contentFor(Object key) {
-    if (key is HubTool) {
-      switch (key) {
-        case HubTool.quickNotes:
-          return const QuickNotesPage();
-        case HubTool.fileManager:
-          return const FileManagerPage();
-        case HubTool.systemMonitor:
-          return const SystemMonitorPage();
-        case HubTool.browser:
-          // Never on screen: the browser tool launches an external process
-          // and is never assigned as the active content key.
-          return const SizedBox.shrink();
-      }
-    }
-    return _buildSection(key as HubSection);
-  }
-
   Widget _content() {
     final Object active = _screenTool ?? _section;
-    _built.putIfAbsent(active, () => _contentFor(active));
+    _built.putIfAbsent(active, () => hubModuleOf(active).screenBuilder(this));
     final visited = _built.keys.toList();
 
     return IndexedStack(
@@ -372,26 +252,27 @@ class _HubShellState extends State<HubShell>
               ),
               children: [
                 for (final section in HubSection.values)
-                  HermesNavItem(
-                    icon: _iconOf(section),
-                    label: _titleOf(context, section),
-                    selected: _screenTool == null && _section == section,
-                    collapsed: collapsed,
-                    onTap: () => _select(section),
-                  ),
+                  if (hubModuleOf(section)
+                      .isAvailable(Linux.currentenvironment))
+                    _navItem(
+                      hubModuleOf(section),
+                      collapsed,
+                      selected: _screenTool == null && _section == section,
+                      onTap: () => _select(section),
+                    ),
                 // Werkzeuge-Sektion (Admin-Hub, Spec: docs/design/feature-spec-admin-hub.md).
                 // Browser startet detached (kein Sectionswechsel); Quick Notes,
                 // Dateimanager und Systemmonitor rendern im Hub-Frame
                 // (Screen-Tools).
                 if (!collapsed) _sectionLabel(context, t),
                 for (final tool in HubTool.values)
-                  HermesNavItem(
-                    icon: _iconOfTool(tool),
-                    label: _titleOfTool(context, tool),
-                    selected: _screenTool == tool,
-                    collapsed: collapsed,
-                    onTap: () => _onToolTap(tool),
-                  ),
+                  if (hubModuleOf(tool).isAvailable(Linux.currentenvironment))
+                    _navItem(
+                      hubModuleOf(tool),
+                      collapsed,
+                      selected: _screenTool == tool,
+                      onTap: () => _onToolTap(tool),
+                    ),
               ],
             ),
           ),
@@ -414,21 +295,31 @@ class _HubShellState extends State<HubShell>
     );
   }
 
+  /// One sidebar row for a module. Everything but [selected] and the tap
+  /// handler comes from the registry.
+  Widget _navItem(
+    HubModule module,
+    bool collapsed, {
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return HermesNavItem(
+      icon: module.icon,
+      label: module.title(AppLocalizations.of(context)!),
+      selected: selected,
+      collapsed: collapsed,
+      onTap: onTap,
+    );
+  }
+
   void _onToolTap(HubTool tool) {
-    switch (tool) {
-      case HubTool.browser:
-        _launchBrowser();
-        break;
-      case HubTool.quickNotes:
-        _selectTool(HubTool.quickNotes);
-        break;
-      case HubTool.fileManager:
-        _selectTool(HubTool.fileManager);
-        break;
-      case HubTool.systemMonitor:
-        _selectTool(HubTool.systemMonitor);
-        break;
+    // The browser is the only tool that is not a screen: it starts a detached
+    // process and leaves the active section alone.
+    if (hubModuleOf(tool).startsProcess) {
+      _launchBrowser();
+      return;
     }
+    _selectTool(tool);
   }
 
   /// Section header in the style of the storage screen's
@@ -527,9 +418,7 @@ class _HubShellState extends State<HubShell>
       child: Row(
         children: [
           Text(
-            _screenTool != null
-                ? _titleOfTool(context, _screenTool!)
-                : _titleOf(context, _section),
+            hubModuleOf(_screenTool ?? _section).title(l10n),
             style: TextStyle(
               color: t.strong,
               fontSize: 15,

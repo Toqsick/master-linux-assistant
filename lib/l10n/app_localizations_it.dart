@@ -1177,6 +1177,18 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get browser => 'Browser';
+
+  @override
+  String get quickNotes => 'Note rapide';
+
+  @override
+  String get fileManager => 'Gestore file';
+
+  @override
+  String get systemMonitor => 'Monitor di sistema';
+
+  @override
   String get runFileWarning =>
       'Il file verrà eseguito come programma con i tuoi privilegi utente. Continua solo se sai cosa fa.';
 }
