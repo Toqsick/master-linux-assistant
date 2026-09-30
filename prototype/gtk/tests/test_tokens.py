@@ -179,7 +179,7 @@ class ContrastTests(unittest.TestCase):
 
     def test_checker_rejects_known_bad_pair(self):
         # RED-Beleg: der Pruefer muss anschlagen — Weiß auf Cream (light-bg)
-        # liegt bei ~1.06:1, weit unter AA.
+        # liegt bei ~1.03:1, weit unter AA.
         light_bg = parse_color(parse_defines(TOKENS_CSS)['bg'])[:3]
         white = (255, 255, 255)
         self.assertLess(contrast_ratio(white, light_bg), 4.5)

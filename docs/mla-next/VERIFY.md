@@ -435,7 +435,7 @@ unabhängig reproduziert).
 2. **GTK4 zieht Wayland vor**, wenn `WAYLAND_DISPLAY` gesetzt ist — `DISPLAY=:1` allein erzwingt KEINEN X11-Lauf. X11-Läufe brauchen `GDK_BACKEND=x11` (Lesson für künftige Start-Gates; BASELINE-§2-X11-Belege beruhten auf Backend-Erzwingung).
 3. **GApplication-Primärinstanz-Verhalten:** eine überlebende alte Instanz lässt neue Läufe still (Exit 0, stderr leer) beenden. Beim Aufräumen die echte python-PID killen (`pgrep -f ^python3 mla_app.py`), nicht die Wrapper-Subshell.
 4. **`@bg` war definiert, aber nicht angewandt** (libadwaita zeigt eigenes `window_bg`) — durch Pixel-Probe der Screenshots gefunden und mit `window { background-color: @bg; }` geschlossen (`eb81fbf`).
-5. **focusRing < 3:1** (kompositiert ≈ 1,4:1 light / ≈ 2,6:1 dark): Plan-Prämisse «Non-Text ≥ 3:1» korrigiert — als dokumentierte Schwäche mit Hermes-Parität ausgewiesen (TOKENS.md §5) und vom Token-Gate unter 3:1 gepinnt statt behauptet.
+5. **focusRing < 3:1** (kompositiert ≈ 1,4:1 light / ≈ 2,5:1 dark): Plan-Prämisse «Non-Text ≥ 3:1» korrigiert — als dokumentierte Schwäche mit Hermes-Parität ausgewiesen (TOKENS.md §5) und vom Token-Gate unter 3:1 gepinnt statt behauptet.
 
 **Belege (X11-Screenshots, nur /tmp-Artefakte, ohne Secrets).** `/tmp/mla91-x11-light.png` und `/tmp/mla91-x11-dark.png` (je 1294×874, `MLA_FORCE_COLOR_SCHEME` + `GDK_BACKEND=x11`, xdotool-`--pid`-Suche + `import -window`). Pixel-Probe: Inhalt hell (254,252,247) = `#FEFCF7` = `@bg` light, dunkel (13,13,26) = `#0D0D1A` = `@bg` dark; Sidebar (250,247,240)/(20,20,37) = `@sidebar` je Schema — die Dark-Umschaltung (Provider-Tausch) ist damit pixelgenau belegt. Durchschnittshelligkeit 84 % vs. 12 %.
 
@@ -453,7 +453,12 @@ unabhängig reproduziert).
 
 **Manuelle Zorin-Prüfung (Basti, offen).** Vollständiger Fokus-/Tastaturdurchgang (sichtbarer Fokusring in allen Bereichen — der Ring liegt rechnerisch unter 3:1, Befund 5), Hell/Dunkel-Umschaltung am lebenden System, Skalierung 100/125/150 %, Wayland-Screenshot; entspricht BASELINE §3 Punkten 6–8 plus ISSUES.md #91 Abnahmen 3–5.
 
-**Reviewer.** Final-Whole-Branch-Review (Task 5) folgt; Verdicts werden hier nachgetragen.
+**Reviewer (Final-Whole-Branch-Review 2026-09-30, `506eb88..5e308ad`, 6 Commits).**
+- **A (Korrektheit): APPROVED** — Werte-Parität 26/26 je Schema in eigener Nachrechnung direkt gegen `hermes_tokens.dart` (nicht dem Test vertrauend); Tone-Formel 24/24 selbst nachgerechnet; Mutations-Test real durchgeführt (`#FEFCF7`→`#FEFCF6` ⇒ 8 Failures — das Gate fängt selbst 1/255-Drift); WCAG-Mathematik über alle 256 Kanalwerte als identisch mit der Dart-Implementierung verifiziert (Dart-Schwelle 0.03928 vs. 0.04045 ohne Auswirkung auf 8-bit-Werte); Provider-Mechanismus sauber (Initialisierung vor Fenster, kein Doppel-Add, keine Provider-Lecks, Prioritäten unkollidiert); Handoff-Pixelwerte gegen die /tmp-Screenshots reproduziert.
+- **B (Sicherheit/Spec): READY_FOR_PR** — Scope exakt die 8 erlaubten Dateien, Trinitäts-Diff leer, keine Secrets/Hostnamen/IPs, kein PNG committet, stale≠ok durchgängig (Doc + CSS + Test), Doku ohne 3:1-Überbehauptung, CI-Schritt YAML-valid und korrekt platziert, Abnahme-Mapping der 5 #91-Kriterien korrekt und ohne criterion-Washing.
+- **Gesamt: READY_FOR_PR.** Minors: focusRing-Dark-Rundung ≈2,6→≈2,5 und Test-Kommentar 1.06→1.03 im Verdict-Commit korrigiert; Plan-Erratum nachgetragen. **FOLLOW-UP (bewusst offen):** (a) Die Parität TOKENS.md↔`hermes_tokens.dart` ist nur manuell geprüft — das Token-Gate liest die Dart-Quelle nicht (Kandidat für den Follow-up-Pool, analog Issue #110); (b) `self.title`-Schattierung in `mla_app.py` (seit Basis vorhanden, harmlos — für #92 merken); (c) `spineWidth`/`opacity*`-Tokens dokumentiert, aber in der Shell noch ohne Anwendung (Andockpunkt A2/#92).
+
+**Task-5-Frischlauf (2026-09-30, auf Handoff-Stand):** `check-versions.sh` ok · `dart format` 123 Dateien 0 geändert · `flutter analyze` 0 Findings · `flutter test` +208 · additional/python 53 OK · GTK-Token-Gate 10 OK · la_core format 0 geändert / analyze clean / +61.
 
 **Rückfallplan.** `git revert` der #91-Commits (`f8a080e` … Handoff-Commit) genügt: neue Dateien (TOKENS.md, tokens.css, tokens-dark.css, test_tokens.py, Plan-Datei) plus kleine Änderungen (mla_app.py, build.yml, VERIFY.md); kein Datenpfad, keine Unit, kein Packaging, polkit-Trinität unberührt.
 

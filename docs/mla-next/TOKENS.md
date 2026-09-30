@@ -115,7 +115,7 @@ IPC_CONTRACT.md:16).
   accentText/accentBgStrong, onAccent/accent, error/bg, success/bg,
   warning/bg, info/bg, codeText/codeBg.
 - **focusRing (Non-Text): bekannte, dokumentierte Schwäche mit Hermes-Parität**
-  — kompositiert (35 % Akzent auf bg) ≈ 1,4:1 (light) bzw. ≈ 2,6:1 (dark),
+  — kompositiert (35 % Akzent auf bg) ≈ 1,4:1 (light) bzw. ≈ 2,5:1 (dark),
   also unter dem 3:1-Wert von WCAG 2.4.11 (Focus Appearance, AA erst ab
   WCAG 2.2 gefordert). Der Wert kommt 1:1 aus `hermes_tokens.dart`
   (Werte-Parität geht vor); Kompensation: 2-px-Outline mit 2-px-Offset, und
@@ -153,7 +153,7 @@ wenn `Adw.StyleManager` `notify::dark` meldet. Grund: GTK 4.14.5 unterstützt
 kein `@media` in provider-geladenem CSS (Parser: «Unknown @ rule», verifiziert
 2026-09-30) — der Plan-Fallback (Provider-Tausch) ist damit der Mechanismus.
 
-CSS-Klassen mit Präfix `mla-`: `.mla-space-3`-artiges Padding (Abstände),
+CSS-Klassen mit Präfix `mla-` — semantische Klassen, deren Padding-/Border-Werte die Struktur-Tokens mit px-Kommentar anwenden (z. B. `.mla-nav-label` = 12/16 px = space3/space4; keine generischen `.mla-space-*`-Utility-Klassen):
 `.mla-screen` (Seitenrahmen), `.mla-details` (rechte Leiste),
 `.mla-chip` + `.mla-tone-ok` … `.mla-tone-stale` (Status; stale mit
 gestrichelter Border), Fokus-Outline global über `:focus-visible`. Für
