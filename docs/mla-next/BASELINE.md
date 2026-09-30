@@ -317,3 +317,347 @@ Die Messwerte sind die Vergleichsbasis für Gate 1 (Registry #60) und die
 Flutter-vs-GTK-Messbasis (löst den offenen Punkt 5 aus §6 teilweise ein — die
 `la_probe`-Messwerte existieren nun; der Flutter/GTK-Vergleich selbst bleibt
 offen).
+
+## §8 Flutter-Release vs. GTK-Shell (Issue #95, 2026-09-30)
+
+Messprotokoll der #95-Baselinemessung nach Issue-#95-Abnahme: Flutter-Release-Build
+gegen die GTK-Shell (statisches Demo-Dashboard) auf demselben Zielrechner, je
+Backend Wayland und X11. Ergänzt §1 und die `la_probe`-Referenz aus §7; die
+Flutter-vs-GTK-Entscheidung selbst ist 0.4.x-Aufgabe — dieser Abschnitt liefert
+nur die Vergleichsbasis (Rohwerte, Mediane, Grenzen), keine Empfehlung.
+
+### Rahmen
+
+| Messfenster | Wert |
+| --- | --- |
+| Task 1 — Flutter-Zellen | 2026-09-30, 07:41–07:58 MESZ (Release-Build 07:36:01+02:00; Probe-Läufe 07:41:28–07:50:16; serielle Zellen 07:51:54–07:57:59+02:00) |
+| Task 2 — GTK-Zellen | 2026-09-30, 08:34–08:45 MESZ (08:34:41–08:44:54+02:00; Probe-Läufe 08:34:41–08:36:08, serielle Zellen 08:37:50–08:44:54) |
+
+Rechner (frisch erhoben 2026-09-30T09:13:15+02:00, ausschließlich unprivilegiert;
+Identifikation über CPU/RAM/Kernel wie bei den #94-Fixtures — kein Hostname,
+keine Nutzernamen):
+
+| Messung | Wert |
+| --- | --- |
+| CPU (`grep -m1 'model name' /proc/cpuinfo`) | 13th Gen Intel(R) Core(TM) i7-13620H |
+| RAM (`grep MemTotal /proc/meminfo`) | 16 066 996 kB |
+| Kernel (`uname -r`) | 7.0.0-34-generic |
+| `getconf CLK_TCK` | 100 |
+| Sitzung | `XDG_SESSION_TYPE=wayland`, `WAYLAND_DISPLAY=wayland-0`, `DISPLAY=:1` (XWayland) |
+| Referenz | Zorin-Matrix §1 (2026-09-29): Zorin OS 18.1, `zorin:GNOME` |
+
+Versionen (aus den Task-Reports übernommen, nicht neu gemessen): Flutter
+3.47.5 (stable) und Dart SDK 3.13.4 (Task 1, vor dem Build 07:36:01); GTK 4 14 5 /
+Adw 1 5 0 via GI-Introspection (Kommando wörtlich aus §1) und Python 3.12.3
+(Task 2; Python frisch bestätigt). Hinweis: der Task-2-Report §1 führt MemTotal
+abweichend mit 9 071 472 640 Bytes; die obige Rechner-Box folgt der frischen
+Erhebung (16 066 996 kB) — die Messwerte sind davon unberührt.
+
+### Messdesign
+
+Vier Zellen {Flutter-Release, GTK-Shell} × {Wayland, X11}; je Zelle 5 Startup-
+und 5 Steady-Läufe, strikt sequenziell.
+
+| Zelle | Artefakt | Startkommando | Startzustand |
+| --- | --- | --- | --- |
+| `flutter-wayland` | `build/linux/x64/release/bundle/linux-assistant` | Binär direkt (nativer Wayland-Client) | Dashboard mit aktivem 3-s-Stat-Poll — echte Systemdaten (df/ps/uptime/free/loadavg) |
+| `flutter-x11` | dito | `GDK_BACKEND=x11 <Binär>` | dito (über XWayland `:1`) |
+| `gtk-wayland` | `prototype/gtk/mla_app.py` (3 924 Bytes) | `python3 prototype/gtk/mla_app.py` (cwd Repo-Root) | statisches Demo-Dashboard, kein Refresh-Timer — `grep -nE 'timeout_add\|GLib\.timeout\|Thread\|subprocess' prototype/gtk/mla_app.py` → keine Treffer |
+| `gtk-x11` | dito | `GDK_BACKEND=x11 python3 prototype/gtk/mla_app.py` | dito |
+
+Gemessen wird stets der App-Prozess selbst — direkter Launch ohne Shell-Wrapper,
+`$!` ist die App-PID. Zwischen den Läufen: SIGTERM ans eigene Kind (max. 10 s
+warten, sonst SIGKILL nur ans eigene Kind), auf Exit warten, 2 s Cooldown.
+
+Wesentliche Messkommandos (1:1 aus den Helferskripten; Abbruchwachen für
+60-s-Timeout und vorzeitigen Process-Exit ausgelassen):
+
+Startup Wayland — erster Wayland-Protokollverkehr (Proxy-Ereignis, vor First-Frame):
+
+```text
+: > "$WL_LOG"
+s=$(date +%s%N)
+WAYLAND_DEBUG=1 "$BIN" 2>>"$WL_LOG" &   # GTK: WAYLAND_DEBUG=1 python3 "$APP" 2>>"$WL_LOG" &
+APP_PID=$!
+while [ ! -s "$WL_LOG" ]; do sleep 0.005; done
+e=$(date +%s%N); echo $(( (e-s)/1000000 )) ms
+```
+
+`WAYLAND_DEBUG=1` lässt libwayland-client jeden Protokollverkehr auf stderr
+drucken; erste Zeile ≈ Verbindungs-/Registry-Phase. Die Perturbation (fprintf
+je Nachricht) ist dokumentiert; die Variable ist nur in den 5 Startup-Läufen
+je App gesetzt, nie in den Steady-Läufen. Erstes Log-Ereignis war jeweils
+`wl_display@1.get_registry(new id wl_registry@2)` (echter Protokollverkehr,
+keine Python-Warning; bei GTK je Lauf belegt). Umfang des Logs beim ersten
+Poll-Treffer: Flutter 3 536–3 817 Bytes, GTK konstant 8 255 Bytes (Probe 5 092 —
+Auflösungs-/Timing-Varianz des ersten Poll-Treffers, kein Protokollunterschied).
+
+Startup X11 — Fenster mit passendem Namen im X-Baum:
+
+```text
+s=$(date +%s%N)
+GDK_BACKEND=x11 "$BIN" >/dev/null 2>&1 &   # GTK: GDK_BACKEND=x11 python3 "$APP" >/dev/null 2>&1 &
+APP_PID=$!
+while ! xdotool search --name "linux.assistant" >/dev/null 2>&1; do sleep 0.01; done   # GTK: --name "Prototyp"
+e=$(date +%s%N); echo $(( (e-s)/1000000 )) ms
+```
+
+Harte Vorbedingung je Lauf (Selbst-Match der prüfenden Shell über
+Klammerausdrücke ausgeschlossen; Fremdinstanzen werden nie beendet — bei
+Verstoß 3× 30 s warten, dann Abbruch mit Exit 2):
+
+```text
+pgrep -af '[l]inux-assistan[t]|[l]inux_assistan[t]|[m]la_app[.]py'   # muss leer sein
+xdotool search --name '[Ll]inux.[Aa]ssistant'                        # nur X11, muss leer sein — GTK-Zellen: 'Prototyp'
+```
+
+Steady — 10 s Settle, 20 Samples @ 1 Hz, CPU-Fenster 20 s (ohne `WAYLAND_DEBUG`):
+
+```text
+"$BIN" >/dev/null 2>&1 & APP_PID=$!                 # GTK analog
+sleep 10                                            # Settle
+cpu0="$(awk '{print $14+$15}' "/proc/$APP_PID/stat")"
+for i in $(seq 1 20); do
+  grep -E 'VmRSS|VmHWM' "/proc/$APP_PID/status"     >> "$sample_file"
+  grep '^Pss:'          "/proc/$APP_PID/smaps_rollup" >> "$sample_file"
+  sleep 1
+done
+cpu1="$(awk '{print $14+$15}' "/proc/$APP_PID/stat")"
+kill "$APP_PID"; wait "$APP_PID" 2>/dev/null || true; sleep 2   # SIGTERM, Exit, Cooldown
+```
+
+- **CPU:** `cpu_percent_eines_Kerns = (cpu1 − cpu0) / (CLK_TCK × 20) × 100` mit
+  `CLK_TCK=100` (utime+stime in Ticks; comm beider Apps ohne Leerzeichen —
+  Feldposition sicher).
+- **RAM:** je Lauf Median der 20 Samples (`VmRSS`, `Pss`); `VmHWM` = letzter Sample.
+- **Median-Regel:** `sort -n`; bei gerader Anzahl Mittel der beiden mittleren
+  Werte (betroffen: PSS flutter-x11 Lauf 1: 90 883,5 kB).
+- **Umgebung je Zelle protokolliert:** `date -Is`, Sitzungsvariablen,
+  `cat /proc/loadavg` vor/nach der Zelle (Werte in den Zell-Unterschriften unten).
+
+Vollständige Helferskripte (`/tmp/mla95-measure.sh`, `/tmp/mla95-measure-gtk.sh`)
+und die 20er-Roh-Sample-Serien (`/tmp/mla95-steady-*.txt`, `/tmp/mla95-gtk-steady-*.txt`)
+liegen nur in den Session-Scratch-Reports (`.superpowers/sdd/task-1-report.md`,
+`task-2-report.md`; gitignored, ephemeral). Dieser Abschnitt führt alle
+Startup-Einzelwerte und die je-Lauf-Steady-Mediane selbst.
+
+### Errata und Prädikate (drei Plan-Pins korrigiert, von Reviewern A/B verifiziert)
+
+| # | Plan-Pin | Realität / gemessene Umsetzung |
+| --- | --- | --- |
+| 1 | Artefakt `…/bundle/linux_assistant` | Real **`linux-assistant`** (Bindestrich); comm ebenfalls; pgrep-/ERE-Muster entsprechend |
+| 2 | X11-Poll `xdotool search --name "Linux Assistant"` | `WindowManager.instance.setTitle("Linux Assistant")` (`lib/main.dart:27`) greift unter X11 nicht — `WM_NAME`/`_NET_WM_NAME` des Dev-Builds sind `linux-assistant`/`linux_assistant`; gemessen wird das ERE `linux.assistant`, die Vorbedingung prüft breiter `[Ll]inux.[Aa]ssistant`; der erste Probe-Lauf lief in den 60-s-Timeout (BLOCKED, außerhalb der Serie) |
+| 3 | `grep VmPss /proc/<pid>/smaps_rollup` | Key ist **`Pss:`** (ohne `Vm`-Präfix) — gemessen `grep '^Pss:'` (Anker vermeidet `Pss_Dirty`/`Pss_Anon`/…) |
+
+Prädikate je Zelle: Flutter-X11-Startup-Poll = ERE `linux.assistant`; GTK-X11-Startup-Poll
+= `Prototyp` (Fenstertitel „Master Linux Assistant · Prototyp" — traf in allen 6
+X11-Läufen sofort; Erratum 2 betrifft GTK nicht); PSS-Schlüssel durchgängig `^Pss:`.
+
+### Zelle flutter-wayland
+
+Umgebung `XDG_SESSION_TYPE=wayland`, `DISPLAY=:1`, `WAYLAND_DISPLAY=wayland-0`.
+Zelle 07:51:54+02:00 (loadavg 4.89 4.35 3.43) bis 07:54:48+02:00 (4.99 4.63 3.70).
+
+Startup (5-ms-Poll auf `/tmp/mla95-wl.log`):
+
+| Lauf | startup_ms | app_pid | wl_log_bytes |
+| --- | --- | --- | --- |
+| 1 | 30 | 256729 | 3536 |
+| 2 | 34 | 256839 | 3769 |
+| 3 | 29 | 257037 | 3817 |
+| 4 | 23 | 257231 | 3817 |
+| 5 | 25 | 257281 | 3769 |
+
+Zellen-Median Startup: **29 ms** (sortiert: 23, 25, 29, 30, 34).
+
+Steady:
+
+| Lauf | RSS-Median (kB) | PSS-Median (kB) | VmHWM (kB) | cpu0 | cpu1 | cpu_percent |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 161524 | 89740 | 164956 | 996 | 3020 | 101.20 |
+| 2 | 161216 | 89720 | 164688 | 998 | 3019 | 101.05 |
+| 3 | 161472 | 89775 | 164980 | 996 | 3018 | 101.10 |
+| 4 | 161216 | 89676 | 164440 | 997 | 3021 | 101.20 |
+| 5 | 161580 | 89749 | 164904 | 998 | 3022 | 101.20 |
+
+Zellen-Mediane: RSS **161 472 kB** · PSS **89 740 kB** · HWM **164 904 kB** ·
+CPU **101.20 %** eines Kerns.
+
+### Zelle flutter-x11
+
+Identische Sitzung; App via `GDK_BACKEND=x11` über XWayland `:1`.
+Zelle 07:55:05+02:00 (loadavg 4.65 4.57 3.70) bis 07:57:59+02:00 (5.43 5.37 4.18).
+
+Startup (10-ms-Poll, Prädikat ERE `linux.assistant` — Erratum 2):
+
+| Lauf | startup_ms | app_pid |
+| --- | --- | --- |
+| 1 | 37 | 265298 |
+| 2 | 39 | 265403 |
+| 3 | 72 | 265515 |
+| 4 | 37 | 265745 |
+| 5 | 41 | 265792 |
+
+Zellen-Median Startup: **39 ms** (sortiert: 37, 37, 39, 41, 72). Ausreißer Lauf 3
+(72 ms) fiel mit ansteigender Systemlast zusammen (1-min-loadavg erreichte 8.04
+am Ende des steady-Laufs 2); der Rohwert bleibt in der Serie, der Median ist
+nicht betroffen.
+
+Steady:
+
+| Lauf | RSS-Median (kB) | PSS-Median (kB) | VmHWM (kB) | cpu0 | cpu1 | cpu_percent |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 162968 | 90883.5 | 166592 | 996 | 3014 | 100.90 |
+| 2 | 163232 | 91302 | 166140 | 991 | 3012 | 101.05 |
+| 3 | 163100 | 91393 | 166420 | 997 | 3021 | 101.20 |
+| 4 | 163148 | 91340 | 166720 | 996 | 3016 | 101.00 |
+| 5 | 163240 | 91415 | 166420 | 997 | 3014 | 100.85 |
+
+Zellen-Mediane: RSS **163 148 kB** · PSS **91 340 kB** · HWM **166 420 kB** ·
+CPU **101.00 %** eines Kerns.
+
+### Zelle gtk-wayland
+
+Identische Sitzung. Zelle 08:37:50+02:00 (loadavg 1.87 2.13 2.66) bis
+08:41:12+02:00 (2.70 2.38 2.64).
+
+Startup (5-ms-Poll auf `/tmp/mla95-gtk-wl.log`):
+
+| Lauf | startup_ms | app_pid | wl_log_bytes |
+| --- | --- | --- | --- |
+| 1 | 76 | 310184 | 8255 |
+| 2 | 70 | 310246 | 8255 |
+| 3 | 57 | 310326 | 8255 |
+| 4 | 63 | 310357 | 8255 |
+| 5 | 63 | 310407 | 8255 |
+
+Zellen-Median Startup: **63 ms** (sortiert: 57, 63, 63, 70, 76).
+
+Steady:
+
+| Lauf | RSS-Median (kB) | PSS-Median (kB) | VmHWM (kB) | cpu0 | cpu1 | cpu_percent |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 187520 | 101347 | 187520 | 36 | 36 | 0.00 |
+| 2 | 187972 | 101093 | 187972 | 38 | 38 | 0.00 |
+| 3 | 187836 | 101166 | 187836 | 37 | 37 | 0.00 |
+| 4 | 188096 | 101161 | 188096 | 36 | 36 | 0.00 |
+| 5 | 188076 | 101327 | 188076 | 38 | 38 | 0.00 |
+
+Zellen-Mediane: RSS **187 972 kB** · PSS **101 166 kB** · HWM **187 972 kB** ·
+CPU **0.00 %** eines Kerns.
+
+### Zelle gtk-x11
+
+Identische Sitzung. Zelle 08:41:26+02:00 (loadavg 2.63 2.38 2.64) bis
+08:44:54+02:00 (2.01 2.13 2.48).
+
+Startup (10-ms-Poll, Prädikat `Prototyp`):
+
+| Lauf | startup_ms | app_pid |
+| --- | --- | --- |
+| 1 | 316 | 314505 |
+| 2 | 277 | 314589 |
+| 3 | 285 | 314702 |
+| 4 | 284 | 314790 |
+| 5 | 298 | 314902 |
+
+Zellen-Median Startup: **285 ms** (sortiert: 277, 284, 285, 298, 316).
+
+Steady:
+
+| Lauf | RSS-Median (kB) | PSS-Median (kB) | VmHWM (kB) | cpu0 | cpu1 | cpu_percent |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 187884 | 101749 | 187884 | 37 | 37 | 0.00 |
+| 2 | 187772 | 101428 | 187772 | 37 | 37 | 0.00 |
+| 3 | 188060 | 101562 | 188060 | 35 | 35 | 0.00 |
+| 4 | 188216 | 101800 | 188216 | 37 | 37 | 0.00 |
+| 5 | 187996 | 101683 | 187996 | 37 | 37 | 0.00 |
+
+Zellen-Mediane: RSS **187 996 kB** · PSS **101 683 kB** · HWM **187 996 kB** ·
+CPU **0.00 %** eines Kerns.
+
+### Zellen-Mediane über alle vier Zellen
+
+| Zelle | Startup-Median | RSS (kB) | PSS (kB) | HWM (kB) | CPU (% eines Kerns) |
+| --- | --- | --- | --- | --- | --- |
+| flutter-wayland | 29 ms¹ | 161 472 | 89 740 | 164 904 | 101.20 |
+| flutter-x11 | 39 ms² | 163 148 | 91 340 | 166 420 | 101.00 |
+| gtk-wayland | 63 ms¹ | 187 972 | 101 166 | 187 972 | 0.00 |
+| gtk-x11 | 285 ms² | 187 996 | 101 683 | 187 996 | 0.00 |
+
+¹ erster Wayland-Protokollverkehr (Proxy-Ereignis, vor First-Frame).
+² Fenster mit passendem Namen im X-Baum (xdotool ohne `--onlyvisible`, nicht
+  strikt „gemappt sichtbar").
+
+### Befunde
+
+Nüchterne Befunde, keine Empfehlung — die Flutter-vs-GTK-Entscheidung ist
+0.4.x-Aufgabe; #95 liefert die Vergleichsbasis für #105.
+
+**(a) CPU-Dauerrendern Flutter:** Alle 10 Flutter-Steady-Läufe zeigen ~101 %
+eines Kerns (100.85–101.20 %): der Release-Build rendert im Ruhezustand
+kontinuierlich (Impeller; App-Log „Using the Impeller rendering backend
+(OpenGLESSDF)"). Die CPU-Formel trägt eine konstante ~+1 %-Verzerrung
+(Sample-Zeit + `sleep 1` verlängern das reale Fenster auf ~20,2 s, der Nenner
+bleibt fix 20 s) — sie betrifft nur Flutter. Die GTK-Shell verbraucht im
+Fixture-Startzustand 0 CPU-Ticks: cpu0 == cpu1 in allen 10 Steady-Läufen
+(statisches Demo-Dashboard ohne Timer, grep-Beleg oben).
+
+**(b) Startup backendintern vergleichen:** direkt vergleichbar ist X11↔X11 —
+identisches Ereignis „Fenster mit passendem Namen im X-Baum": Flutter 39 ms
+vs. GTK 285 ms. Wayland↔Wayland nur mit Proxy-Vorbehalt (29 vs. 63 ms —
+„erster Protokollverkehr" ≠ First-Frame). Backendübergreifend wird nicht
+gerankt.
+
+**(c) X11-Aufschlag** (backendintern): GTK +222 ms (63 → 285), Flutter
++10 ms (29 → 39).
+
+**(d) RSS/PSS** (Wayland-Mediane): Flutter 161 472 kB RSS / 89 740 kB PSS;
+GTK 187 972 kB / 101 166 kB. PSS ist umgebungsvariabel und sharer-abhängig;
+die GTK-RSS enthält die geteilten Python+GI+GTK-Runtime-Seiten (GTK-PSS liegt
+~87 MB unter GTK-RSS). In den GTK-Zellen ist RSS/PSS zudem fast
+backendunabhängig (Δ < 0,2 %).
+
+**(e) Lastasymmetrie** (korrigierte Richtung, Task-2-Report §7): Task 1 lief
+unter 1-min-loadavg 4.6–8.0 (Zellgrenzen 4.65–5.43; 15-min 3.4–4.2), Task 2
+unter 1.62–2.92 (15-min 2.5–2.7) — gleich gelagert (keine künstliche Last,
+stets nur eine App-Instanz aktiv), aber nicht lastgleich. Hohe Last verlängert
+Startup-Zeiten, nie umgekehrt: der gemessene Flutter-Startup-Vorteil ist damit
+eine **konservative Untergrenze**; die GTK-Aufstellung war schonend (GTK unter
+den milderen Bedingungen gemessen). Geltungsbereich: Last wirkt vor allem auf
+Startup-Zeiten und CPU-Konkurrenz, praktisch nicht auf RSS/PSS; die
+Prozess-CPU ist per `/proc/<pid>/stat` gemessen (Verzerrungsrichtung ebenfalls
+eher Untergrenze). Ob die GTK-Zellen bei Last ~5–8 (Task-1-Bedingung) gleich
+ruhig reagieren wie bei ~2, ist aus diesen Daten allein nicht belegbar.
+
+**(f) Größen** (nur Angabe, kein Ranking): Flutter-Bundle
+`build/linux/x64/release/bundle` 26 885 925 Bytes; Flutter-Binary
+`linux-assistant` 23 664 Bytes; `mla_app.py` 3 924 Bytes. Unterschiedliche
+Natur (das Python-Skript braucht Python+GI-Runtime); `la_probe` (§7:
+6 547 240 Bytes, 3 ms Median-Startzeit) bleibt separater Referenzpunkt.
+
+### «Nicht verglichen»
+
+1. **GTK-Fixture-Last:** kein Datenadapter/Refresh-Timer in `mla_app.py`
+   (grep-Beleg) — hängt am #92-Rest; die GTK-Zellen messen den
+   Fixture-**Startzustand**.
+2. **Flutter-Last-Zustände** (z. B. Systemmonitor-1-s-Sampler): nur per
+   UI-Interaktion erreichbar, unter Wayland nicht fernsteuerbar; bewusst keine
+   xdotool-Koordinatenklicks in die Baseline (Validitätsrisiko).
+   User-Entscheidung 2026-09-30 «Reduziert messen».
+3. **Wayland-Startzeit = erster Protokollverkehr ≠ First-Frame** (X11 misst
+   Fenster-Erscheinen) → Startzeiten backend-übergreifend nicht direkt
+   vergleichbar.
+4. **Datenquellen nicht identisch:** Flutter pollt echte Systemdaten
+   (df/ps/uptime/free/loadavg, 3 s), GTK zeigt statische Demo-Fixtures.
+5. **Kein Binärgrößen-Ranking:** Flutter-Bundle vs. Python-Skript haben
+   unterschiedliche Natur (Skript braucht Python+GI-Runtime) — nur Angabe;
+   `la_probe` (§7: 6 547 240 Bytes, 3 ms) bleibt separater Referenzpunkt.
+6. **Kein Debug-Build, keine Langlauf-/Memory-Growth-Aussage** (Langlauf ist
+   0.1.x-Aufgabe).
+7. Das X11-Poll-Ereignis ist „Fenster mit passendem Namen existiert im
+   X-Baum" (xdotool ohne `--onlyvisible`), nicht strikt „gemappt sichtbar"
+   (Erratum 2).
+8. Die Probe-Läufe (je Task 4–5, Zeiten in den Task-Reports) waren
+   Skript-Validierung außerhalb der 5+5-Serien und fließen in keine Mediane
+   ein.

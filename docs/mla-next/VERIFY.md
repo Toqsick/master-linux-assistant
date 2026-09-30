@@ -1,6 +1,6 @@
 # MLA-Next: Verifikation und Handoff
 
-Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (Wayland- und X11-Start — Gate 0, BASELINE §2; manuelle Checks offen), la_core-Spike und Registry sind getestet inkl. Performance-Messwerten (Gate 1, BASELINE §7). **#93 ist gemerged** (PR #89 → `6c5c625`, PR #107 → `e4c1346`; Merge-Freigabe 2026-09-30) und **#94 (Fixtures + Fehler-/Stale-Modelle) auf `feature/mla-94-fixtures` umgesetzt** (Handoff-Abschnitt unten, alle Gates grün, wartet auf Final-Review/Freigabe). Weiterhin nicht ausgeführt: IPC-/Gate-2-Tests, Flutter-vs-GTK-Vergleichsmessung (#95), manuelle Gate-0-Checks (BASELINE §3). Der Scaffold-Commit ist **kein** Release-Gate.
+Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (Wayland- und X11-Start — Gate 0, BASELINE §2; manuelle Checks offen), la_core-Spike und Registry sind getestet inkl. Performance-Messwerten (Gate 1, BASELINE §7). **#93 ist gemerged** (PR #89 → `6c5c625`, PR #107 → `e4c1346`; Merge-Freigabe 2026-09-30) und **#94 (Fixtures + Fehler-/Stale-Modelle) auf `feature/mla-94-fixtures` umgesetzt** (Handoff-Abschnitt unten, alle Gates grün, wartet auf Final-Review/Freigabe). Die #95-Baselinemessung Flutter-Release vs. GTK-Shell liegt vor (BASELINE §8, Handoff #95 unten). Weiterhin nicht ausgeführt: IPC-/Gate-2-Tests, manuelle Gate-0-Checks (BASELINE §3). Der Scaffold-Commit ist **kein** Release-Gate.
 
 ## Gate 0: Scaffold
 
@@ -383,6 +383,42 @@ unabhängig reproduziert).
 **Manuelle Zorin-Prüfung.** Für #94 nicht erforderlich (keine UI-Änderung); die Captures stammen von diesem Zorin-Rechner (2026-09-30).
 
 **Rückfallplan.** `git revert` der Task-Commits genügt: Task 2 isoliert (nur la_core-Neudatei + Barrel-Zeile), Task 1+3 gemeinsam (gemeinsame Fixture-Dateien), Task 4 reine Doku. Kein Migrationsschritt, kein Datenpfad.
+
+## Handoff #95 — Baseline-Messung Flutter-Release vs. GTK-Shell
+
+**Status:** Messung vollständig (4 Zellen {Flutter-Release, GTK-Shell} × {Wayland, X11}, je 5 Startup- + 5 Steady-Läufe) und als Messprotokoll in `docs/mla-next/BASELINE.md` §8 dokumentiert. Umgesetzt auf `feature/mla-95-baseline` (Basis-SHA `31277a2`; Plan-Commit `5757c0d`, Erratum-Commit `9de72b0`), Task 3 (Doku) ist der Commit dieses Abschnitts. Messaufgabe: kein Code, keine Tests, kein Packaging angefasst; Messhelfer und die 20er-Roh-Serien liegen ausschließlich unter `/tmp` und `.superpowers/sdd/` (gitignored, ephemeral) — §8 führt alle Startup-Einzelwerte und die je-Lauf-Steady-Mediane selbst.
+
+**Messfenster/Rechner.** Task 1 (Flutter-Zellen) 2026-09-30 07:41–07:58 MESZ (Release-Build 07:36:01, Probe-Läufe 07:41:28–07:50:16, serielle Zellen 07:51:54–07:57:59); Task 2 (GTK-Zellen) 08:34–08:45 MESZ (08:34:41–08:44:54). Rechner-Box frisch erhoben (BASELINE §8: i7-13620H, 16 066 996 kB RAM, Kernel 7.0.0-34-generic, Wayland-Sitzung, XWayland `:1`; keine Hostnamen — Leak-Disziplin wie bei den #94-Fixtures). Anomalie dokumentiert: der Task-2-Report §1 führt MemTotal abweichend (9 071 472 640 Bytes); die frische Erhebung (`/proc/meminfo`, `free -b`) ergibt 16 066 996 kB — §8 folgt der frischen Erhebung, die Messwerte sind davon unberührt.
+
+**Failing-Test/Fixture.** Keiner — Messaufgabe (Plan-Constraint 6); Belege sind die Rohwerte 1:1 (BASELINE §8) und die Gates unten.
+
+**Reviewer.** Je Task A (Korrektheit) + B (Vollständigkeit/Spec):
+- Task 1: A APPROVED (alle 20 RESULT-Zeilen gegen die Zellenlogs nachgerechnet, Kontrolllauf ~99,9 % eines Kerns bestätigt das Dauerrendern) / B SPEC_OK (Rohwerte gegen die `/tmp`-Serien belegt, die 3 Plan-Errata verifiziert).
+- Task 2: A APPROVED (Helfer diff-identisch zur Task-1-Technik, alle 10 Steady-Mediane nachgerechnet, CPU = 0 Ticks durch eigenen Kontrolllauf reproduziert) / B NEEDS_FIXES (Lastasymmetrie-Begründung §7 textlich invertiert) → Fix-Subagent (Richtung korrigiert: Flutter-Startup-Vorteil = konservative Untergrenze, GTK-Aufstellung schonend, RSS/PSS praktisch lastunabhängig — §8 Befund (e)) → Re-Review SPEC_OK.
+
+**Kernresultate (Mediane; Details/Rohwerte in §8).** Startup X11↔X11 (identisches Ereignis „Fenster im X-Baum“): Flutter 39 ms vs. GTK 285 ms; Wayland↔Wayland nur mit Proxy-Vorbehalt (29 vs. 63 ms, „erster Protokollverkehr“ ≠ First-Frame). CPU: Flutter ~101 % eines Kerns in allen 10 Steady-Läufen (Impeller-Dauerrendern; ~+1 %-Formelverzerrung betrifft nur Flutter), GTK 0 Ticks in 10/10 Läufen (kein Timer, grep-Beleg). RSS/PSS (Wayland-Mediane): Flutter 161 472/89 740 kB, GTK 187 972/101 166 kB. X11-Aufschlag backendintern: GTK +222 ms (63→285), Flutter +10 ms (29→39). Größen nur Angabe (Bundle 26 885 925 B, Binary 23 664 B, `mla_app.py` 3 924 B — kein Ranking). „Nicht verglichen“: 8 Punkte in §8 (6 Plan-Punkte wortgleich + X11-Poll-Ereignis „im X-Baum, nicht strikt gemappt sichtbar“ + Probe-Läufe außerhalb der Serien).
+
+**Gates — tatsächlich ausgeführt (2026-09-30 nach Task 3), alle Exit 0.**
+
+| Gate | Ausgabe |
+|---|---|
+| Root `dart format --output=none --set-exit-if-changed lib test` | `Formatted 122 files (0 changed) in 0.23 seconds.` |
+| `flutter analyze` | `No issues found! (ran in 2.2s)` |
+| `flutter test` (voller Lauf) | `00:04 +200: All tests passed!` |
+| la_core `dart pub get` | `Got dependencies!` |
+| la_core `dart format --output=none --set-exit-if-changed lib test` | `Formatted 23 files (0 changed) in 0.04 seconds.` |
+| la_core `dart analyze` | `No issues found!` |
+| la_core `dart test` | `00:00 +60: All tests passed!` |
+| `python3 -m unittest discover -s tests -t .` (additional/python) | `Ran 53 tests in 0.046s` / `OK` |
+| `bash tool/check-versions.sh` | `version 0.8.0 is consistent` |
+
+**Rote/übersprungene Gates.** Keine roten (Messaufgabe). Übersprungen: `build-deb.sh` (kein Paketbezug; CI baut beim späteren PR), CI für den Branch (läuft mit dem späteren PR), manuelle Gate-0-Checks (BASELINE §3 — von #95 unberührt, bleiben separat offen).
+
+**Manuelle Zorin-Prüfung.** Für #95 nicht erforderlich — die GUI-Messungen liefen automatisiert auf dem Zorin-Zielrechner (Sitzung siehe §8-Rahmen); manuelle Gate-0-Checks bleiben separat offen.
+
+**Rückfallplan.** `git revert` der #95-Commits (`5757c0d`, `9de72b0`, Task-3-Doku-Commit) genügt: reine Doku (Plan-Datei, BASELINE §8, dieser Abschnitt, ISSUES-Spiegel), kein Code, kein Datenpfad, keine Unit, kein Packaging.
+
+**Grenzen (bewusst offen).** Die #92-Abnahme bleibt formal offen (GTK-Datenadapter-Rest) und ist im §8-„Nicht verglichen“ benannt, nicht weggebügelt; die Flutter-vs-GTK-Entscheidung ist 0.4.x-Aufgabe (#105 nimmt diese Basis auf).
 
 ## Agenten-Handoff
 
