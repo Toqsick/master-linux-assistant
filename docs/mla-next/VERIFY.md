@@ -1,6 +1,6 @@
 # MLA-Next: Verifikation und Handoff
 
-Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (Wayland- und X11-Start — Gate 0, BASELINE §2; manuelle Checks offen), la_core-Spike und Registry sind getestet inkl. Performance-Messwerten (Gate 1, BASELINE §7). Weiterhin nicht ausgeführt: IPC-/Gate-2-Tests, Flutter-vs-GTK-Vergleichsmessung (Roadmap 0.0.3), manuelle Gate-0-Checks (BASELINE §3). Der Scaffold-Commit ist **kein** Release-Gate.
+Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (Wayland- und X11-Start — Gate 0, BASELINE §2; manuelle Checks offen), la_core-Spike und Registry sind getestet inkl. Performance-Messwerten (Gate 1, BASELINE §7). **#93 ist gemerged** (PR #89 → `6c5c625`, PR #107 → `e4c1346`; Merge-Freigabe 2026-09-30) und **#94 (Fixtures + Fehler-/Stale-Modelle) auf `feature/mla-94-fixtures` umgesetzt** (Handoff-Abschnitt unten, alle Gates grün, wartet auf Final-Review/Freigabe). Weiterhin nicht ausgeführt: IPC-/Gate-2-Tests, Flutter-vs-GTK-Vergleichsmessung (#95), manuelle Gate-0-Checks (BASELINE §3). Der Scaffold-Commit ist **kein** Release-Gate.
 
 ## Gate 0: Scaffold
 
@@ -16,6 +16,7 @@ Aktualisierung 2026-09-30: Die GTK-Scaffold-Laufzeit ist auf Zorin verifiziert (
 - [x] Issue #60: IDs eindeutig, fehlende/zyklische Abhängigkeiten abgewiesen, Start/Stop/Lazy-Loading getestet; Flutter-Navigation unverändert. — Kern-Registry-Teil 2026-09-30: `dart test` 30/30 in packages/la_core (doppelte IDs, fehlende/zyklische Abhängigkeiten, Topo-Start/Rückwärts-Stop, Single-Flight); `git diff --stat 92bef60..HEAD -- lib/ additional/ deb/ linux/` leer (Exit 0). **Der Flutter-`HubModule`-Adapter samt Vollständigkeitstest ist nachgeliefert** — Belege im Abschnitt „Abnahme #60" unten (Root-`flutter test` +200)
 - [x] Bestehende Repo-Gates nach Scope tatsächlich ausführen: `tool/check-versions.sh`, `dart format`, `flutter analyze`, `flutter test`, Python-Tests. — 2026-09-30 frisch ausgeführt, alle Exit 0: `version 0.8.0 is consistent`; `Formatted 118 files (0 changed)`; `No issues found!`; `00:02 +184: All tests passed!`; `Ran 49 tests` / `OK` — vgl. docs/mla-next/BASELINE.md §4
 - [x] Issue #93, Schnitt 1 (Parser-Umzug nach `packages/la_core`): App-Test byte-identisch, alle Gates grün. — 2026-09-30: Handoff-Abschnitt unten. DI, Event-Vertrag und `la_probe`-Ablage sind in **Schnitt 2** geliefert (Abschnitt „Handoff #93 Schnitt 2" unten, alle Gates grün); der Flutter-`HubModule`-Adapter ist mit #60 geliefert (Abschnitt unten).
+- [x] Issue #94 (Gemeinsame Fixtures + Fehler-/Stale-Modelle): beide Tracks lesen `test/fixtures/`, Leak-Check leer, `ProbeStatus` getestet. — 2026-09-30: Handoff-Abschnitt „Handoff #94" unten; alle Gates grün (flutter 200/200, la_core 60/60, Python 53/53).
 
 ## Gate 2: IPC und Backup
 
@@ -337,6 +338,51 @@ Listener + `onListenerError`, Nutzung nach `dispose` → `EventBusError`), `prob
 
 **Rückfallplan.** `git revert` der Schnitt-2-Commits genügt: kein Migrationsschritt, kein Datenpfad, keine Unit
 in `deb/DEBIAN/control`, `la_core` nirgends installiert.
+
+## Handoff #94 — Gemeinsame Fixtures + Fehler-/Stale-Modelle
+
+**Status:** umgesetzt auf `feature/mla-94-fixtures` (Basis `e4c1346`, 6 eigene Commits `aff40ac..3786464`), **nicht gepusht** — Push/PR folgen; **Merge und Schließen von #94 erst nach gesonderter Freigabe.**
+
+**Basis-SHA/Pfade/Scope.** Basis `e4c1346` (main, nach PR-#107-Squash). Neu: `test/fixtures/` (fünf echte geschwärzte Zorin-Ausgaben `zorin_df/ps/uptime/free/loadavg.txt` + sieben synthetische Edge-Vektoren + `README.md` mit Capture-Kommandos, Schwärzungsregeln, GTK-/Python-Track-Abschnitt), `additional/python/tests/test_fixture_leak_check.py`, `packages/la_core/lib/src/probe_status.dart` (+ Barrel-Export), `packages/la_core/test/probe_status_test.dart`, SDD-Plan `docs/superpowers/plans/2026-09-30-mla-94-fixtures-state-models.md`. Geändert: `test/system_parsers_test.dart`, `packages/la_core/test/parsers_test.dart` (lesen nun die Fixtures statt Inline-Duplikate). Grenzen eingehalten: `test/system_monitor_service_test.dart` unberührt (QA3/#87), kein Code in `prototype/gtk/` (A2/#92), keine IPC-Contract-Fixtures (`IPC_CONTRACT.md:22`), polkit-Dreifaltigkeit unberührt.
+
+**Failing-Test/Fixture.** Task 1: RED `FixturesClean` ohne `test/fixtures/` (zwei Failures, Output im Task-Report). Task 2: RED Compile-Fehler `Couldn't find constructor 'ProbeStatus'`. Task 3: Umbau bestehender Tests — Baseline-Vorher-Lauf dokumentiert (flutter 200/200 vor wie nach).
+
+**Umsetzung.** Subagent-Driven Development: je Task frischer Implementer + Two-Reviewer-Gate (Reviewer A Funktion/Korrektheit, Reviewer B Vollständigkeit/Spec), Reports unter `.superpowers/sdd/task-{1..4}-{report,review*}.md`, Ledger `.superpowers/sdd/progress.md`.
+
+**Zustandsmodell.** `ProbeState { unknown, running, ok, stale, failed }`; `stale` nur über `markStale()` aus `ok` (behält `data`/`observedAt`), kein Pfad zurück zu `ok` ohne frische Observation — 8 neue Tests, Vertragslage `IPC_CONTRACT.md:16`.
+
+**Schwärzung/Leak-Check.** Capture exakt der Produktions-Aufrufe (df ohne LC_ALL, uptime/free mit `LC_ALL=C`, ps `-eo pcpu,args --sort=-pcpu`, `/proc/loadavg`), alles unprivilegiert. Schwärzung: `/home|/media/<name>` → `/user`-Platzhalter, Usernamen → `user`, URLs/Hosts → `example.invalid`; über die Regeln hinaus zusätzlich geschwärzt: QEMU-SMBIOS-Serial, MAC-Adresse, Xwayland-Authority-Suffix, eine Konto-URL (`.ai`-TLD, vom Leak-Check nicht abgedeckt — Lücke in `test/fixtures/README.md` dokumentiert, manuelle Durchsicht bleibt Pflicht). Leak-Check läuft bei jedem CI-Lauf mit (Trigger ausschließlich Push/PR) und ist auf allen zwölf `*.txt` leer. Final-Review-Fix (eigener Commit): die Brave-Crash-Reporter-Client-ID — persistent pro Installation, in der ersten Fassung fälschlich als Session-Zufallswert geführt — wurde 4× in `zorin_ps.txt` zu `<redacted>` geschwärzt; der Leak-Check prüft nun zusätzlich Ports in `port=`-/`port:`- und `host:port`-Form, wodurch `--port=41641`, `telnet:localhost:7100` und `tcp:<redacted>:7149` gleichfalls geschwärzt wurden; die verbleibenden bloßen Port-Zahlen (`websocket=5700`, `--port 7000`) sind in `test/fixtures/README.md` dokumentiert.
+
+**Reviewer.** Je Task A (Korrektheit) + B (Vollständigkeit) parallel:
+- Task 1: A APPROVED / B SPEC_OK — Werte und Scope unabhängig verifiziert; Minor: TLD-Allowlist-Lücke, `/opt/brave.com`-Fehlalarm (im Fixture neutralisiert), keine `subTest`s.
+- Task 2: A APPROVED / B SPEC_OK — „kein stillschweigender stale→ok-Pfad" konstruktiv geprüft (`final class`, `_stale` privat, `ok` nur frischer Konstruktor); Gates von B reproduziert (60/60).
+- Task 3: A APPROVED / B SPEC_OK — alle gepinnten Erwartungswerte gegen die Fixture-Dateien nachgerechnet; Asserts teils gestrafft (df `hasLength(2)`, beide `_removableDevices`-Einträge abgedeckt).
+- Task 4: A NEEDS_FIXES (F1 dirname-Zählung, F2 „täglich in CI", F3 Präsens-Overclaim) → Fix `3786464` → Re-Review A APPROVED / B SPEC_OK.
+- Secrets/Privilegien-Sicht (Reviewer-2-Pflicht aus dem Issue): unprivilegierte Captures, Schwärzung inkl. Zusatzfunde oben, Leak-Check-Vektoren (MUST_FLAG/MUST_NOT_FLAG) grün, kein `pkexec`/polkit-Bezug im Diff.
+
+**Gates — tatsächlich ausgeführt (2026-09-30 auf `3786464`), alle Exit 0.**
+
+| Gate | Ausgabe |
+|---|---|
+| la_core `dart format --output=none --set-exit-if-changed lib test` | `Formatted 23 files (0 changed)` |
+| la_core `dart analyze` | `No issues found!` |
+| la_core `dart test` | `00:00 +60: All tests passed!` (52 alt + 8 neu) |
+| `dart compile exe bin/la_probe.dart` + display-less `--version`-Lauf | `Generated: /tmp/la_probe94`; `la_probe 0.0.1-spike.1 (dart 3.13.4 … linux_x64)` |
+| Root `dart format --output=none --set-exit-if-changed lib test` | `Formatted 122 files (0 changed)` |
+| `flutter analyze` | `No issues found! (ran in 3.1s)` |
+| `flutter test` (voller Lauf) | `00:07 +200: All tests passed!` |
+| `python3 -m unittest discover -s tests -t .` (additional/python) | `Ran 53 tests` / `OK` (49 alt + 4 neu) |
+| `bash tool/check-versions.sh` | `version 0.8.0 is consistent` |
+
+Nach der Final-Review-Fix-Runde `8bddeb6` erneut ausgeführt und grün: Python `Ran 53 tests` / `OK`, `flutter test` `+200: All tests passed!`,
+la_core `dart test` `+60: All tests passed!` (Belege in `.superpowers/sdd/final-review-94-fix-report.md`; der Re-Review hat den Python-Lauf
+unabhängig reproduziert).
+
+**Rote/übersprungene Gates.** Rot nur die geplanten TDD-REDs (Task 1 `FixturesClean`, Task 2 Compile-Fehler). Übersprungen: `build-deb.sh` (kein Paketbezug — `la_probe`-Kompilat direkt geprüft; CI baut beim PR), CI für den Branch (läuft mit dem späteren PR), manuelle Gate-0-Checks (unverändert offen, von #94 nicht berührt).
+
+**Manuelle Zorin-Prüfung.** Für #94 nicht erforderlich (keine UI-Änderung); die Captures stammen von diesem Zorin-Rechner (2026-09-30).
+
+**Rückfallplan.** `git revert` der Task-Commits genügt: Task 2 isoliert (nur la_core-Neudatei + Barrel-Zeile), Task 1+3 gemeinsam (gemeinsame Fixture-Dateien), Task 4 reine Doku. Kein Migrationsschritt, kein Datenpfad.
 
 ## Agenten-Handoff
 

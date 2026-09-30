@@ -1,0 +1,2 @@
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdb1        59G   12G   47G  21% /media/user/USB Stick

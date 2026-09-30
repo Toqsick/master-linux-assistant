@@ -1,0 +1,60 @@
+%CPU COMMAND
+54.1 /opt/ZCode/zcode --type=zygote
+18.4 /opt/ZCode/zcode --type=zygote --no-zygote-sandbox
+17.9 /usr/bin/gnome-shell
+ 8.6 [irq/169-nvidia]
+ 7.3 /home/user/.local/bin/claude --model deepseek-v4.1-flash:cloud
+ 5.3 ZCode
+ 4.2 /home/user/.hermes/hermes-agent/venv/bin/python /home/user/10-Projekte/40-archive/hermes-webui/server.py
+ 3.8 qemu-system-x86_64 -nodefaults -cpu host,kvm=on,l3-cache=on,+hypervisor,migratable=no,-vmx,+invtsc,hv_passthrough -smp 8,sockets=1,dies=1,cores=8,threads=1 -m 4G -machine type=q35,smm=off,graphics=off,vmport=off,dump-guest-core=off,hpet=off,accel=kvm -enable-kvm -global kvm-pit.lost_tick_policy=discard -smbios type=1,serial=<redacted> -display vnc=:0,websocket=5700 -vga virtio -monitor telnet:localhost:<redacted>,server,nowait,nodelay -daemonize -D /run/shm/qemu.log -pidfile /run/shm/qemu.pid -name windows,process=windows,debug-threads=on -serial pty -device qemu-xhci,id=xhci,p2=7,p3=7 -device usb-tablet -netdev tap,id=hostnet0,ifname=qemu,vhost=on,vhostfd=40,script=no,downscript=no -device virtio-net-pci,id=net0,netdev=hostnet0,romfile=,mac=<redacted> -drive file=/storage/data.img,id=data3,format=raw,cache=none,aio=native,discard=on,detect-zeroes=on,if=none -device virtio-scsi-pci,id=data3b,bus=pcie.0,addr=0xa,iothread=io2 -device scsi-hd,drive=data3,bus=data3b.0,channel=0,scsi-id=0,lun=0,rotation_rate=1,bootindex=3 -object iothread,id=io2 -rtc base=localtime -global ICH9-LPC.disable_s3=1 -global ICH9-LPC.disable_s4=1 -drive file=/storage/windows.rom,if=pflash,unit=0,format=raw,readonly=on -drive file=/storage/windows.vars,if=pflash,unit=1,format=raw -object rng-random,id=objrng0,filename=/dev/urandom -device virtio-rng-pci,rng=objrng0,id=rng0,bus=pcie.0 -qmp tcp:<redacted>:<redacted>,server,wait=off
+ 3.5 /usr/libexec/gnome-terminal-server
+ 3.4 /usr/bin/Xwayland :1 -rootless -noreset -accessx -core -auth /run/user/1000/.mutter-Xwaylandauth.XXXXXX -listenfd 4 -listenfd 5 -displayfd 6 -initfd 7 -byteswappedclients
+ 2.1 zcode-cli
+ 1.5 /home/user/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run
+ 1.4 /home/user/.local/share/Steam/ubuntu12_32/steam -srt-logger-opened -nominidumps -nobreakpad
+ 1.2 [kswapd0]
+ 1.2 zcode-host-local-1
+ 1.1 /app/backend/.venv/bin/python3 run.py
+ 0.9 /opt/brave/brave-origin/brave --type=renderer --crashpad-handler-pid=76538 --enable-crash-reporter=<redacted>, --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --change-stack-guard-on-fork=enable --ozone-platform=wayland --lang=de --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=5 --launch-time-ticks=5197659378 --shared-files=v8_context_snapshot_data:100 --metrics-shmem-handle=4,i,10835550188310315065,18262364392105639179,1572864 --field-trial-handle=3,i,15062781474188989950,438324570285517737,262144 --variations-seed-version --pseudonymization-salt-handle=7,i,10110938901392271257,15063517335369296479,4 --trace-process-track-uuid=3190708990997080739
+ 0.9 ollama serve
+ 0.8 ./steamwebhelper -nocrashdialog -lang=de_DE -cachedir=/home/user/.local/share/Steam/config/htmlcache -steampid=9964 -buildid=1788652215 -steamid=0 -logdir=/home/user/.local/share/Steam/logs -uimode=7 -startcount=0 -steamuniverse=Public -realm=Global -clientui=/home/user/.local/share/Steam/clientui -steampath=/home/user/.local/share/Steam/ubuntu12_32/steam -launcher=0 -use_xcomposite_workaround --valve-initial-threadpool-size=6 --valve-enable-site-isolation --enable-smooth-scrolling --password-store=basic --log-file=/home/user/.local/share/Steam/logs/cef_log.txt --disable-quick-menu --disable-component-update --gaia-url=https://example.invalid/x --enable-features=PlatformHEVCDecoderSupport --disable-features=WinRetrieveSuggestionsOnlyOnDemand,SpareRendererForSitePerProcess,DcheckIsFatal,BlockPromptsIfIgnoredOften,WebUsbDeviceDetection,ValveFFmpegAllowLowDelayHEVC
+ 0.8 /usr/local/bin/python3.14 /usr/local/bin/uvicorn app:app --host <redacted> --port 7000
+ 0.8 grafana server --homepath=/usr/share/grafana --config=/etc/grafana/grafana.ini --packaging=docker cfg:default.log.mode=console cfg:default.paths.data=/var/lib/grafana cfg:default.paths.logs=/var/log/grafana cfg:default.paths.plugins=/var/lib/grafana/plugins cfg:default.paths.provisioning=/etc/grafana/provisioning
+ 0.7 /opt/brave/brave-origin/brave https://example.invalid/x
+ 0.6 /home/user/.local/share/Steam/ubuntu12_64/steamwebhelper --type=zygote --no-zygote-sandbox --crashpad-handler-pid=10519 --enable-crash-reporter=, --change-stack-guard-on-fork=enable --enable-chrome-runtime --user-data-dir=/home/user/.local/share/Steam/config/htmlcache --user-agent-product=Valve Steam Client --buildid=1788652215 --steamid=0 --valve-initial-threadpool-size=6
+ 0.6 [kworker/u64:3-flush-259:0]
+ 0.5 /home/user/.local/share/Steam/ubuntu12_64/steamwebhelper --type=zygote --crashpad-handler-pid=10519 --enable-crash-reporter=, --change-stack-guard-on-fork=enable --enable-chrome-runtime --user-data-dir=/home/user/.local/share/Steam/config/htmlcache --user-agent-product=Valve Steam Client --buildid=1788652215 --steamid=0 --valve-initial-threadpool-size=6
+ 0.5 [irq/168-i915]
+ 0.5 [kworker/u64:13-flush-259:0]
+ 0.5 [kworker/u64:7-events_unbound]
+ 0.5 [ksoftirqd/3]
+ 0.5 [kworker/u65:3-i915_flip]
+ 0.5 /opt/brave/brave-origin/brave --type=utility --utility-sub-type=network.mojom.NetworkService --lang=de --service-sandbox-type=none --render-node-override=/dev/dri/renderD128 --crashpad-handler-pid=76538 --enable-crash-reporter=<redacted>, --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --metrics-shmem-handle=4,i,18331974843409462341,18317330008175650949,524288 --field-trial-handle=3,i,15062781474188989950,438324570285517737,262144 --variations-seed-version --pseudonymization-salt-handle=7,i,10110938901392271257,15063517335369296479,4 --trace-process-track-uuid=3190708989122997041
+ 0.5 /usr/bin/pipewire-pulse
+ 0.4 [ksoftirqd/0]
+ 0.4 [kworker/u65:2-i915_flip]
+ 0.4 [kworker/u64:6-flush-259:0]
+ 0.4 /opt/brave/brave-origin/brave --type=gpu-process --gpu-recent-crash-count=0 --ozone-platform=wayland --render-node-override=/dev/dri/renderD128 --crashpad-handler-pid=76538 --enable-crash-reporter=<redacted>, --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAQAEAAAAAAAAAAAAAGAASAAAAAAAAAABAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAMAAAAAQAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --metrics-shmem-handle=4,i,10881897162623787683,17503164814799442783,262144 --field-trial-handle=3,i,15062781474188989950,438324570285517737,262144 --variations-seed-version --pseudonymization-salt-handle=7,i,10110938901392271257,15063517335369296479,4 --trace-process-track-uuid=3190708988185955192
+ 0.4 [nvidia-modeset/kthread_q]
+ 0.4 [ksoftirqd/8]
+ 0.4 [ksoftirqd/2]
+ 0.4 /usr/bin/nvidia-powerd
+ 0.4 [ksoftirqd/10]
+ 0.4 [ksoftirqd/12]
+ 0.3 [ksoftirqd/4]
+ 0.3 [ksoftirqd/6]
+ 0.3 [ksoftirqd/14]
+ 0.3 [ksoftirqd/13]
+ 0.3 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+ 0.3 /usr/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock --port=<redacted>
+ 0.3 /opt/brave/brave-origin/brave --type=renderer --crashpad-handler-pid=76538 --enable-crash-reporter=<redacted>, --extension-process --enable-distillability-service --origin-trial-public-key=bYUKPJoPnCxeNvu72j4EmPuK7tr1PAC7SHh8ld9Mw3E=,fMS4mpO6buLQ/QMd+zJmxzty/VQ6B1EUZqoCU04zoRU= --change-stack-guard-on-fork=enable --ozone-platform=wayland --lang=de --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=39 --launch-time-ticks=7082521201 --shared-files=v8_context_snapshot_data:100 --metrics-shmem-handle=4,i,12667826611441120018,17242416458959943119,1572864 --field-trial-handle=3,i,15062781474188989950,438324570285517737,262144 --variations-seed-version --pseudonymization-salt-handle=7,i,10110938901392271257,15063517335369296479,4 --trace-process-track-uuid=3190709022856503605
+ 0.3 [ksoftirqd/1]
+ 0.3 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+ 0.3 [kworker/u64:4-flush-259:0]
+ 0.2 [ksoftirqd/15]
+ 0.2 [ksoftirqd/5]
+ 0.2 [ksoftirqd/7]
+ 0.2 [ksoftirqd/9]
+ 0.2 [ksoftirqd/11]
+ 0.2 [kworker/u64:2-flush-259:0]
+ 0.2 zcode-cli

@@ -1,0 +1,4 @@
+%CPU COMMAND
+ 42.0 /usr/bin/a
+ 0.0
+ 3.2 /usr/bin/c
