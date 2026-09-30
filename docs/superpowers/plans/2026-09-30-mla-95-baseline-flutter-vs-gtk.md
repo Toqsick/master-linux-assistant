@@ -24,13 +24,13 @@
 
 | Zelle | Artefakt | Start-Kommando | Startzustand |
 |---|---|---|---|
-| Flutter × Wayland | `build/linux/x64/release/bundle/linux_assistant` | Binär direkt | Dashboard mit aktivem 3-s-Stat-Poll (`hub_shell.dart`: initialSection-Default, `setSectionActive(usesStats)` in initState) — **echte Systemdaten** |
+| Flutter × Wayland | `build/linux/x64/release/bundle/linux-assistant` | Binär direkt | Dashboard mit aktivem 3-s-Stat-Poll (`hub_shell.dart`: initialSection-Default, `setSectionActive(usesStats)` in initState) — **echte Systemdaten** |
 | Flutter × X11 | dito | `GDK_BACKEND=x11 <Binär>` | dito (über XWayland `:1`) |
 | GTK × Wayland | `prototype/gtk/mla_app.py` | `python3 prototype/gtk/mla_app.py` | statisches Demo-Dashboard (kein Refresh-Timer; grep-Beleg: kein `timeout_add`/`GLib.timeout`/`Thread` in mla_app.py) |
 | GTK × X11 | dito | `GDK_BACKEND=x11 python3 prototype/gtk/mla_app.py` | dito |
 
 - **5 Läufe je Zelle, Median + Rohwerte.** Pro Lauf: Startzeit messen, 10 s Settle, dann 20-s-Fenster mit 1-Hz-Samples (RAM) und CPU-Delta (Fensteranfang/-ende). Zwischen Läufen: SIGTERM an den App-Prozess, auf Exit warten, 2 s Cooldown, Restprozess-Check (`pgrep`).
-- **Gemessen wird der App-Prozess selbst** (`linux_assistant` bzw. `python3`), nie ein Wrapper. `$!` nach direktem Launch ist die App-PID (Gate-0-Lektion: keine Shell-Wrapper dazwischen).
+- **Gemessen wird der App-Prozess selbst** (`linux-assistant` bzw. `python3`), nie ein Wrapper. `$!` nach direktem Launch ist die App-PID (Gate-0-Lektion: keine Shell-Wrapper dazwischen).
 - **Harte Vorbedingung je Lauf:** kein App-Restprozess (`pgrep -af linux_assistant`, `pgrep -af mla_app.py` leer — Self-Match der prüfenden Shell ausschließen) und unter X11 kein Fenster mit dem Suchnamen (`xdotool search --name` leer). Die installierte v0.8.0-App hat denselben Titel «Linux Assistant» und Single-Instance-Verhalten — läuft sie, würde ein zweiter Launch nur fokussieren und sofort exiten. Messung nur ab Ruhezustand.
 
 ### Messgrößen (exakte Kommandos)
@@ -38,7 +38,7 @@
 - **Startzeit X11 — Fenster sichtbar:**
   ```bash
   s=$(date +%s%N); <Start-Kommando> & app_pid=$!
-  while ! xdotool search --name "Linux Assistant" >/dev/null 2>&1; do sleep 0.01; done
+  while ! xdotool search --name "linux.assistant" >/dev/null 2>&1; do sleep 0.01; done
   e=$(date +%s%N); echo $(( (e-s)/1000000 )) ms   # GTK-Zelle: Suchname "Prototyp"
   ```
 - **Startzeit Wayland — erster Wayland-Protokollverkehr (Proxy, Vor-First-Frame):**
@@ -49,7 +49,7 @@
   e=$(date +%s%N); echo $(( (e-s)/1000000 )) ms
   ```
   `WAYLAND_DEBUG=1` lässt libwayland-client jeden Protokollverkehr auf stderr drucken; erste Zeile ≈ Verbindungs-/Registry-Phase. Perturbation (ein fprintf) dokumentieren; **nur für die Startzeit-Läufe setzen, nicht für RAM/CPU-Läufe.**
-- **RAM:** je Sample `grep -E 'VmRSS|VmHWM' /proc/$app_pid/status` und `grep VmPss /proc/$app_pid/smaps_rollup`; Median der 20 Samples je Lauf.
+- **RAM:** je Sample `grep -E 'VmRSS|VmHWM' /proc/$app_pid/status` und `grep '^Pss:' /proc/$app_pid/smaps_rollup`; Median der 20 Samples je Lauf.
 - **CPU:** `awk '{print $14+$15}' /proc/$app_pid/stat` bei Fensterbeginn und -ende (utime+stime in Ticks; comm ohne Leerzeichen bei beiden Apps — `linux_assistan`/`python3` — Feldposition sicher); Differenz × 10 ms / 20 s → % eines Kerns.
 - **Umgebung je Zelle protokollieren:** `XDG_SESSION_TYPE`, `DISPLAY`, `WAYLAND_DISPLAY`, `date -Is`, `cat /proc/loadavg` vor/nach der Zelle (Ruhe-Bedingung).
 - **Bundle-Größe (nur Angabe, kein Ranking):** `du -sb build/linux/x64/release/bundle` und `stat -c '%s' build/linux/x64/release/bundle/linux_assistant`.
@@ -76,3 +76,13 @@
 - Manuelle Gate-0-Checks (BASELINE §3) bleiben Bastis eigene, unberührt.
 - #92-Abnahme bleibt offen (formale Blockade von #95); im #95-Handoff benannt, nicht «weggebügelt».
 - Die Flutter-vs-GTK-**Entscheidung** selbst ist 0.4.x-Aufgabe; #95 liefert nur die Vergleichsbasis für #105.
+
+## Erratum (2026-09-30, nach Task 1 + Two-Reviewer-Gate)
+
+Drei Pin-Fehler in diesem Plan, von Implementer gefunden und von Reviewern A/B verifiziert (Belege: `.superpowers/sdd/task-1-report.md` §3):
+
+1. **Binärname:** Das Release-Bundle enthält `linux-assistant` (Bindestrich), nicht `linux_assistant`. Messungen/Comm-Muster entsprechend (z. B. `pgrep -f 'linux.assistant'`).
+2. **X11-Fenstertitel:** `WindowManager.instance.setTitle("Linux Assistant")` (`lib/main.dart:27`) greift unter X11 nicht — `WM_NAME`/`_NET_WM_NAME` des Dev-Builds sind `linux-assistant`/`linux_assistant`. Poll-Prädikat ist das ERE `linux.assistant`; die Vorbedingung nutzt breiter `[Ll]inux.[Aa]ssistant` (deckt auch den Titel der installierten v0.8.0-App ab). Präzisierung für §8: Das Poll-Ereignis ist «Fenster mit passendem Namen existiert im X-Baum» (xdotool ohne `--onlyvisible`), nicht strikt «gemappt sichtbar».
+3. **PSS-Key:** `smaps_rollup` führt den Key `Pss:` (kein `VmPss`) — `grep '^Pss:'`.
+
+Zusätzlich für Task 3 vorgemerkt (aus den Reviews): Rechner-Identifikation (Hostname, CPU-Modell, RAM) frisch erheben; Randbedingungen textieren (Dauer-CPU ~101 % eines Kerns durch Impeller-Dauerrendern, ~+1 %-Fenster-Verzerrung der CPU-Formel, Systemlast 4.6–8.0 während der Messung, 72-ms-X11-Startup-Ausreißer in der Serie belassen, PSS ist umgebungsvariabel/sharer-abhängig).
