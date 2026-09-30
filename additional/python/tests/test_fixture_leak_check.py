@@ -26,8 +26,9 @@ FIXTURE_DIR = os.path.join(REPO_ROOT, "test", "fixtures")
 # this list is flagged as a leak (e.g. foo.bar.ai, github.com). The list
 # feeds the detection pattern — it is NOT an allowlist of harmless
 # suffixes; TLDs outside it are simply not matched (known heuristic gap,
-# see the README "Leak-Check" section).
-ALLOWED_TLDS = r"com|net|org|io|ai|dev|de|eu|info|biz|co|me|app|xyz|example"
+# see the README "Leak-Check" section). Named FLAGGED_TLDS (was
+# ALLOWED_TLDS, #110-B): the old name suggested the opposite reading.
+FLAGGED_TLDS = r"com|net|org|io|ai|dev|de|eu|info|biz|co|me|app|xyz|example"
 
 # The one allowed URL placeholder; findings that point at it are dropped.
 ALLOWED_URL = "example.invalid"
@@ -45,7 +46,7 @@ _PATTERNS = (
     #    name the redaction rules keep.
     re.compile(r"/(?:home|media)/(?!user\b)[^/\s]+"),
     # 4. URL/domain with a TLD from the recognized-TLD list.
-    re.compile(r"[a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:" + ALLOWED_TLDS + r")\b"),
+    re.compile(r"[a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:" + FLAGGED_TLDS + r")\b"),
     # 5. user@host
     re.compile(r"[A-Za-z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\b"),
     # 7. port in the unambiguous port= / port: forms (--port=41641,
