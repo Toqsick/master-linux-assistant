@@ -221,7 +221,7 @@ CPU-, RAM- und Startzeit-Baseline des Flutter-Release-Builds gegen die GTK-Shell
 ## Handoff (Pflicht je Aufgabe, aus `docs/mla-next/VERIFY.md`)
 - [x] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest — 2026-09-30: SDD-Plan `docs/superpowers/plans/2026-09-30-mla-95-baseline-flutter-vs-gtk.md` (Basis `31277a2`, Branch `feature/mla-95-baseline`, Commit `5757c0d`); Messaufgabe — kein Failing-Test, Belege sind Rohwerte 1:1 und Gates
 - [x] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft — 2026-09-30: je Task zwei Reviewer (A Korrektheit/B Vollständigkeit): Task 1 A APPROVED/B SPEC_OK; Task 2 A APPROVED/B NEEDS_FIXES (Lastasymmetrie-Richtung §7) → Fix → Re-Review SPEC_OK — Details in VERIFY „Handoff #95“
-- [x] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt — 2026-09-30: alle Gates Exit 0 (flutter +200, la_core +60, Python 53/OK, check-versions ok; Gatetabelle in VERIFY „Handoff #95“); rot: keine; übersprungen: build-deb.sh und CI (beim späteren PR); Rückfallplan `git revert` der #95-Commits (nur Doku)
+- [x] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt — 2026-09-30: alle Gates Exit 0 (flutter +200, la_core +60, Python 53/OK, check-versions ok; Gatetabelle in VERIFY „Handoff #95“); rot: keine; übersprungen: build-deb.sh und CI (beim späteren PR) sowie die manuellen Gate-0-Checks (BASELINE §3, bleiben separat offen); Rückfallplan `git revert` der #95-Commits (nur Doku)
 - [x] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe — eingehalten: nur Commits auf `feature/mla-95-baseline`, kein Push; GitHub-#95 bleibt bis zum Merge/Freigabe offen
 
 ## Abhängigkeiten

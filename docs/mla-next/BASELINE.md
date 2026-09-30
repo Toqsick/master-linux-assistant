@@ -386,10 +386,12 @@ e=$(date +%s%N); echo $(( (e-s)/1000000 )) ms
 `WAYLAND_DEBUG=1` lässt libwayland-client jeden Protokollverkehr auf stderr
 drucken; erste Zeile ≈ Verbindungs-/Registry-Phase. Die Perturbation (fprintf
 je Nachricht) ist dokumentiert; die Variable ist nur in den 5 Startup-Läufen
-je App gesetzt, nie in den Steady-Läufen. Erstes Log-Ereignis war jeweils
-`wl_display@1.get_registry(new id wl_registry@2)` (echter Protokollverkehr,
-keine Python-Warning; bei GTK je Lauf belegt). Umfang des Logs beim ersten
-Poll-Treffer: Flutter 3 536–3 817 Bytes, GTK konstant 8 255 Bytes (Probe 5 092 —
+je App gesetzt, nie in den Steady-Läufen. Erstes Proxy-Ereignis war die
+Registry-Abfrage `wl_display@1.get_registry(new id wl_registry@2)` — echte
+erste Protokollzeile, keine Python-Warning. Beleglage je Backend: Bei GTK ist
+das je Lauf mit der ersten Protokollzeile belegt; bei Flutter nur über die
+Log-Umfänge beim ersten Poll-Treffer (konsistent, aber nicht zeilenbelegt):
+Flutter 3 536–3 817 Bytes, GTK konstant 8 255 Bytes (Probe 5 092 —
 Auflösungs-/Timing-Varianz des ersten Poll-Treffers, kein Protokollunterschied).
 
 Startup X11 — Fenster mit passendem Namen im X-Baum:
@@ -436,10 +438,12 @@ kill "$APP_PID"; wait "$APP_PID" 2>/dev/null || true; sleep 2   # SIGTERM, Exit,
   `cat /proc/loadavg` vor/nach der Zelle (Werte in den Zell-Unterschriften unten).
 
 Vollständige Helferskripte (`/tmp/mla95-measure.sh`, `/tmp/mla95-measure-gtk.sh`)
-und die 20er-Roh-Sample-Serien (`/tmp/mla95-steady-*.txt`, `/tmp/mla95-gtk-steady-*.txt`)
-liegen nur in den Session-Scratch-Reports (`.superpowers/sdd/task-1-report.md`,
-`task-2-report.md`; gitignored, ephemeral). Dieser Abschnitt führt alle
-Startup-Einzelwerte und die je-Lauf-Steady-Mediane selbst.
+sind 1:1 in den Session-Scratch-Reports (`.superpowers/sdd/task-1-report.md`,
+`task-2-report.md`) abgedruckt; die 20er-Roh-Sample-Serien
+(`/tmp/mla95-steady-*.txt`, `/tmp/mla95-gtk-steady-*.txt`) und die Zellenlogs
+lagen ausschließlich unter `/tmp` — Reports (gitignored) und `/tmp` sind
+beides ephemeral. Dieser Abschnitt führt alle Startup-Einzelwerte
+und die je-Lauf-Steady-Mediane selbst.
 
 ### Errata und Prädikate (drei Plan-Pins korrigiert, von Reviewern A/B verifiziert)
 
@@ -615,8 +619,8 @@ gerankt.
 **(d) RSS/PSS** (Wayland-Mediane): Flutter 161 472 kB RSS / 89 740 kB PSS;
 GTK 187 972 kB / 101 166 kB. PSS ist umgebungsvariabel und sharer-abhängig;
 die GTK-RSS enthält die geteilten Python+GI+GTK-Runtime-Seiten (GTK-PSS liegt
-~87 MB unter GTK-RSS). In den GTK-Zellen ist RSS/PSS zudem fast
-backendunabhängig (Δ < 0,2 %).
+~87 MB unter GTK-RSS). In den GTK-Zellen ist RSS praktisch backendunabhängig
+(Δ 24 kB ≈ 0,01 %), PSS nahezu (Δ 517 kB ≈ 0,51 %).
 
 **(e) Lastasymmetrie** (korrigierte Richtung, Task-2-Report §7): Task 1 lief
 unter 1-min-loadavg 4.6–8.0 (Zellgrenzen 4.65–5.43; 15-min 3.4–4.2), Task 2
