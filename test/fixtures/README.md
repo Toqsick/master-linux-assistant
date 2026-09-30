@@ -98,14 +98,16 @@ UIDs, Pfaden in `ps`-Argumenten und Browser-URLs durchsehen.
 Der Python-/GTK-Track liest dieselben Fixtures über den Repo-Root, der zur
 Laufzeit aus dem Skriptpfad aufgelöst wird — exakt wie im Leak-Check
 (`additional/python/tests/test_fixture_leak_check.py:19`, `REPO_ROOT` aus
-`__file__`, drei Ebenen nach oben, dann `os.path.join(REPO_ROOT, "test",
-"fixtures")`). Adapter unter `prototype/gtk/` lesen im Repo-Checkout
-denselben `test/fixtures/`-Pfad. Wie ein später installierter (nicht
+`__file__`, vier dirname-Ebenen nach oben (tests → python → additional →
+Repo-Root), dann `os.path.join(REPO_ROOT, "test", "fixtures")`). Adapter
+unter `prototype/gtk/` sollen im Repo-Checkout denselben
+`test/fixtures/`-Pfad lesen. Wie ein später installierter (nicht
 ausgecheckter) Client die Fixtures findet, ist über den A2/#92-Adapter
 zu definieren — dafür gibt es noch keine Konvention.
 
 Beleg, dass der Python-Lesezugriff auf diese Fixtures funktioniert und
-täglich in CI läuft: `additional/python/tests/test_fixture_leak_check.py`
+bei jedem CI-Lauf ausgeführt wird (Trigger sind ausschließlich Push/PR):
+`additional/python/tests/test_fixture_leak_check.py`
 iteriert über jede `*.txt`-Datei in `test/fixtures/` und failt, wenn das
 Verzeichnis fehlt oder leer ist — der Pfad ist damit Teil der laufenden
 Python-Testsuite, nicht nur dokumentiert.
