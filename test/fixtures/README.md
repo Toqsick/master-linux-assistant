@@ -93,6 +93,27 @@ UIDs, Pfaden in `ps`-Argumenten und Browser-URLs durchsehen.
   "test", "fixtures")` mit `REPO_ROOT` aus `__file__` aufgelöst (siehe
   Leak-Check-Test).
 
+## GTK-/Python-Track
+
+Der Python-/GTK-Track liest dieselben Fixtures über den Repo-Root, der zur
+Laufzeit aus dem Skriptpfad aufgelöst wird — exakt wie im Leak-Check
+(`additional/python/tests/test_fixture_leak_check.py:19`, `REPO_ROOT` aus
+`__file__`, drei Ebenen nach oben, dann `os.path.join(REPO_ROOT, "test",
+"fixtures")`). Adapter unter `prototype/gtk/` lesen im Repo-Checkout
+denselben `test/fixtures/`-Pfad. Wie ein später installierter (nicht
+ausgecheckter) Client die Fixtures findet, ist über den A2/#92-Adapter
+zu definieren — dafür gibt es noch keine Konvention.
+
+Beleg, dass der Python-Lesezugriff auf diese Fixtures funktioniert und
+täglich in CI läuft: `additional/python/tests/test_fixture_leak_check.py`
+iteriert über jede `*.txt`-Datei in `test/fixtures/` und failt, wenn das
+Verzeichnis fehlt oder leer ist — der Pfad ist damit Teil der laufenden
+Python-Testsuite, nicht nur dokumentiert.
+
+Echte GTK-Datenadapter (Anbindung der Fixtures an die GTK-Oberfläche) sind
+Gegenstand von A2/#92 und Folgetasks. Dieser Abschnitt dokumentiert nur die
+Lese-Konvention; in `prototype/gtk/` existiert dazu bewusst noch kein Code.
+
 ## Dateien
 
 | Datei | Art | Inhalt |
