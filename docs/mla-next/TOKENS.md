@@ -6,7 +6,8 @@
 > **Quelle der Wahrheit für Farbwerte:** `lib/layouts/hermes_tokens.dart`
 > (light `:98-132`, dark `:135-162`). Diese Datei portiert sie 1:1 in den
 > GTK-Track; Abweichungen sind nur dokumentiert, nie zurückgeportet.
-> Umsetzung: `prototype/gtk/tokens.css`, geprüft durch
+> Umsetzung: `prototype/gtk/tokens.css` (Light + Klassen) +
+> `prototype/gtk/tokens-dark.css` (Dark-Overrides), geprüft durch
 > `prototype/gtk/tests/test_tokens.py` (Konsistenz, Kontrast, Hardcode-Gate).
 
 ## 1. Farb-Tokens (26, hell und dunkel)
@@ -138,9 +139,20 @@ IPC_CONTRACT.md:16).
 
 ## 8. Anwendung in der Shell
 
-CSS-Klassen mit Präfix `mla-`: `.mla-space-3` (Abstände), `.mla-screen`
-(Seitenrahmen), `.mla-details` (rechte Leiste), `.mla-tone-ok` …
-`.mla-tone-stale` (Status), `.mla-focus`-Outline global über
-`:focus-visible`. Keine Hex-Farben außerhalb `tokens.css` — durchgesetzt per
-Regex-Gate in `test_tokens.py` (heute einziger Verstoß: `#b8860b` in
-`mla_app.py:84`, durch dieses Paket beseitigt).
+**Mechanismus:** `tokens.css` (Light-Werte + CSS-Klassen) läuft immer mit;
+`tokens-dark.css` (nur Dark-`@define-color`-Overrides) wird über einen
+zweiten `Gtk.CssProvider` mit höherer Priorität zugeschaltet bzw. entfernt,
+wenn `Adw.StyleManager` `notify::dark` meldet. Grund: GTK 4.14.5 unterstützt
+kein `@media` in provider-geladenem CSS (Parser: «Unknown @ rule», verifiziert
+2026-09-30) — der Plan-Fallback (Provider-Tausch) ist damit der Mechanismus.
+
+CSS-Klassen mit Präfix `mla-`: `.mla-space-3`-artiges Padding (Abstände),
+`.mla-screen` (Seitenrahmen), `.mla-details` (rechte Leiste),
+`.mla-chip` + `.mla-tone-ok` … `.mla-tone-stale` (Status; stale mit
+gestrichelter Border), Fokus-Outline global über `:focus-visible`. Für
+Abstände gelten padding/margin-Klassen; `Gtk.Box`-`spacing`, Paned-Position
+und Fenstergröße sind dokumentierte Tokens (§2), die im Code Anwendung finden
+(GTK bietet dafür kein CSS-Äquivalent). Keine Hex-Farben außerhalb der
+Token-Dateien — durchgesetzt per Regex-Gate in `test_tokens.py`
+(vormaliger Verstoß `#b8860b` in `mla_app.py:84` ist mit diesem Paket
+beseitigt).

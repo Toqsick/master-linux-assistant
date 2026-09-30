@@ -1,0 +1,163 @@
+/*
+ * MLA-Next Tokens — GTK4/libadwaita (Issue #91, A1)
+ * Quelle der Werte: docs/mla-next/TOKENS.md (= lib/layouts/hermes_tokens.dart).
+ * Keine Farbwerte außerhalb dieser Datei — durchgesetzt per Regex-Gate in
+ * prototype/gtk/tests/test_tokens.py.
+ */
+
+/* --- Farb-Tokens, Light (Default) ----------------------------------- */
+@define-color bg #FEFCF7;
+@define-color sidebar #FAF7F0;
+@define-color surface #F3EEE3;
+@define-color surface-subtle #F7F4EC;
+@define-color surface-subtle-hover #EFEADF;
+@define-color border #E0D8C8;
+@define-color border-muted #D0C6B2;
+@define-color border-subtle #EAE4D8;
+@define-color text #1A1610;
+@define-color strong #0F0D08;
+@define-color muted #5C5344;
+@define-color accent #B8860B;
+@define-color accent-hover #996F08;
+@define-color accent-text #7F5C08;
+@define-color accent-bg #F8F2E4;
+@define-color accent-bg-strong #F1E7CE;
+@define-color on-accent #1A1610;
+@define-color error #C62828;
+@define-color success #2E7D32;
+@define-color warning #B45309;
+@define-color info #05748F;
+@define-color hover-bg rgba(0,0,0,0.051);
+@define-color input-bg rgba(0,0,0,0.031);
+@define-color focus-ring rgba(184,134,11,0.349);
+@define-color code-bg #F5F0E5;
+@define-color code-text #8B4513;
+
+/* --- Status-Tones, Light (TOKENS.md §4: fg solid, bg 10 %, border 28 %
+ *     auf bg vorgeblendet; unknown/stale = Neutral-Tone) -------------- */
+@define-color tone-ok-fg #2E7D32;
+@define-color tone-ok-bg #E9EFE3;
+@define-color tone-ok-border #C4D8C0;
+@define-color tone-warn-fg #B45309;
+@define-color tone-warn-bg #F7EBDF;
+@define-color tone-warn-border #E9CDB4;
+@define-color tone-crit-fg #C62828;
+@define-color tone-crit-bg #F8E7E2;
+@define-color tone-crit-border #EEC1BD;
+@define-color tone-running-fg #05748F;
+@define-color tone-running-bg #E5EEED;
+@define-color tone-running-border #B8D6DA;
+@define-color tone-unknown-fg #5C5344;
+@define-color tone-unknown-bg #F7F4EC;
+@define-color tone-unknown-border #E0D8C8;
+@define-color tone-stale-fg #5C5344;
+@define-color tone-stale-bg #F7F4EC;
+@define-color tone-stale-border #E0D8C8;
+
+/* --- Farb-Tokens + Tones, Dark --------------------------------------
+ * NICHT hier: GTK 4.14.5 unterstützt kein @media in provider-geladenem
+ * CSS. Die Dark-Werte liegen in tokens-dark.css und werden über einen
+ * zweiten Provider zugeschaltet (mla_app.py, Adw.StyleManager-Signal). */
+
+/* --- Anwendung (Shell) ---------------------------------------------- */
+.mla-nav {
+  background-color: @sidebar;
+}
+
+.mla-nav-label {
+  padding: 12px 16px;  /* space3 / space4 */
+}
+
+.mla-nav-row:hover {
+  background-color: @hover-bg;
+}
+
+.mla-nav-row:selected {
+  background-color: @accent-bg;
+  color: @accent-text;
+}
+
+.mla-accent-text {
+  color: @accent-text;
+}
+
+.mla-screen {
+  padding-top: 24px;   /* space5 (GTK-Zusatz) */
+  padding-left: 24px;
+  color: @text;
+}
+
+.mla-desc {
+  color: @muted;
+}
+
+.mla-details {
+  padding-top: 24px;
+  padding-left: 16px;  /* space4 */
+}
+
+.mla-detail-heading {
+  color: @muted;
+}
+
+.mla-detail-text {
+  color: @text;
+}
+
+/* Status-Chips: Radius pill, Hairline-Border; stale per gestrichelter
+ * Border strukturell von ok getrennt (TOKENS.md §4). */
+.mla-chip {
+  border-radius: 999px;
+  border-width: 1px;   /* borderWidth */
+  padding: 4px 12px;   /* space1 / space3 */
+}
+
+.mla-tone-ok {
+  color: @tone-ok-fg;
+  background-color: @tone-ok-bg;
+  border-color: @tone-ok-border;
+  border-style: solid;
+}
+
+.mla-tone-warn {
+  color: @tone-warn-fg;
+  background-color: @tone-warn-bg;
+  border-color: @tone-warn-border;
+  border-style: solid;
+}
+
+.mla-tone-crit {
+  color: @tone-crit-fg;
+  background-color: @tone-crit-bg;
+  border-color: @tone-crit-border;
+  border-style: solid;
+}
+
+.mla-tone-running {
+  color: @tone-running-fg;
+  background-color: @tone-running-bg;
+  border-color: @tone-running-border;
+  border-style: solid;
+}
+
+.mla-tone-unknown {
+  color: @tone-unknown-fg;
+  background-color: @tone-unknown-bg;
+  border-color: @tone-unknown-border;
+  border-style: solid;
+}
+
+.mla-tone-stale {
+  color: @tone-stale-fg;
+  background-color: @tone-stale-bg;
+  border-color: @tone-stale-border;
+  border-style: dashed;
+}
+
+/* Sichtbarer Fokusring in allen Bereichen (TOKENS.md §6). */
+row:focus-visible,
+button:focus-visible,
+entry:focus-visible {
+  outline: 2px solid @focus-ring;
+  outline-offset: 2px;
+}
