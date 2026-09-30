@@ -4,6 +4,9 @@ version: 0.0.1
 publish_to: none
 
 environment:
+  # Aligned with the committed lockfile (>=3.11.0) — see bf4942b3. The bound also
+  # decides which formatter style `dart format` applies to this package, so
+  # lowering it silently reformats files rather than being a no-op.
   sdk: ^3.11.0
 
 dev_dependencies:
