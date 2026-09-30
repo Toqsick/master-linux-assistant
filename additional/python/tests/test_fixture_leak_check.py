@@ -3,8 +3,9 @@
 The zorin_*.txt fixtures are real command outputs captured on a developer
 machine and redacted by hand at capture time. This test is the safety net
 that runs in CI: if a future capture ships with a private IP, a named home
-directory, a real URL/domain or a user@host pair, the suite fails before it
-reaches the public repository.
+directory, a real URL/domain, a user@host pair or a port in an unambiguous
+form (port=/port:, host:port), the suite fails before it reaches the public
+repository.
 
 The check is heuristic — it complements, never replaces, the manual review
 documented in test/fixtures/README.md.
@@ -44,6 +45,23 @@ _PATTERNS = (
     re.compile(r"[a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:" + ALLOWED_TLDS + r")\b"),
     # 5. user@host
     re.compile(r"[A-Za-z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\b"),
+    # 7. port in the unambiguous port= / port: forms (--port=41641,
+    #    port: 5432). The space form (--port 7000) stays out on purpose:
+    #    it is indistinguishable from ordinary argument values.
+    re.compile(r"(?i)\bport\s*[=:]\s*\d{1,5}\b"),
+    # 8. host:port — hostname-like label run (letters, digits, hyphens,
+    #    dots; no underscores) directly before the colon. The colon must
+    #    not follow a digit or colon, so clock times (14:23:01, up 3:45)
+    #    and kernel thread names (259:0) stay out; display numbers with no
+    #    host (vnc=:0, Xwayland :1) and identifier handles with underscores
+    #    (snapshot_data:100) have no hostname before the colon.
+    re.compile(
+        r"(?<![\w.-])"
+        r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
+        r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*"
+        r"(?<![0-9:]):"
+        r"\d{1,5}(?![\w.])"
+    ),
 )
 
 
@@ -87,6 +105,10 @@ class LeakDetection(unittest.TestCase):
         "/media/braten/USB",
         "curl https://internal.corp.example/health",
         "ssh git@github.com",
+        "port=5432",
+        "port: 41641",
+        "connect host:8080",
+        "tcp:db-server.internal:7149",
     ]
     MUST_NOT_FLAG = [
         " 14:23:01 up  3:45,  1 user,  load average: 0.52, 0.58",
@@ -99,6 +121,12 @@ class LeakDetection(unittest.TestCase):
         "https://example.invalid/x",
         "/dev/nvme0n1p2",
         "%CPU COMMAND",
+        "14:23:01 up 3:45",
+        "0.52, 0.58",
+        "--port 7000",
+        "vnc=:0,websocket=5700",
+        "Xwayland :1",
+        "--shared-files=v8_context_snapshot_data:100",
     ]
 
     def test_every_must_flag_vector_is_detected(self):

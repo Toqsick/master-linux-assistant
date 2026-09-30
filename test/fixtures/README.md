@@ -59,6 +59,16 @@ Regeln oben nicht abdecken):
   `<redacted>`.
 - Zufalls-Suffix einer Xwayland-Session-Auth-Datei → `XXXXXX`.
 - Eine im Brave-Args-Aufruf sichtbare Konto-URL → `https://example.invalid/x`.
+- Die Brave-Crash-Reporter-Client-ID (`--enable-crash-reporter=<UUID>`,
+  4 Vorkommnisse) → `<redacted>`: diese ID ist persistent pro Installation
+  und damit identifierend. Sie wurde in der ersten Fassung dieses Abschnitts
+  fälschlich als Session-Zufallswert geführt und im Final-Review-#94-Fix
+  korrigiert.
+- Ports in eindeutiger Form → `<redacted>`: `telnet:localhost:7100`
+  (host:port-Form), `tcp:<redacted>:7149` (Port hinter bereits geschwärztem
+  Host) und `--port=41641` (tailscaled, `port=`-Form). Verbleibende Ports:
+  `5700` (`websocket=5700`, QEMU-VNC-Websocket-Default) und `7000`
+  (`--port 7000`, Leerzeichen-Form) — Begründung im Abschnitt Leak-Check.
 - Der Brave-Installationspfad `/opt/brave.com/…` → `/opt/brave/…`: der
   Domain-Anteil im Pfad ist ein Struktur-Fehlalarm des Leak-Checks (er kann
   Installationspfad nicht von Host unterscheiden) und wird nach der
@@ -67,8 +77,10 @@ Regeln oben nicht abdecken):
 Bewertet und absichtlich behalten (nicht identifizierend): UID `1000`
 (Default-Erstbenutzer, u. a. in `/run/user/1000`), generische
 Software-Inventar-Namen (Steam, Ollama, …), Chromium-Sitzungs-Zufallswerte
-(`--metrics-shmem-handle`, `--pseudonymization-salt-handle`, Crash-UUIDs —
-pro Session zufällig bzw. öffentliche Konstanten) sowie generische Pfade unter
+(`--metrics-shmem-handle`, `--pseudonymization-salt-handle` — pro Session
+zufällige Handle-/Salt-Werte; die Brave-Crash-Reporter-Client-ID zählt
+nicht dazu, sie ist persistent pro Installation und wurde nachträglich
+geschwärzt, siehe Liste oben) sowie generische Pfade unter
 `/storage` (VM-Disk-Images ohne Personenbezug).
 
 ## Leak-Check (heuristische Absicherung)
@@ -76,8 +88,21 @@ pro Session zufällig bzw. öffentliche Konstanten) sowie generische Pfade unter
 `additional/python/tests/test_fixture_leak_check.py` läuft mit der
 Python-Testsuite in CI und prüft jede `*.txt`-Datei hier gegen Musterkategorien
 (IPv4, IPv6-Heuristik, `/home`/`/media` mit erlaubtem Namen `user`, Domains mit
-TLD-Allowlist, `user@host`). `README.md` wird nicht gescannt — sie dokumentiert
+TLD-Allowlist, `user@host`, Ports in `port=`-/`port:`-Form, `host:port`).
+`README.md` wird nicht gescannt — sie dokumentiert
 die Regeln selbst und enthielte damit die zu findenden Muster per Design.
+
+Port-Formen im Einzelnen: geprüft werden `port=<zahl>`/`port: <zahl>`
+(z. B. `--port=41641`) und `host:port` mit hostname-artigem Host
+(Buchstaben/Ziffern/Bindestriche/Punkte, keine Unterstriche) unmittelbar vor
+dem Doppelpunkt (z. B. `localhost:7100`); der Doppelpunkt darf nicht
+unmittelbar nach einer Ziffer oder einem Doppelpunkt stehen, damit Uhrzeiten
+(`14:23:01`, `up 3:45`) und Kernel-Thread-Namen (`259:0`) nicht matchen.
+Bloße Port-Zahlen in Argumenten ohne Host-Kontext bleiben bewusst drin — sie
+sind ohne Fehlalarme nicht erkennbar und nicht identifizierend
+(Standard-Dienstports): in `zorin_ps.txt` verbleiben `websocket=5700`
+(QEMU-Default) und `--port 7000` (Leerzeichen-Form, von `port=`/`port:`
+unterschieden).
 
 **Der Check ist heuristisch und ersetzt keine manuelle Durchsicht:** Die
 TLD-Allowlist ist bewusst kurz (`.ai` fällt z. B. durch das Raster), hex- und

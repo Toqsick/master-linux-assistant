@@ -314,3 +314,23 @@ Barrel `packages/la_core/lib/la_core.dart` ergänzen: `export 'src/probe_status.
 ## Rückfallplan
 
 `git revert` der Task-Commits (siehe Ledger); kein Force-Push, Branch ist nicht gepusht. Task 2 ist isoliert (nur la_core-Neudatei + Barrel-Zeile), Task 1/3 greifen ineinander (gemeinsame Fixture-Dateien) und werden gemeinsam revertiert.
+
+---
+
+## Erratum (2026-09-30)
+
+- **Task-1-Snippet, `REPO_ROOT`:** Das Python-Snippet in Task 1a zeigt drei
+  `os.path.dirname`-Stufen; korrekt sind vier (tests → python → additional →
+  Repo-Root). Die Implementierung
+  (`additional/python/tests/test_fixture_leak_check.py`) war von Anfang an
+  korrekt. Das Plan-Snippet wird bewusst nicht umgeschrieben (kein
+  Historien-Rewriting) — dieser Abschnitt ist die Korrektur.
+- **Fixture-Realität:** Der Final-Review-#94-Fix-Commit dieser Runde
+  (`fix(mla): Final-Review #94 — Client-ID schwärzen, Port-Umgang
+  dokumentieren, Leak-Check erweitern (#94)`) ist die aktuelle Referenz für
+  den Zustand der Fixtures: Brave-Crash-Reporter-Client-ID (persistent pro
+  Installation) 4× geschwärzt, Leak-Check um `port=`-/`port:`- und
+  `host:port`-Formen erweitert, drei weitere Port-Vorkommnisse
+  (`--port=41641`, `telnet:localhost:7100`, `tcp:<redacted>:7149`)
+  geschwärzt, Details in `test/fixtures/README.md`. Die Schwärzungsliste in
+  Task 1 ist damit nicht mehr vollständig.
