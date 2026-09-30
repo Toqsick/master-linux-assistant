@@ -213,16 +213,16 @@ _Quelle: `docs/mla-next/AGENT_PLAN.md` (0.0.3), `docs/mla-next/IPC_CONTRACT.md`.
 CPU-, RAM- und Startzeit-Baseline des Flutter-Release-Builds gegen die GTK-Shell auf demselben Zorin-Rechner. Vorhanden: `la_probe` (Binär 6 547 240 Bytes, Median-Startzeit 3 ms, `BASELINE.md` §7) und die Zorin-Matrix (§1). Neu: Leerlauf und Fixture-Last für beide Varianten.
 
 ## Abnahme
-- [ ] Messprotokoll in `docs/mla-next/BASELINE.md`: Kommando, Rechner, Sitzungstyp, Datum, Rohwerte
-- [ ] Wiederholungen mit Median wie beim `la_probe`-Spike (5 Läufe je Variante)
-- [ ] Wayland und X11 getrennt ausgewiesen
-- [ ] Das Ergebnis nennt ausdrücklich, was nicht verglichen wurde
+- [x] Messprotokoll in `docs/mla-next/BASELINE.md`: Kommando, Rechner, Sitzungstyp, Datum, Rohwerte — 2026-09-30: §8 (Messkommandos 1:1, Rechner-Box frisch erhoben 09:13 MESZ, Wayland-Sitzung mit XWayland `:1`, Messfenster beider Tasks, alle Rohwerte je Zelle)
+- [x] Wiederholungen mit Median wie beim `la_probe`-Spike (5 Läufe je Variante) — 2026-09-30: je Zelle 5 Startup- + 5 Steady-Läufe (4 Zellen), Median-Regel wie §7; Zellen-Mediane-Tabelle in §8
+- [x] Wayland und X11 getrennt ausgewiesen — 2026-09-30: vier Zellen getrennt (Flutter/GTK × Wayland/X11); backendintern verglichen, backendübergreifend nicht gerankt (§8 Befunde b/c)
+- [x] Das Ergebnis nennt ausdrücklich, was nicht verglichen wurde — 2026-09-30: „Nicht verglichen“-Box in §8 (8 Punkte: 6 Plan-Punkte wortgleich, X11-Poll-Ereignis „im X-Baum, nicht strikt gemappt sichtbar“, Probe-Läufe außerhalb der Serien)
 
 ## Handoff (Pflicht je Aufgabe, aus `docs/mla-next/VERIFY.md`)
-- [ ] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest
-- [ ] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft
-- [ ] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt
-- [ ] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe
+- [x] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest — 2026-09-30: SDD-Plan `docs/superpowers/plans/2026-09-30-mla-95-baseline-flutter-vs-gtk.md` (Basis `31277a2`, Branch `feature/mla-95-baseline`, Commit `5757c0d`); Messaufgabe — kein Failing-Test, Belege sind Rohwerte 1:1 und Gates
+- [x] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft — 2026-09-30: je Task zwei Reviewer (A Korrektheit/B Vollständigkeit): Task 1 A APPROVED/B SPEC_OK; Task 2 A APPROVED/B NEEDS_FIXES (Lastasymmetrie-Richtung §7) → Fix → Re-Review SPEC_OK — Details in VERIFY „Handoff #95“
+- [x] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt — 2026-09-30: alle Gates Exit 0 (flutter +200, la_core +60, Python 53/OK, check-versions ok; Gatetabelle in VERIFY „Handoff #95“); rot: keine; übersprungen: build-deb.sh und CI (beim späteren PR) sowie die manuellen Gate-0-Checks (BASELINE §3, bleiben separat offen); Rückfallplan `git revert` der #95-Commits (nur Doku)
+- [x] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe — eingehalten: nur Commits auf `feature/mla-95-baseline`, kein Push; GitHub-#95 bleibt bis zum Merge/Freigabe offen
 
 ## Abhängigkeiten
 Blockiert durch: #94, #92
