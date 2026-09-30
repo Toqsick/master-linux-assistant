@@ -24,7 +24,7 @@ FIXTURE_DIR = os.path.join(REPO_ROOT, "test", "fixtures")
 
 # Public suffixes considered harmless in fixtures. Anything else that looks
 # like a dotted host is flagged.
-ALLOWED_TLDS = r"com|net|org|io|dev|de|eu|info|biz|co|me|app|xyz|example"
+ALLOWED_TLDS = r"com|net|org|io|ai|dev|de|eu|info|biz|co|me|app|xyz|example"
 
 # The one allowed URL placeholder; findings that point at it are dropped.
 ALLOWED_URL = "example.invalid"
@@ -101,9 +101,10 @@ class LeakDetection(unittest.TestCase):
         "192.168.178.23",
         "2001:db8::1",
         "connect to 10.0.0.5:5432",
-        "/home/bratan/secret.txt",
-        "/media/braten/USB",
+        "/home/alice/secret.txt",
+        "/media/bob/USB",
         "curl https://internal.corp.example/health",
+        "visit https://foo.bar.ai now",
         "ssh git@github.com",
         "port=5432",
         "port: 41641",
@@ -167,9 +168,10 @@ class FixturesClean(unittest.TestCase):
         names = sorted(n for n in os.listdir(FIXTURE_DIR) if n.endswith(".txt"))
         self.assertTrue(names, "no *.txt fixtures under %s" % FIXTURE_DIR)
         for name in names:
-            with open(os.path.join(FIXTURE_DIR, name), encoding="utf-8") as handle:
-                content = handle.read()
-            self.assertEqual(find_leaks(content), [], "%s contains leaks" % name)
+            with self.subTest(fixture=name):
+                with open(os.path.join(FIXTURE_DIR, name), encoding="utf-8") as handle:
+                    content = handle.read()
+                self.assertEqual(find_leaks(content), [], "%s contains leaks" % name)
 
 
 if __name__ == "__main__":
