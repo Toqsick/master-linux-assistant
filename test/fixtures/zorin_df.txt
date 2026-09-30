@@ -1,0 +1,10 @@
+Dateisystem    Größe Benutzt Verf. Verw% Eingehängt auf
+tmpfs           1,6G    4,0M  1,6G    1% /run
+/dev/nvme0n1p3  607G    511G   66G   89% /
+tmpfs           7,7G    182M  7,5G    3% /dev/shm
+tmpfs           5,0M       0  5,0M    0% /run/lock
+efivarfs        268K    190K   74K   72% /sys/firmware/efi/efivars
+tmpfs           7,7G       0  7,7G    0% /run/qemu
+/dev/nvme0n1p2  321G    253G   53G   83% /mnt/DATA
+/dev/nvme0n1p1  511M    6,2M  505M    2% /boot/efi
+tmpfs           1,6G    228K  1,6G    1% /run/user/1000

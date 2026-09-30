@@ -1,0 +1,4 @@
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       511M  6,1M  505M   2% /boot/efi
+/dev/sda2       468G  212G  233G  48% /
+/dev/sda2       468G  212G  233G  48% /home
