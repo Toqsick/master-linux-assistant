@@ -44,7 +44,7 @@ _PATTERNS = (
     # 3. /home/<x> and /media/<x> with x != 'user' — 'user' is the only
     #    name the redaction rules keep.
     re.compile(r"/(?:home|media)/(?!user\b)[^/\s]+"),
-    # 4. URL/domain with a TLD from the allowlist.
+    # 4. URL/domain with a TLD from the recognized-TLD list.
     re.compile(r"[a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:" + ALLOWED_TLDS + r")\b"),
     # 5. user@host
     re.compile(r"[A-Za-z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\b"),

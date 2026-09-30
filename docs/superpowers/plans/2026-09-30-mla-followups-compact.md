@@ -51,7 +51,9 @@ nackte `pkexec` weiterhin über den Eltern-PATH auf; nur ein explizit
 `test/process_command_runner_test.dart`, Tests 7+8 («the passed PATH decides
 where the naked pkexec prefix is resolved» / «an environment without PATH
 still sees the parent PATH»). Die Plan-Annahme «ohne PATH-Übernahme wird
-`pkexec` nicht gefunden» trifft damit nicht zu — und selbst eine vollständige
-Ablösung des Eltern-Envs würde das Kind nicht PATH-los lassen, da Dart dann
-einen Default-PATH setzt. Die Dokumentations-Tests pinnen die realen
+`pkexec` nicht gefunden» trifft damit nicht zu. Präzisierung: bei einer
+vollständigen Ablösung des Eltern-Envs (`includeParentEnvironment: false`)
+bliebe das Kind dagegen PATH-los — Dart setzt keinen Default-PATH; ein
+Shell-Kind wie `/bin/sh` nähme sich selbst einen Default-PATH (Quelle des
+früheren Fehleindrucks). Die Dokumentations-Tests pinnen die realen
 Semantiken fest; ein Produktions-Fix blieb bewusst draußen.

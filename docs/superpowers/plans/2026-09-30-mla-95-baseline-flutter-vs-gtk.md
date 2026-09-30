@@ -85,7 +85,7 @@ Drei Pin-Fehler in diesem Plan, von Implementer gefunden und von Reviewern A/B v
 2. **X11-Fenstertitel:** `WindowManager.instance.setTitle("Linux Assistant")` (`lib/main.dart:27`) greift unter X11 nicht — `WM_NAME`/`_NET_WM_NAME` des Dev-Builds sind `linux-assistant`/`linux_assistant`. Poll-Prädikat ist das ERE `linux.assistant`; die Vorbedingung nutzt breiter `[Ll]inux.[Aa]ssistant` (deckt auch den Titel der installierten v0.8.0-App ab). Präzisierung für §8: Das Poll-Ereignis ist «Fenster mit passendem Namen existiert im X-Baum» (xdotool ohne `--onlyvisible`), nicht strikt «gemappt sichtbar».
 3. **PSS-Key:** `smaps_rollup` führt den Key `Pss:` (kein `VmPss`) — `grep '^Pss:'`.
 
-Zusätzlich für Task 3 vorgemerkt (aus den Reviews): Rechner-Identifikation (Hostname, CPU-Modell, RAM) frisch erheben; Randbedingungen textieren (Dauer-CPU ~101 % eines Kerns durch Impeller-Dauerrendern, ~+1 %-Fenster-Verzerrung der CPU-Formel, Systemlast 4.6–8.0 während der Messung, 72-ms-X11-Startup-Ausreißer in der Serie belassen, PSS ist umgebungsvariabel/sharer-abhängig).
+Zusätzlich für Task 3 vorgemerkt (aus den Reviews): Rechner-Identifikation (Hostname, CPU-Modell, RAM) frisch erheben; Randbedingungen textieren (Dauer-CPU ~101 % eines Kerns durch Impeller-Dauerrendern (nicht reine Renderkosten, enthält den 3-s-Poll-Anteil — BASELINE §8 Befund (a)), ~+1 %-Fenster-Verzerrung der CPU-Formel, Systemlast 4.6–8.0 während der Messung, 72-ms-X11-Startup-Ausreißer in der Serie belassen, PSS ist umgebungsvariabel/sharer-abhängig).
 
 ## Erratum (2026-09-30, aus den Follow-up-Reviews #89–#95)
 
