@@ -39,3 +39,19 @@
 
 - Registry-Race-Härtung (eigenes Issue wert), Release-Process.md-Rewrite, manuelle Gate-0-Checks (Basti), Spawn-Umgebungs-**Produkt**-Fix (falls Test 6 eine echte Lücke zeigt → dokumentieren, separates Issue, kein Mitnehm-Fix).
 - Wayland-Screenshot und `-dev`-Pakete (#90) bleiben manuell.
+
+## Erratum (2026-09-30, nach Task 4 + Reviews)
+
+Die Design-Entscheidung «Spawn-Test-Konstruktion» ist in einem Punkt empirisch
+widerlegt: ein übergebenes `environment` **ersetzt nicht** das Eltern-Env.
+`Process.run` merged per Default (`includeParentEnvironment: true`) das
+Eltern-Env zurück — ein übergebenes Environment **ohne** PATH-Key löst das
+nackte `pkexec` weiterhin über den Eltern-PATH auf; nur ein explizit
+übergebener PATH gewinnt. Gemessen und festgepinnt in
+`test/process_command_runner_test.dart`, Tests 7+8 («the passed PATH decides
+where the naked pkexec prefix is resolved» / «an environment without PATH
+still sees the parent PATH»). Die Plan-Annahme «ohne PATH-Übernahme wird
+`pkexec` nicht gefunden» trifft damit nicht zu — und selbst eine vollständige
+Ablösung des Eltern-Envs würde das Kind nicht PATH-los lassen, da Dart dann
+einen Default-PATH setzt. Die Dokumentations-Tests pinnen die realen
+Semantiken fest; ein Produktions-Fix blieb bewusst draußen.

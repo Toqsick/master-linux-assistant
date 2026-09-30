@@ -28,7 +28,7 @@ im Betrieb verwendet (Quellen in Klammern). Nicht abwandeln — insbesondere die
 | `zorin_df.txt` | `df -h` (ohne LC_ALL — Produktionsdefault) | `lib/linux/linux_filesystem.dart:9` |
 | `zorin_ps.txt` | `ps -eo pcpu,args --sort=-pcpu` | `lib/linux/linux_process.dart:10` (metric=pcpu) |
 | `zorin_uptime.txt` | `LC_ALL=C /usr/bin/uptime` | `lib/linux/linux_system.dart:22` |
-| `zorin_free.txt` | `LC_ALL=C /usr/bin/free -m` | `lib/linux/linux_system.dart:11` |
+| `zorin_free.txt` | `LC_ALL=C /usr/bin/free -m` | `lib/linux/linux_system.dart:13-14` |
 | `zorin_loadavg.txt` | `cat /proc/loadavg` | `lib/linux/linux_system.dart:53` |
 
 Dokumentierte Abweichung: `zorin_ps.txt` wurde auf die ersten 60 Zeilen

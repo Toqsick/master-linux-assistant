@@ -1,6 +1,6 @@
 # AGENTS.md — `linux-assistant`
 
-Last verified: 2026-09-18.
+Last verified: 2026-09-30.
 
 Deeper instructions override `~/AGENTS.md` for this subtree.
 
@@ -20,8 +20,9 @@ cd ~/10-Projekte/10-active/linux-assistant
 flutter pub get
 dart format --output=none --set-exit-if-changed lib test  # CI gate
 flutter analyze        # CI gate: zero findings expected
-flutter test           # 15 files, ~177 cases — real coverage
-(cd additional/python && python3 -m unittest discover -s tests -t .)
+flutter test           # 18 files, 208 cases — real coverage
+(cd additional/python && python3 -m unittest discover -s tests -t .)  # 53 tests
+(cd packages/la_core && dart pub get && dart format --output=none --set-exit-if-changed . && dart analyze && dart test)  # la_core gates, own CI steps
 bash build-deb.sh      # the only maintained packaging path
 ```
 
@@ -47,7 +48,8 @@ matching `_privilegedEntryPoints` list and `build-deb.sh` chmods those two
 scripts. Rename or move any of them only together, in all three places.
 
 **Conventions:** CI runs version check → format gate → analyze → Dart tests
-→ Python tests → build-deb on pinned `ubuntu-24.04` (glibc compat for Zorin
+→ Python tests → la_core gates (`packages/la_core`, plain `dart`) → build-deb
+on pinned `ubuntu-24.04` (glibc compat for Zorin
 18 / Mint 22). `unawaited_futures` is enforced — wrap fire-and-forget
 futures in `unawaited(...)`; log through `lib/services/logger.dart`, never
 `print`. L10n arb files live in `lib/l10n`; Finnish is

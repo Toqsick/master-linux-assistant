@@ -22,8 +22,11 @@ REPO_ROOT = os.path.dirname(
 )
 FIXTURE_DIR = os.path.join(REPO_ROOT, "test", "fixtures")
 
-# Public suffixes considered harmless in fixtures. Anything else that looks
-# like a dotted host is flagged.
+# TLDs the domain heuristic recognizes: a dotted host whose suffix is in
+# this list is flagged as a leak (e.g. foo.bar.ai, github.com). The list
+# feeds the detection pattern — it is NOT an allowlist of harmless
+# suffixes; TLDs outside it are simply not matched (known heuristic gap,
+# see the README "Leak-Check" section).
 ALLOWED_TLDS = r"com|net|org|io|ai|dev|de|eu|info|biz|co|me|app|xyz|example"
 
 # The one allowed URL placeholder; findings that point at it are dropped.

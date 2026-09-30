@@ -86,3 +86,7 @@ Drei Pin-Fehler in diesem Plan, von Implementer gefunden und von Reviewern A/B v
 3. **PSS-Key:** `smaps_rollup` führt den Key `Pss:` (kein `VmPss`) — `grep '^Pss:'`.
 
 Zusätzlich für Task 3 vorgemerkt (aus den Reviews): Rechner-Identifikation (Hostname, CPU-Modell, RAM) frisch erheben; Randbedingungen textieren (Dauer-CPU ~101 % eines Kerns durch Impeller-Dauerrendern, ~+1 %-Fenster-Verzerrung der CPU-Formel, Systemlast 4.6–8.0 während der Messung, 72-ms-X11-Startup-Ausreißer in der Serie belassen, PSS ist umgebungsvariabel/sharer-abhängig).
+
+## Erratum (2026-09-30, aus den Follow-up-Reviews #89–#95)
+
+Der Abschnitt «Messzellen» formulierte die Läufe kombiniert («5 Läufe je Zelle … Pro Lauf: Startzeit messen, … dann 20-s-Fenster»). Real gemessen und in `docs/mla-next/BASELINE.md` §8 dokumentiert sind **je Zelle 5 Startup- und 5 Steady-Läufe getrennt** (strikt sequenziell): die Startup-Läufe setzen `WAYLAND_DEBUG=1` (dokumentierte Perturbation), die Steady-Läufe bewusst nicht — nur getrennte Serien isolieren diese Perturbation von den RAM-/CPU-Messfenstern.
