@@ -6,6 +6,10 @@
 /// observation constructs a new `ok` value (`IPC_CONTRACT.md`).
 enum ProbeState { unknown, running, ok, stale, failed }
 
+/// A probe observation with its state machine position and payload.
+///
+/// Branch on [state], never on `data != null`: `stale` keeps the last
+/// payload, so `data` can be non-null in non-ok states too.
 final class ProbeStatus<T> {
   final ProbeState state;
   final T? data;

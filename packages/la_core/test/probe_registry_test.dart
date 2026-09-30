@@ -12,7 +12,7 @@ class _FakeProbe implements Probe {
   @override
   Future<ProbeResult> run() async {
     runs++;
-    return result ?? ProbeResult(level: ProbeLevel.ok, key: id);
+    return result ?? ProbeResult(level: ProbeSeverity.ok, key: id);
   }
 }
 
@@ -65,13 +65,13 @@ void main() {
     final registry = ProbeRegistry(bus: bus, logger: logger);
     final probe = _FakeProbe(
       'probe.x',
-      result: const ProbeResult(level: ProbeLevel.warn, key: 'probe.x'),
+      result: const ProbeResult(level: ProbeSeverity.warn, key: 'probe.x'),
     );
     registry.register(probe);
 
     final result = await registry.run('probe.x');
 
-    expect(result.level, ProbeLevel.warn);
+    expect(result.level, ProbeSeverity.warn);
     expect(probe.runs, 1);
     expect(published, hasLength(1));
     expect(published.single.key, 'probe.x');

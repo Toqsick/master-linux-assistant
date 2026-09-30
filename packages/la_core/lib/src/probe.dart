@@ -1,4 +1,9 @@
-enum ProbeLevel { ok, warn, crit, unknown }
+/// Severity rating of a single probe result.
+///
+/// Named [ProbeSeverity] — not "Level" — to keep it apart from [ProbeState],
+/// the unknown/running/ok/stale/failed state machine: severity is the rating
+/// of an observed probe result, not a lifecycle state.
+enum ProbeSeverity { ok, warn, crit, unknown }
 
 class ProbeResult {
   const ProbeResult({
@@ -8,7 +13,7 @@ class ProbeResult {
     this.at,
   });
 
-  final ProbeLevel level;
+  final ProbeSeverity level;
   final String key;
   final Map<String, String> params;
   final DateTime? at;
@@ -28,5 +33,5 @@ class SelfProbe implements Probe {
 
   @override
   Future<ProbeResult> run() async =>
-      ProbeResult(level: ProbeLevel.ok, key: id, at: DateTime.now());
+      ProbeResult(level: ProbeSeverity.ok, key: id, at: DateTime.now());
 }

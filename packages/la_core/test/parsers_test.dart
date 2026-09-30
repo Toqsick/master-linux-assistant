@@ -98,6 +98,21 @@ void main() {
       final processes = parsePsOutput(output, 3);
       expect(processes.map((p) => p.processName), ["a", "c"]);
     });
+
+    test("fills the requested count when a bare line comes first", () {
+      // A kernel-thread bare line among the first `count` data lines must
+      // not shrink the result below the requested count.
+      const output =
+          "%CPU COMMAND\n"
+          " 42.0 /usr/bin/a\n"
+          " 0.0\n"
+          " 3.2 /usr/bin/c\n"
+          " 5.0 /usr/bin/d\n";
+
+      final processes = parsePsOutput(output, 3);
+
+      expect(processes.map((p) => p.processName), ["a", "c", "d"]);
+    });
   });
 
   group("uptime parser", () {
