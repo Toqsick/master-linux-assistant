@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:la_core/la_core.dart' as core;
 import 'package:linux_assistant/helpers/command_helper.dart';
-import 'package:linux_assistant/services/logger.dart';
 
 export 'package:la_core/la_core.dart' show Uptime;
 
@@ -34,20 +33,13 @@ abstract class LinuxSystem {
 
   /// Cached: the CPU thread count cannot change while the app is running, and
   /// the polling dashboard would otherwise fork `nproc` on every tick.
-  static int? _cachedThreadCount;
+  ///
+  /// The cache lives in the [core.CpuInfo] instance now (#93), not in a
+  /// `static int?` shared by the whole VM.
+  static final core.CpuInfo _cpu = core.CpuInfo(runner: CommandHelper.runner);
 
   static Future<int> getCpuThreadCount() async {
-    final cached = _cachedThreadCount;
-    if (cached != null) {
-      return cached;
-    }
-    var cmdResult = await CommandHelper.run("/usr/bin/nproc");
-    if (!cmdResult.success) {
-      logError("Command failed", cmdResult.error);
-    }
-    final count = int.parse(cmdResult.output);
-    _cachedThreadCount = count;
-    return count;
+    return _cpu.threadCount();
   }
 
   /// Returns the average load of the CPU of the last minute

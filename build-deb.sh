@@ -27,6 +27,20 @@ cp version build/linux/x64/release/bundle/
 # Prepare deb files for packaging
 mkdir -p "$STAGE/usr/lib/linux-assistant/"
 cp -r build/linux/x64/release/bundle/* "$STAGE/usr/lib/linux-assistant/"
+
+# Bundle the core probe binary (#93). It lives in the app's lib directory on
+# purpose: it is internal, gets no chmod +x, no /usr/bin entry and no polkit
+# action, and nothing outside the app calls it.
+if command -v dart >/dev/null 2>&1; then
+  dart compile exe packages/la_core/bin/la_probe.dart \
+    -o "$STAGE/usr/lib/linux-assistant/la_probe"
+  # Smoke check: the binary has to answer --version with no display attached.
+  env -u DISPLAY -u WAYLAND_DISPLAY \
+    "$STAGE/usr/lib/linux-assistant/la_probe" --version
+else
+  echo "dart not found in PATH; skipping la_probe build" >&2
+fi
+
 mkdir -p "$STAGE/usr/share/icons/hicolor/scalable/apps/"
 cp linux-assistant.svg "$STAGE/usr/share/icons/hicolor/scalable/apps/"
 mkdir -p "$STAGE/usr/share/icons/hicolor/256x256/apps/"

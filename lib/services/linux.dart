@@ -48,7 +48,7 @@ class Linux {
       Linux.currentenvironment.runningInFlatpak = true;
       // The execution layer needs to know too; it is what inserts
       // flatpak-spawn in front of every command.
-      CommandHelper.runningInFlatpak = true;
+      CommandHelper.processRunner.runningInFlatpak = true;
 
       // That python scripts are also running in flatpak we need to copy them to the home directory .cache folder.
       // Argument lists, not command strings: a home folder containing a

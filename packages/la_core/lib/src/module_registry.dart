@@ -1,3 +1,4 @@
+import 'event_bus.dart';
 import 'module_descriptor.dart';
 
 enum ModuleState { registered, starting, started, stopping, stopped }
@@ -16,9 +17,16 @@ class ModuleRegistryError implements Exception {
 
 /// Statische Registrierung; kein Laden fremder Plugins (Issue #60).
 class ModuleRegistry {
-  ModuleRegistry({required ModuleActivator activator}) : _activator = activator;
+  ModuleRegistry({required ModuleActivator activator, EventBus? bus})
+    : _activator = activator,
+      _bus = bus;
 
   final ModuleActivator _activator;
+
+  /// Optional: when set, a newly registered module is announced on
+  /// [CoreTopics.moduleRegistered]. `null` keeps the registry silent, so the
+  /// existing callers and tests stay unchanged.
+  final EventBus? _bus;
   final Map<String, ModuleDescriptor> _modules = {};
   final Map<String, ModuleState> _states = {};
   final Map<String, bool> _visible = {};
@@ -33,6 +41,7 @@ class ModuleRegistry {
     _modules[descriptor.id] = descriptor;
     _states[descriptor.id] = ModuleState.registered;
     _validated = false;
+    _bus?.publish(CoreTopics.moduleRegistered, descriptor);
   }
 
   List<ModuleDescriptor> get descriptors => List.unmodifiable(_modules.values);
