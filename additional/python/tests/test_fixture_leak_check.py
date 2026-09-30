@@ -22,9 +22,12 @@ REPO_ROOT = os.path.dirname(
 )
 FIXTURE_DIR = os.path.join(REPO_ROOT, "test", "fixtures")
 
-# Public suffixes considered harmless in fixtures. Anything else that looks
-# like a dotted host is flagged.
-ALLOWED_TLDS = r"com|net|org|io|dev|de|eu|info|biz|co|me|app|xyz|example"
+# TLDs the domain heuristic recognizes: a dotted host whose suffix is in
+# this list is flagged as a leak (e.g. foo.bar.ai, github.com). The list
+# feeds the detection pattern — it is NOT an allowlist of harmless
+# suffixes; TLDs outside it are simply not matched (known heuristic gap,
+# see the README "Leak-Check" section).
+ALLOWED_TLDS = r"com|net|org|io|ai|dev|de|eu|info|biz|co|me|app|xyz|example"
 
 # The one allowed URL placeholder; findings that point at it are dropped.
 ALLOWED_URL = "example.invalid"
@@ -41,7 +44,7 @@ _PATTERNS = (
     # 3. /home/<x> and /media/<x> with x != 'user' — 'user' is the only
     #    name the redaction rules keep.
     re.compile(r"/(?:home|media)/(?!user\b)[^/\s]+"),
-    # 4. URL/domain with a TLD from the allowlist.
+    # 4. URL/domain with a TLD from the recognized-TLD list.
     re.compile(r"[a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:" + ALLOWED_TLDS + r")\b"),
     # 5. user@host
     re.compile(r"[A-Za-z0-9._-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\b"),
@@ -101,9 +104,10 @@ class LeakDetection(unittest.TestCase):
         "192.168.178.23",
         "2001:db8::1",
         "connect to 10.0.0.5:5432",
-        "/home/bratan/secret.txt",
-        "/media/braten/USB",
+        "/home/alice/secret.txt",
+        "/media/bob/USB",
         "curl https://internal.corp.example/health",
+        "visit https://foo.bar.ai now",
         "ssh git@github.com",
         "port=5432",
         "port: 41641",
@@ -167,9 +171,10 @@ class FixturesClean(unittest.TestCase):
         names = sorted(n for n in os.listdir(FIXTURE_DIR) if n.endswith(".txt"))
         self.assertTrue(names, "no *.txt fixtures under %s" % FIXTURE_DIR)
         for name in names:
-            with open(os.path.join(FIXTURE_DIR, name), encoding="utf-8") as handle:
-                content = handle.read()
-            self.assertEqual(find_leaks(content), [], "%s contains leaks" % name)
+            with self.subTest(fixture=name):
+                with open(os.path.join(FIXTURE_DIR, name), encoding="utf-8") as handle:
+                    content = handle.read()
+                self.assertEqual(find_leaks(content), [], "%s contains leaks" % name)
 
 
 if __name__ == "__main__":

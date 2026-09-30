@@ -19,7 +19,7 @@ jobs:
     # (Zorin OS 18, Linux Mint 22, Ubuntu 24.04 itself).
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'

@@ -98,6 +98,21 @@ void main() {
       final processes = parsePsOutput(output, 3);
       expect(processes.map((p) => p.processName), ["a", "c"]);
     });
+
+    test("fills the requested count when a bare line comes first", () {
+      // A kernel-thread bare line among the first `count` data lines must
+      // not shrink the result below the requested count.
+      const output =
+          "%CPU COMMAND\n"
+          " 42.0 /usr/bin/a\n"
+          " 0.0\n"
+          " 3.2 /usr/bin/c\n"
+          " 5.0 /usr/bin/d\n";
+
+      final processes = parsePsOutput(output, 3);
+
+      expect(processes.map((p) => p.processName), ["a", "c", "d"]);
+    });
   });
 
   group("uptime parser", () {
@@ -146,12 +161,13 @@ void main() {
 
       final memory = MemoryInfo.parseFreeOutput(output)!;
 
-      expect(memory.totalMb, 16066996);
-      expect(memory.usedMb, 10558324);
-      expect(memory.swapTotalMb, 16421880);
-      expect(memory.swapUsedMb, 7950396);
+      // Captured with `free -m`: the fixture's figures are mebibytes.
+      expect(memory.totalMb, 15690);
+      expect(memory.usedMb, 8578);
+      expect(memory.swapTotalMb, 16036);
+      expect(memory.swapUsedMb, 5437);
       expect(memory.hasSwap, isTrue);
-      expect(memory.usedRatio, closeTo(10558324 / 16066996, 0.0001));
+      expect(memory.usedRatio, closeTo(8578 / 15690, 0.0001));
     });
 
     test("handles a machine without swap", () {

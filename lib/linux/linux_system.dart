@@ -7,8 +7,12 @@ export 'package:la_core/la_core.dart' show Uptime;
 
 abstract class LinuxSystem {
   static Future<bool> hasSwap() async {
-    var cmdResult =
-        await CommandHelper.run("/usr/bin/free", env: {"LC_ALL": "C"});
+    // `-m` is load-bearing: MemoryInfo's fields are mebibytes (the la_core
+    // parser documents "free -m"), so without the flag every figure would be
+    // 1024x off. The bare-command [CommandHelper.run] cannot carry arguments.
+    var cmdResult = await CommandHelper.runWithArguments(
+        "/usr/bin/free", ["-m"],
+        env: {"LC_ALL": "C"});
     if (!cmdResult.success) {
       throw Exception(cmdResult.error);
     }

@@ -68,8 +68,8 @@ class LeakDetection(unittest.TestCase):
         "192.168.178.23",
         "2001:db8::1",
         "connect to 10.0.0.5:5432",
-        "/home/bratan/secret.txt",
-        "/media/braten/USB",
+        "/home/alice/secret.txt",
+        "/media/bob/USB",
         "curl https://internal.corp.example/health",
         "ssh git@github.com",
     ]

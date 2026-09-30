@@ -209,11 +209,13 @@ dieser Datei).
 3. **`-dev`-Pakete fehlen:** `gtk4.pc`/`libadwaita-1.pc` nicht installiert
    (§1) — für den PyGObject-Lauf irrelevant, für künftige C-Builds
    (GSettings-Schemas, Compile) relevant.
-4. **`analysis_options.yaml`-Auto-Änderung:** `flutter analyze` fügt bei
-   jedem Lauf `analyzer.exclude: build/**, linux/**` ein (§4); im A0-Lauf
-   zurückgenommen. Entscheidung offen: Exclude dauerhaft übernehmen oder
-   Analyzer-Verhalten ignorieren — vor dem nächsten Gate-Lauf klären, sonst
-   bleibt der Working Tree nicht sauber.
+4. **`analysis_options.yaml`-Auto-Änderung — erledigt (1367d3c):** `flutter
+   analyze` fügt bei jedem Lauf `analyzer.exclude: build/**, linux/**` ein
+   (§4); im A0-Lauf noch zurückgenommen. Das Exclude ist inzwischen dauerhaft
+   ins Repo übernommen (Commit `1367d3c`, „adopt analyzer excludes
+   auto-written by flutter tool") — dieses #90-Abnahme-Teilitem ist damit
+   erledigt. Punkte 2/3 (Wayland-Screenshot, `-dev`-Pakete) und die manuelle
+   Checkliste (§3) bleiben offen.
 5. **Messbasis 0.0.3 (aufgelöst 2026-09-30, teils):** die `la_probe`-Messwerte
    liegen vor (§7, Task-4/#59-Spike — §7 ist kein Platzhalter mehr); offen
    bleibt der Flutter-vs-GTK-Vergleich selbst (Roadmap 0.0.3/0.4.x). Diese
@@ -601,7 +603,9 @@ Nüchterne Befunde, keine Empfehlung — die Flutter-vs-GTK-Entscheidung ist
 **(a) CPU-Dauerrendern Flutter:** Alle 10 Flutter-Steady-Läufe zeigen ~101 %
 eines Kerns (100.85–101.20 %): der Release-Build rendert im Ruhezustand
 kontinuierlich (Impeller; App-Log „Using the Impeller rendering backend
-(OpenGLESSDF)"). Die CPU-Formel trägt eine konstante ~+1 %-Verzerrung
+(OpenGLESSDF)"). Nicht reine Renderkosten: die ~101 % enthalten auch den
+möglichen Anteil des 3-s-Stat-Polls (Subprozess-Spawns). Die CPU-Formel
+trägt eine konstante ~+1 %-Verzerrung
 (Sample-Zeit + `sleep 1` verlängern das reale Fenster auf ~20,2 s, der Nenner
 bleibt fix 20 s) — sie betrifft nur Flutter. Die GTK-Shell verbraucht im
 Fixture-Startzustand 0 CPU-Ticks: cpu0 == cpu1 in allen 10 Steady-Läufen
