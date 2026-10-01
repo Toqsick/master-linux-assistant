@@ -351,7 +351,7 @@ in `deb/DEBIAN/control`, `la_core` nirgends installiert.
 
 **Zustandsmodell.** `ProbeState { unknown, running, ok, stale, failed }`; `stale` nur über `markStale()` aus `ok` (behält `data`/`observedAt`), kein Pfad zurück zu `ok` ohne frische Observation — 8 neue Tests, Vertragslage `IPC_CONTRACT.md:16`.
 
-**Schwärzung/Leak-Check.** Capture exakt der Produktions-Aufrufe (df ohne LC_ALL, uptime/free mit `LC_ALL=C`, ps `-eo pcpu,args --sort=-pcpu`, `/proc/loadavg`), alles unprivilegiert. Schwärzung: `/home|/media/<name>` → `/user`-Platzhalter, Usernamen → `user`, URLs/Hosts → `example.invalid`; über die Regeln hinaus zusätzlich geschwärzt: QEMU-SMBIOS-Serial, MAC-Adresse, Xwayland-Authority-Suffix, eine Konto-URL (`.ai`-TLD, vom Leak-Check nicht abgedeckt — Lücke in `test/fixtures/README.md` dokumentiert, manuelle Durchsicht bleibt Pflicht). Leak-Check läuft bei jedem CI-Lauf mit (Trigger ausschließlich Push/PR) und ist auf allen zwölf `*.txt` leer. Final-Review-Fix (eigener Commit): die Brave-Crash-Reporter-Client-ID — persistent pro Installation, in der ersten Fassung fälschlich als Session-Zufallswert geführt — wurde 4× in `zorin_ps.txt` zu `<redacted>` geschwärzt; der Leak-Check prüft nun zusätzlich Ports in `port=`-/`port:`- und `host:port`-Form, wodurch `--port=41641`, `telnet:localhost:7100` und `tcp:<redacted>:7149` gleichfalls geschwärzt wurden; die verbleibenden bloßen Port-Zahlen (`websocket=5700`, `--port 7000`) sind in `test/fixtures/README.md` dokumentiert.
+**Schwärzung/Leak-Check.** Capture exakt der Produktions-Aufrufe (df ohne LC_ALL, uptime/free mit `LC_ALL=C`, ps `-eo pcpu,args --sort=-pcpu`, `/proc/loadavg`), alles unprivilegiert. Schwärzung: `/home|/media/<name>` → `/user`-Platzhalter, Usernamen → `user`, URLs/Hosts → `example.invalid`; über die Regeln hinaus zusätzlich geschwärzt: QEMU-SMBIOS-Serial, MAC-Adresse, Xwayland-Authority-Suffix, eine Konto-URL (`.ai`-TLD — zum Capture-Zeitpunkt nicht abgedeckt, seit 643da93 in der Flag-Liste; die heute vom Leak-Check nicht erkannten Suffixe sind in `test/fixtures/README.md` dokumentiert, manuelle Durchsicht bleibt Pflicht). Leak-Check läuft bei jedem CI-Lauf mit (Trigger ausschließlich Push/PR) und ist auf allen zwölf `*.txt` leer. Final-Review-Fix (eigener Commit): die Brave-Crash-Reporter-Client-ID — persistent pro Installation, in der ersten Fassung fälschlich als Session-Zufallswert geführt — wurde 4× in `zorin_ps.txt` zu `<redacted>` geschwärzt; der Leak-Check prüft nun zusätzlich Ports in `port=`-/`port:`- und `host:port`-Form, wodurch `--port=41641`, `telnet:localhost:7100` und `tcp:<redacted>:7149` gleichfalls geschwärzt wurden; die verbleibenden bloßen Port-Zahlen (`websocket=5700`, `--port 7000`) sind in `test/fixtures/README.md` dokumentiert.
 
 **Reviewer.** Je Task A (Korrektheit) + B (Vollständigkeit) parallel:
 - Task 1: A APPROVED / B SPEC_OK — Werte und Scope unabhängig verifiziert; Minor: TLD-Allowlist-Lücke, `/opt/brave.com`-Fehlalarm (im Fixture neutralisiert), keine `subTest`s.
@@ -506,6 +506,40 @@ unabhängig reproduziert).
 **Rückfallplan.** `git revert 530ea0f b13bdd7` genügt: 2 la_core-Dateien (1 Implementierung + 1 neuer Test), kein Produktionscode außerhalb la_core, keine Unit, kein Packaging, polkit-Trinität unberührt.
 
 **Grenzen (bewusst offen).** `deactivateAll` deckt Module, die beim Aufruf `starting` sind (noch nicht in `_activationOrder`), weiterhin nicht ab — pre-existing, außerhalb des Diff-Scopes (Reviewer 1 + Fixer-Scopenotiz). Der Kommentar am erweiterten Guard nennt „stopping/starting"; erreichbar ist nur der `stopping`-Fall (Re-Review-Minor, reiner Kommentar-Wortlaut). Issue #110 Position C (Spawn-PATH-Fixierung) bleibt offen und braucht eine menschliche Sicherheitsentscheidung. Der Cross-ID-Race-Teil der #110-A-Checkbox ist über Test 3/5 abgedeckt (gemeinsamer Dep), nicht als eigener Cross-ID-Stresstest.
+## Handoff #110-B — Review-Minors aus dem Follow-up-Pool (Nachtlauf 2026-09-30)
+
+**Status:** Pool-Item B aus Issue #110 vollständig umgesetzt auf Branch `night/pool-b` (Basis-SHA `506eb88`, Commit `64ba632` + Review-Fix-Commits). Lokaler Nachtlauf (Automation), kein Push/PR — Freigabe wie immer beim Menschen. Umfang: 4 Dateien +45/−11 (vor Review-Fixes) + 2 Minor-Fixes aus Review A.
+
+**Umsetzung je #110-B-Checkbox:**
+1. **README-Zeilenref-Drift** — Paritäts-Tabelle nachgezogen (`linux_system.dart` :22→:26, :13-14→:13-15, :53→:57), Bug-Notiz-Ref :11→:13-15 (beide free-Call-Referenzen, Tabelle + Notiz). Zusätzlich im Geist des Items korrigiert: „TLD-Allowlist"→„TLD-Flag-Liste" (:103, :120) und die stale `.ai`-Raster-Aussage (:120) — `.ai` ist seit `643da93` in der Liste; Beispiel jetzt `.store` (verifiziert nicht in FLAGGED_TLDS).
+2. **count≤0-Kante** — Entscheidung: PIN. Neuer Test `count 0 or negative yields every entry, not an empty list` in `packages/la_core/test/parsers_test.dart` pinnt count=0 und count=-1 → alle Einträge. Mutationsbeleg gefahren: Mutante `count<=0 → return empty` failt den Test (`+0 -1`), Original grün. Reviewer A hat die „kein Produktions-Caller"-Aussage verifiziert (einziger Call-Path `system_stats_service.dart:192` mit `count=5`).
+3. **Spawn-Test Fall 6** — voller Fehler-Vertrag statt `isNotEmpty`: `output, isEmpty` (der Runner hardcodet `""` auf dem ProcessException-Pfad, command_helper.dart:65) + `error contains "No such file or directory"` (auf dieser Toolchain gemessen; Dart lokalisiert errno-Strings nicht, CI pinned Linux).
+4. **Spawn-Test 8** — exakte Präfixkette statt `startsWith("PATH=/")`: Kind sieht exakt `PATH=$parentPath` (Parent-PATH 1:1), strengere Aussage über die Merge-Semantik.
+5. **ALLOWED_TLDS-Misnomer** — Rename zu `FLAGGED_TLDS` (Definition + einzige Usage-Stelle), Kommentar dokumentiert den alten Namen; README-Prosa an 2 Stellen mitgezogen.
+
+**Reviewer.** Dual-Review auf Branch-Diff (2 parallele Subagenten):
+- A (Korrektheit): NEEDS_FIXES mit 2 Minors → F1 Parser-Doccomment ergänzt („A `count` of 0 or less disables the limit" — der Test-Kommentar-Bezug ist damit wahr; vorher widersprach der Doc der Kante milde) → F2 VERIFY.md:354 stale `.ai`-Gegenwartsform korrigiert („seit 643da93 in der Flag-Liste"). Beide gefixt.
+- B (Vollständigkeit/Spec): READY_FOR_PR — alle 5 Checkboxen SATISFIED (Nr. 1 exceeded: auch die :120-Stale-Aussage), Scope exakt 4 Dateien, alle Gates eigenständig nachgefahren und grün reproduziert (inkl. snap-dart-Format-Check heute 123/0 — der Laufzeit-Befund „111 changed" war ein Binärpfad-Artefakt des Snap-dart, mit Flutter-Dart 3.13.4 konsequent 0 changed).
+- Re-Review A: beide Minors gefixt (einzeilig, siehe Fix-Commits), damit kein offenes Critical/Important — gesamt **READY_FOR_PR**.
+
+**Gates — tatsächlich ausgeführt (2026-09-30, Nachtlauf, auf `64ba632`):**
+
+| Gate | Ausgabe |
+|---|---|
+| `bash tool/check-versions.sh` | `version 0.8.0 is consistent` |
+| Root `dart format --output=none --set-exit-if-changed lib test` | `Formatted 123 files (0 changed) in 0.50 seconds.` |
+| `flutter analyze` | `No issues found! (ran in 6.2s)` |
+| la_core `dart format` | `Formatted 24 files (0 changed) in 0.04 seconds.` |
+| la_core `dart analyze` | `No issues found!` |
+| la_core `dart test` | `00:00 +62: All tests passed!` (61 + neuer Pin) |
+| `flutter test` (voller Lauf) | `00:10 +208: All tests passed!` |
+| `python3 -m unittest discover -s tests -t .` (additional/python) | `Ran 53 tests in 0.101s` / `OK` |
+
+**Rote/übersprungene Gates.** Keine roten. Übersprungen: `build-deb.sh` (kein Packaging-Bezug; CI baut beim späteren PR), Branch-CI (läuft mit dem späteren PR), token-gate (betrifft #91-Dateien, nicht im Scope), manuelle Gate-0-Checks (bleiben Bastis Aufgabe).
+
+**Rückfallplan.** `git revert` der #110-B-Commits genügt: 2 Test-Dateien (Asserts + 1 neuer Test), 1 README, 1 Python-Test, 1 Parser-Doccomment, 1 VERIFY-Zeile — kein Produktionscode bis auf den Doccomment, keine Unit, kein Packaging.
+
+**Grenzen (bewusst offen).** README:137 `:19`-Ref (Kommentarzeile statt :20 REPO_ROOT-Zuweisung) — vorbestehend, außerhalb B-Buchstabe (nur linux_system.dart-Refs), als Minor bei Reviewer B notiert. `No such file or directory`-Pin ist CI-Linux-garantiert (Dart lokalisiert errno nicht, Runner hardcodet `""`+`e.message`). Der 23:30-Schwesternlauf (Automation) arbeitet mit derselben Queue; #110-B gilt über die Handoff-Sektion als abgeschlossen.
 
 ## Agenten-Handoff
 

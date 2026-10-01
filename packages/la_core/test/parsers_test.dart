@@ -113,6 +113,31 @@ void main() {
 
       expect(processes.map((p) => p.processName), ["a", "c", "d"]);
     });
+
+    test("count 0 or negative yields every entry, not an empty list", () {
+      // Pinned edge, documented in the parser's doc comment but previously
+      // untested and without production callers: the early-exit compare
+      // `processes.length == count` never fires for count <= 0, so the
+      // parser degenerates to "all entries". If that is ever deemed a bug
+      // and changed to "empty", this pin makes the change visible instead
+      // of silent.
+      const output =
+          "%CPU COMMAND\n"
+          " 42.0 /usr/bin/a\n"
+          " 3.2 /usr/bin/c\n"
+          " 5.0 /usr/bin/d\n";
+
+      expect(parsePsOutput(output, 0).map((p) => p.processName), [
+        "a",
+        "c",
+        "d",
+      ]);
+      expect(parsePsOutput(output, -1).map((p) => p.processName), [
+        "a",
+        "c",
+        "d",
+      ]);
+    });
   });
 
   group("uptime parser", () {

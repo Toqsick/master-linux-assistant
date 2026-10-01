@@ -27,9 +27,9 @@ im Betrieb verwendet (Quellen in Klammern). Nicht abwandeln — insbesondere die
 |---|---|---|
 | `zorin_df.txt` | `df -h` (ohne LC_ALL — Produktionsdefault) | `lib/linux/linux_filesystem.dart:9` |
 | `zorin_ps.txt` | `ps -eo pcpu,args --sort=-pcpu` | `lib/linux/linux_process.dart:10` (metric=pcpu) |
-| `zorin_uptime.txt` | `LC_ALL=C /usr/bin/uptime` | `lib/linux/linux_system.dart:22` |
-| `zorin_free.txt` | `LC_ALL=C /usr/bin/free -m` | `lib/linux/linux_system.dart:13-14` |
-| `zorin_loadavg.txt` | `cat /proc/loadavg` | `lib/linux/linux_system.dart:53` |
+| `zorin_uptime.txt` | `LC_ALL=C /usr/bin/uptime` | `lib/linux/linux_system.dart:26` |
+| `zorin_free.txt` | `LC_ALL=C /usr/bin/free -m` | `lib/linux/linux_system.dart:13-15` |
+| `zorin_loadavg.txt` | `cat /proc/loadavg` | `lib/linux/linux_system.dart:57` |
 
 Dokumentierte Abweichung: `zorin_ps.txt` wurde auf die ersten 60 Zeilen
 gekürzt (das Capture hatte 682; die Top-Liste braucht der Parser nur in
@@ -41,7 +41,7 @@ Capture lief ohne `-m` und enthielt KiB-Werte, während `MemoryInfo.*Mb`
 (Doku: „free -m, in mebibytes") und die Formatter (`/1024`, MiB→GiB)
 Mebibytes erwarten — auf diesem Capture-Pfad wären alle RAM-/Swap-Werte
 1024× zu hoch angezeigt worden. Der Produktionsaufruf in
-`lib/linux/linux_system.dart:11` wurde auf `/usr/bin/free -m` korrigiert und
+`lib/linux/linux_system.dart:13-15` wurde auf `/usr/bin/free -m` korrigiert und
 die Fixture damit neu aufgezeichnet (Follow-up aus dem #94-Review-Minor zu
 MemoryInfo MiB/KiB + Ad-hoc-Befund 2026-09-30). Der Dashboard-Poller
 (`lib/services/system_stats_service.dart`) führte `free -m` bereits korrekt;
@@ -100,7 +100,7 @@ geschwärzt, siehe Liste oben) sowie generische Pfade unter
 `additional/python/tests/test_fixture_leak_check.py` läuft mit der
 Python-Testsuite in CI und prüft jede `*.txt`-Datei hier gegen Musterkategorien
 (IPv4, IPv6-Heuristik, `/home`/`/media` mit erlaubtem Namen `user`, Domains mit
-TLD-Allowlist, `user@host`, Ports in `port=`-/`port:`-Form, `host:port`).
+TLD-Flag-Liste, `user@host`, Ports in `port=`-/`port:`-Form, `host:port`).
 `README.md` wird nicht gescannt — sie dokumentiert
 die Regeln selbst und enthielte damit die zu findenden Muster per Design.
 
@@ -117,7 +117,7 @@ sind ohne Fehlalarme nicht erkennbar und nicht identifizierend
 unterschieden).
 
 **Der Check ist heuristisch und ersetzt keine manuelle Durchsicht:** Die
-TLD-Allowlist ist bewusst kurz (`.ai` fällt z. B. durch das Raster), hex- und
+TLD-Flag-Liste ist bewusst kurz (`.store` fällt z. B. durch das Raster), hex- und
 ziffernähnliche Kennungen wie Serials oder MACs erkennt kein der Muster. Jede
 neue echte Ausgabe vor dem Einchecken selbst nach Usernamen, Rechnernamen,
 UIDs, Pfaden in `ps`-Argumenten und Browser-URLs durchsehen.

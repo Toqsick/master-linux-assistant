@@ -191,7 +191,11 @@ exit 0
 
       expect(result.success, isFalse);
       expect(result.exitCode, -1);
-      expect(result.error, isNotEmpty);
+      // The full error contract of the ProcessException path: no stdout was
+      // ever produced, and the message is the OS lookup failure (measured on
+      // this toolchain: "No such file or directory"), not a generic blob.
+      expect(result.output, isEmpty);
+      expect(result.error, contains("No such file or directory"));
     });
 
     test(
@@ -236,6 +240,10 @@ exit 0
       // prefix still resolves. Real /bin/sh — unprivileged, echo only.
       final ProcessCommandRunner runner = ProcessCommandRunner();
 
+      // Exact prefix chain instead of a bare startsWith("PATH=/"): the child
+      // sees the parent's PATH verbatim (not merely "some absolute path"),
+      // so echo it once and pin the full line.
+      final String parentPath = Platform.environment["PATH"]!;
       final CommandResult result = await runner.run(
         "sh",
         [r"-c", r"echo PATH=$PATH"],
@@ -243,7 +251,7 @@ exit 0
       );
 
       expect(result.success, isTrue);
-      expect(result.output.trim(), startsWith("PATH=/"));
+      expect(result.output.trim(), "PATH=$parentPath");
     });
   });
 }
