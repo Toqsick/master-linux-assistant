@@ -19,8 +19,13 @@
 | `l10n_test.dart` | l10n-Vollständigkeit der `.arb`-Dateien | Unit |
 | `quick_notes_widget_test.dart` | E2 QuickNotes-Widget (Save-Race, Fehler-State) | Widget-Tests |
 | `security_check_outcome_test.dart` | `classifySecurityCheck` (Exit-Code-Deutung) | Unit |
+| `hub_module_registry_test.dart` | `hubModules`-Registry (#60): Bijektion, Widget-Bau, ARB-Titel | Pure Dart |
+| `hub_navigation_test.dart` | Hub-Shell-Navigation H1–H9 (#60, Characterization) | Widget-Tests |
+| `process_command_runner_test.dart` | `ProcessCommandRunner`: echte Prozesse, pkexec/flatpak-Präfixe | Spawn-Tests |
 
-Ausführen: `flutter test` (aktuell: 177 Tests in 15 Dateien).
+Ausführen: `flutter test` (aktuell: 18 Dateien, 208 Tests; Python-Suite:
+`additional/python` → 53 Tests, `packages/la_core` → 61 Dart-Tests mit
+eigenen `dart analyze`/`dart format`-Gates).
 
 ## Etablierte Patterns
 

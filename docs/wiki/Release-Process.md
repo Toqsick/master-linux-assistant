@@ -33,8 +33,12 @@ bash ./build-deb.sh   # linux-assistant_0.7.2_amd64.deb (+ Alias linux-assistant
 ## Packaging-Details
 
 - **deb:** `build-deb.sh` staged in `build/deb-root/` (schreibt nichts mehr
-  in getrackte Dateien), deklariert GTK + Python-Module + keybinder.
-  Install: `sudo apt install ./linux-assistant_*_amd64.deb`.
+  in getrackte Dateien), deklariert GTK + Python-Module + keybinder. Es
+  kompiliert außerdem den headless-Probe `la_probe` aus
+  `packages/la_core/bin/la_probe.dart` nach
+  `/usr/lib/linux-assistant/la_probe` und smoked ihn display-los
+  (`--version`); fehlt `dart` im PATH, wird der Schritt übersprungen (kein
+  Paketfehler). Install: `sudo apt install ./linux-assistant_*_amd64.deb`.
 - **rpm:** unmaintained (`packaging/unmaintained/build-rpm.sh`, Version-Ersetzung per Feldname).
 - **arch:** unmaintained (`build-arch-pkg.sh` bricht ab, solange kein `PKGBUILD`
   neben dem Skript liegt; siehe `packaging/unmaintained/`).
@@ -51,7 +55,9 @@ Binaries tragen die glibc des Build-Images – ein stiller Wechsel von
 (Zorin OS 18, Mint 22, Ubuntu 24.04) nicht starten.
 
 Reihenfolge: `flutter pub get` → `tool/check-versions.sh` → `dart format`-Gate
-→ `flutter analyze`-Gate → `flutter test` → Python-Unit-Tests → `build-deb.sh`
+→ `flutter analyze`-Gate → `flutter test` → Python-Unit-Tests → la_core-Gates
+(`dart pub get` → `dart analyze` → `dart format` → `dart test` →
+`la_probe`-Headless-Compile in `packages/la_core`) → `build-deb.sh`
 → Artefakt-Upload.
 
 ## In-App-Updater

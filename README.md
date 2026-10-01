@@ -84,8 +84,8 @@ trigger is `Color.withValues(alpha:)` in the Hermes widgets), check
 `flutter --version` and switch to a newer channel if needed.
 
 ```bash
-git clone https://github.com/Jean28518/linux-assistant.git
-cd linux-assistant
+git clone https://github.com/Toqsick/master-linux-assistant.git
+cd master-linux-assistant
 
 # Option 1: Build with flutter manually
 flutter build linux
@@ -171,7 +171,7 @@ flatpak run io.github.jean28518.Linux-Assistant
 
 ## Features
 
-<https://github.com/Jean28518/linux-assistant/blob/main/features.csv>
+`features.csv` im Repo-Root (distro/desktop support matrix)
 
 ## Current Languages
 
@@ -182,7 +182,7 @@ flatpak run io.github.jean28518.Linux-Assistant
 
 ## Mission
 
-<https://github.com/Jean28518/linux-assistant/blob/main/MANIFEST.md>
+`MANIFEST.md` im Repo-Root
 
 ## Development
 

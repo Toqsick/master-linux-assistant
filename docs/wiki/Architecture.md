@@ -25,6 +25,9 @@ lib/
 ├── widgets/hermes/            Hermes-Widgets (Card, StatTile, Sparkline,
 │                              Badge, HaloDot, NavItem, CopyCommand)
 ├── models/, enums/, content/, helpers/, l10n/
+├── packages/                   la_core: Flutter-freier Dart-Kern (#59/#60/#93)
+│                              Parser, Probe-Vertrag, ModuleRegistry, EventBus,
+│                              CommandRunner, la_probe (headless CLI)
 additional/python/             Helferskripte (Umgebung, Apps, Bookmarks, …)
 ```
 
@@ -49,14 +52,14 @@ Content-Fläche.
    `fileManager`, `systemMonitor` → rendern im Frame, getrackt in
    `_screenTool`).
 
-### Screen-Tool-Pattern (neues Werkzeug hinzufügen)
+### Modul-Registry (Werkzeug hinzufügen, Issue #60)
 
-Vier kleine Edits in `hub_shell.dart`:
-
-1. Wert in `enum HubTool` aufnehmen
-2. Case in `_iconOfTool` + `_titleOfTool`
-3. Case in `_onToolTap` (Screen → `_selectTool`, extern → Launch)
-4. Case in `_contentFor` (Screen-Widget zurückgeben)
+Ein Eintrag in der `hubModules`-Map in `hub_module.dart` ersetzt die
+ehemaligen `switch`-Blöcke: Wert in `enum HubSection`/`HubTool` aufnehmen und
+ein zugehöriges `HubModule` registrieren (Icon, Titel, `screenBuilder`,
+Starts-Prozess-Flag). `hubModuleOf(tool)` ist der einzige Reader und wirft
+laut, wenn ein Enum-Wert ohne Registry-Eintrag bleibt; `hub_shell.dart`
+iteriert die Enums und rendert die Sidebar aus der Registry.
 
 ## Stats-Polling (Performance)
 
