@@ -24,7 +24,7 @@
 | `process_command_runner_test.dart` | `ProcessCommandRunner`: echte Prozesse, pkexec/flatpak-Präfixe | Spawn-Tests |
 
 Ausführen: `flutter test` (aktuell: 18 Dateien, 208 Tests; Python-Suite:
-`additional/python` → 53 Tests, `packages/la_core` → 61 Dart-Tests mit
+`additional/python` → 53 Tests, `packages/la_core` → 68 Dart-Tests mit
 eigenen `dart analyze`/`dart format`-Gates).
 
 ## Etablierte Patterns
