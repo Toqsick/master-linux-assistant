@@ -9,25 +9,36 @@ Aktuell: `v0.8.0` ist getaggt und veröffentlicht. Die Planung für
 Die Datei **`version`** im Repo-Root ist die einzige Source of Truth.
 `build-deb.sh` liest sie und ersetzt die Werte zur Build-Zeit – der
 eingecheckte Wert in `deb/DEBIAN/control` bleibt unangetastet (Commit
-`1e90957`). RPM und Arch sind im Fork unmaintained, ihre Vorlagen liegen
-unter `packaging/unmaintained/` (inkl. `rpmbuild/SPECS/…` und `PKGBUILD`).
+`1e90957`).
+
+**`pubspec.yaml` führt eine zweite, abhängige Kopie** (`version:`, inkl.
+`+Build-Nummer`), die Flutter für `--build-name`/`--build-number` braucht.
+Beide Werte müssen gleich laufen: `tool/check-versions.sh` vergleicht den
+numerischen Präfix der `pubspec.yaml` mit der `version`-Datei und lässt CI
+fehlschlagen, sobald sie auseinanderlaufen. Ein Release-Bump fasst deshalb
+**immer beide Dateien** an (siehe Schritt 2).
+
+Der einzige gepflegte Paketweg ist das Debian-Paket. Weitere, im Fork
+unmaintainte Paketweg-Vorlagen liegen unter `packaging/unmaintained/`
+(z. B. `PKGBUILD` für Arch).
 
 ## Release-Schritte
 
 ```bash
 # 1. Gate prüfen (siehe Milestone §5): CI grün, Verifikation abgehakt, l10n done
 
-# 2. Version bumpen
+# 2. Version bumpen — beide Quellen: `version` und die Kopie in `pubspec.yaml`
 echo "0.7.2" > version
-git add version && git commit -m "release: v0.7.2"
+sed -i 's/^version: .*/version: 0.7.2+1/' pubspec.yaml
+bash tool/check-versions.sh   # muss "version 0.7.2 is consistent" melden
+git add version pubspec.yaml && git commit -m "release: v0.7.2"
 
 # 3. Taggen & pushen
 git tag -a v0.7.2 -m "Admin-Hub: Werkzeuge-Sektion (Browser, Quick Notes, Dateimanager, Systemmonitor)"
 git push origin main --tags
 
-# 4. Pakete bauen
+# 4. Paket bauen (nur der deb-Pfad ist gepflegt)
 bash ./build-deb.sh   # linux-assistant_0.7.2_amd64.deb (+ Alias linux-assistant.deb für den CI-Artefakt-Upload)
-# rpm/arch: unmaintained, siehe packaging/unmaintained/
 ```
 
 ## Packaging-Details
@@ -39,7 +50,6 @@ bash ./build-deb.sh   # linux-assistant_0.7.2_amd64.deb (+ Alias linux-assistant
   `/usr/lib/linux-assistant/la_probe` und smoked ihn display-los
   (`--version`); fehlt `dart` im PATH, wird der Schritt übersprungen (kein
   Paketfehler). Install: `sudo apt install ./linux-assistant_*_amd64.deb`.
-- **rpm:** unmaintained (`packaging/unmaintained/build-rpm.sh`, Version-Ersetzung per Feldname).
 - **arch:** unmaintained (`build-arch-pkg.sh` bricht ab, solange kein `PKGBUILD`
   neben dem Skript liegt; siehe `packaging/unmaintained/`).
 - **Flatpak:** eigenständiger Track, separates Repo
@@ -65,8 +75,7 @@ Reihenfolge: `flutter pub get` → `tool/check-versions.sh` → `dart format`-Ga
 `LinuxAssistantUpdater.isVersionGreaterThanCurrent` toleriert Tags wie
 `0.8`, `v0.8.0-rc1` oder Müll (parst nur numerische Präfixe, wirft nie).
 Der Updater wählt das Release-Artefakt nach `content_type`
-(`application/vnd.debian.binary-package` bzw. `application/x-rpm`), nicht
-nach dem Dateinamen.
+(`application/vnd.debian.binary-package`), nicht nach dem Dateinamen.
 
 ## Smoke-Test nach Installation (DoD-Ausschnitt)
 

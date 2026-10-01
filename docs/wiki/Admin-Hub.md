@@ -86,6 +86,6 @@ Service: `lib/services/system_monitor_service.dart`.
 
 ## Eigenes Werkzeug hinzufügen
 
-Siehe [[Architecture]] → „Screen-Tool-Pattern“ (4 Edits in `hub_shell.dart`).
+Siehe [[Architecture]] → „Modul-Registry“ (Enum-Wert + `hubModules`-Eintrag in `hub_module.dart`).
 Konventionen: Hermes-Tokens statt harter Farben, Service injizierbar,
 Parser rein, destructive Aktionen mit Confirm.
