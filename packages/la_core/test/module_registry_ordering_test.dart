@@ -165,4 +165,35 @@ void main() {
     expect(registry.stateOf('a'), ModuleState.started);
     expect(registry.stateOf('b'), ModuleState.started);
   });
+
+  test('deactivateAll stoppt ein Modul im Uebergang, statt es zu '
+      'ueberspringen (Last-Wins)', () async {
+    final stopGate = Completer<void>();
+    final activator = GatedActivator(gates: {'stop:a': stopGate});
+    final registry = ModuleRegistry(activator: activator);
+    registry.register(mod('a'));
+
+    await registry.activate('a');
+    expect(activator.log, ['start a']);
+
+    // Deaktivierung laeuft, Gate haelt sie auf: Modul ist stopping, aber
+    // weiterhin in _activationOrder.
+    final stopping = registry.deactivate('a');
+    expect(registry.stateOf('a'), ModuleState.stopping);
+
+    // Gegenrichtung reiht sich richtungsbewusst hinter der Deaktivierung ein.
+    final restarting = registry.activate('a');
+
+    // Zeitlich letzter Aufruf: alles stoppen. Das Modul ist im Uebergang
+    // (stopping + gequeute Aktivierung) und darf nicht uebersprungen werden.
+    final allStopped = registry.deactivateAll();
+
+    stopGate.complete();
+    await stopping;
+    await restarting;
+    await allStopped;
+
+    expect(registry.stateOf('a'), ModuleState.stopped);
+    expect(activator.log, ['start a', 'stop a', 'start a', 'stop a']);
+  });
 }

@@ -281,7 +281,12 @@ class ModuleRegistry {
 
   Future<void> deactivateAll() async {
     for (final id in List.of(_activationOrder).reversed) {
-      if (_states[id] == ModuleState.started) {
+      // Auch Module im Uebergang (stopping/starting) erfassen: haengt dort
+      // bereits eine Gegenrichtungs-Aktivierung als Nachfolger unter
+      // _inflight, muss sich das "alles stoppen" dahinter einreihen — sonst
+      // gewinnt die gequeute Aktivierung und das Modul endet started, obwohl
+      // deactivateAll der zeitlich letzte Aufruf war (Issue #110).
+      if (_states[id] == ModuleState.started || _inflight.containsKey(id)) {
         await _enqueue(id, _Direction.deactivate);
       }
     }
