@@ -42,6 +42,11 @@ jobs:
       - name: Root runner tests
         run: python3 -m unittest discover -s tests -t .
         working-directory: additional/python
+      # MLA-Next #91: GTK token gate — tokens.css/tokens-dark.css consistent
+      # with docs/mla-next/TOKENS.md, WCAG-AA text pairs, no hardcoded colors
+      # in the shell. Plain Python, no GTK toolchain needed.
+      - name: GTK token gate
+        run: python3 -m unittest discover -s prototype/gtk/tests
       # MLA-Next: the pure-Dart core package (#59/#60) runs its own gates with
       # plain `dart` from the same SDK — no Flutter, no GTK toolchain, no
       # display (issue #59 requires the compiled probe to run headless in CI).
