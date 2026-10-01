@@ -1,0 +1,54 @@
+/*
+ * MLA-Next Tokens, Dark-Overrides (Issue #91, A1)
+ * Wird zusätzlich zu tokens.css geladen, wenn Adw.StyleManager dark meldet
+ * (GTK 4.14.5 unterstützt kein @media in provider-geladenem CSS — deshalb
+ * Provider-Tausch statt @media (prefers-color-scheme), s. TOKENS.md §8).
+ * Werte: docs/mla-next/TOKENS.md, Spalte Dark.
+ */
+
+@define-color bg #0D0D1A;
+@define-color sidebar #141425;
+@define-color surface #1A1A2E;
+@define-color surface-subtle #16162A;
+@define-color surface-subtle-hover #1F1F35;
+@define-color border #2A2A45;
+@define-color border-muted #3A3A58;
+@define-color border-subtle #20203A;
+@define-color text #FFF8DC;
+@define-color strong #FFFFFF;
+@define-color muted #C0C0C0;
+@define-color accent #FFD700;
+@define-color accent-hover #FFBF00;
+@define-color accent-text #FFD700;
+@define-color accent-bg #201D18;
+@define-color accent-bg-strong #322D1D;
+@define-color on-accent #0D0D1A;
+@define-color error #EF5350;
+@define-color success #4CAF50;
+@define-color warning #FFA726;
+@define-color info #4DD0E1;
+@define-color hover-bg rgba(255,255,255,0.059);
+@define-color input-bg rgba(255,255,255,0.039);
+@define-color focus-ring rgba(255,215,0,0.349);
+@define-color code-bg #1A1A2E;
+@define-color code-text #F0C27F;
+
+/* Status-Tones, Dark (TOKENS.md §4) */
+@define-color tone-ok-fg #4CAF50;
+@define-color tone-ok-bg #131D1F;
+@define-color tone-ok-border #1F3A29;
+@define-color tone-warn-fg #FFA726;
+@define-color tone-warn-bg #251C1B;
+@define-color tone-warn-border #51381D;
+@define-color tone-crit-fg #EF5350;
+@define-color tone-crit-bg #24141F;
+@define-color tone-crit-border #4C2129;
+@define-color tone-running-fg #4DD0E1;
+@define-color tone-running-bg #13212E;
+@define-color tone-running-border #1F4452;
+@define-color tone-unknown-fg #C0C0C0;
+@define-color tone-unknown-bg #16162A;
+@define-color tone-unknown-border #2A2A45;
+@define-color tone-stale-fg #C0C0C0;
+@define-color tone-stale-bg #16162A;
+@define-color tone-stale-border #2A2A45;

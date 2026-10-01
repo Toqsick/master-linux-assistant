@@ -422,6 +422,45 @@ unabhängig reproduziert).
 
 **Grenzen (bewusst offen).** Die #92-Abnahme bleibt formal offen (GTK-Datenadapter-Rest) und ist im §8-„Nicht verglichen“ benannt, nicht weggebügelt; die Flutter-vs-GTK-Entscheidung ist 0.4.x-Aufgabe (#105 nimmt diese Basis auf).
 
+## Handoff #91 — A1 Tokens & UI-Design (GTK-Shell)
+
+**Status:** Automatisierbarer Teil umgesetzt auf `feature/mla-91-tokens` (Basis-SHA `506eb88`; Plan-Commit `f8a080e`, Token-Spec `04a0c7d`, Shell-Umstellung `cfff063`, Token-Gate + CI `134b7a7`, Fenster-bg-Fix `eb81fbf`, dieser Abschnitt). Plan: `docs/superpowers/plans/2026-09-30-mla-91-tokens.md`. Manuelle Abnahmekriterien von #91 (Fokus-Durchgang, Skalierung, Wayland-Screenshot, visuelle Hell/Dunkel-Prüfung) bleiben Basti vorbehalten — unten benannt. GitHub-#91 bleibt bis Freigabe offen; kein Push erfolgt.
+
+**Failing-Test/Fixture.** Token-Gate `prototype/gtk/tests/test_tokens.py` als neuer Gate-Typ (kein klassisches RED/GREEN am Produktionscode — Doku+CSS+Test entstehen gemeinsam): Schärfe-Nachweise als RED-Äquivalent eingebaut, Muster wie der Leak-Check (`test_checker_rejects_known_bad_pair`: Weiß auf Cream muss abgewiesen werden; `test_gate_regex_flags_known_bad_snippet`: das Regex-Gate muss den vormals realen Verstoß `#B8860B` finden). Tone-Werte und Kontrastpaare werden aus `tokens.css`/`tokens-dark.css` geparst und gegen TOKENS.md/Formel nachgerechnet.
+
+**Basis-Entscheidungen.** Token-Namen 1:1 von `HermesTokens` übernommen (Werte `hermes_tokens.dart:98-162`; Naming-Frage aus ISSUES.md #71 dem User gestellt, unbeantwortet geblieben → Empfehlung getroffen, im Plan als revidierbar markiert). Kontrast-Ziel AA 4,5:1 für 16 Text-Paare je Schema. Status-Tones ohne neue Farben (fg solid / bg 10 % / border 28 % auf bg vorgeblendet), `stale` strukturell von `ok` getrennt (gestrichelte Border, farbenblindsicher).
+
+**Mechanismus-Befunde (2026-09-30, GTK 4.14.5 / libadwaita 1.5.0):**
+1. **`@media` wird in provider-geladenem CSS nicht unterstützt** (Parser: «Unknown @ rule», isoliert verifiziert — `load_from_data` warnt nur, wirft nicht). Plan-Fallback umgesetzt: `tokens.css` (Light+Klassen) + `tokens-dark.css` (nur `@define-color`-Overrides) über zweiten Provider mit `PRIORITY_APPLICATION + 1`, umgeschaltet am `Adw.StyleManager`-Signal `notify::dark`.
+2. **GTK4 zieht Wayland vor**, wenn `WAYLAND_DISPLAY` gesetzt ist — `DISPLAY=:1` allein erzwingt KEINEN X11-Lauf. X11-Läufe brauchen `GDK_BACKEND=x11` (Lesson für künftige Start-Gates; BASELINE-§2-X11-Belege beruhten auf Backend-Erzwingung).
+3. **GApplication-Primärinstanz-Verhalten:** eine überlebende alte Instanz lässt neue Läufe still (Exit 0, stderr leer) beenden. Beim Aufräumen die echte python-PID killen (`pgrep -f ^python3 mla_app.py`), nicht die Wrapper-Subshell.
+4. **`@bg` war definiert, aber nicht angewandt** (libadwaita zeigt eigenes `window_bg`) — durch Pixel-Probe der Screenshots gefunden und mit `window { background-color: @bg; }` geschlossen (`eb81fbf`).
+5. **focusRing < 3:1** (kompositiert ≈ 1,4:1 light / ≈ 2,5:1 dark): Plan-Prämisse «Non-Text ≥ 3:1» korrigiert — als dokumentierte Schwäche mit Hermes-Parität ausgewiesen (TOKENS.md §5) und vom Token-Gate unter 3:1 gepinnt statt behauptet.
+
+**Belege (X11-Screenshots, nur /tmp-Artefakte, ohne Secrets).** `/tmp/mla91-x11-light.png` und `/tmp/mla91-x11-dark.png` (je 1294×874, `MLA_FORCE_COLOR_SCHEME` + `GDK_BACKEND=x11`, xdotool-`--pid`-Suche + `import -window`). Pixel-Probe: Inhalt hell (254,252,247) = `#FEFCF7` = `@bg` light, dunkel (13,13,26) = `#0D0D1A` = `@bg` dark; Sidebar (250,247,240)/(20,20,37) = `@sidebar` je Schema — die Dark-Umschaltung (Provider-Tausch) ist damit pixelgenau belegt. Durchschnittshelligkeit 84 % vs. 12 %.
+
+**Gates — tatsächlich ausgeführt (2026-09-30 auf `eb81fbf`):**
+
+| Gate | Ausgabe |
+|---|---|
+| `python3 -m py_compile prototype/gtk/mla_app.py` | Exit 0 |
+| Start-Gate Wayland light/dark (`GDK_BACKEND=wayland`, `timeout 6`) | je Exit 124 (≥ 6 s am Leben), stderr 0 Bytes |
+| Start-Gate X11 light/dark (`DISPLAY=:1 GDK_BACKEND=x11`, `timeout 6`) | je Exit 124, stderr 0 Bytes |
+| `python3 -m unittest discover -s prototype/gtk/tests` | `Ran 10 tests` / `OK` |
+| `python3 -m unittest discover -s tests -t .` (additional/python, unberührt) | `Ran 53 tests` / `OK` |
+
+**Rote/übersprungene Gates.** Rot: eine — der erste Screenshot-Versuch schlug fehl (xdotool fand kein Fenster; Ursache Befund 2+3, kein Produktionsfehler); nach Backend-Erzwingung und PID-Aufräumen grün. Übersprungen: `build-deb.sh` (kein Paketbezug; CI baut beim späteren PR inkl. neuem GTK-token-gate-Schritt), Root-Flutter-Gates und la_core in Task 4 (laufen frisch in Task 5 als Frischlauf-Sicherung — keine Flutter-/la_core-Dateien im Scope), Wayland-Screenshot (bleibt manuell, BASELINE §6.2).
+
+**Manuelle Zorin-Prüfung (Basti, offen).** Vollständiger Fokus-/Tastaturdurchgang (sichtbarer Fokusring in allen Bereichen — der Ring liegt rechnerisch unter 3:1, Befund 5), Hell/Dunkel-Umschaltung am lebenden System, Skalierung 100/125/150 %, Wayland-Screenshot; entspricht BASELINE §3 Punkten 6–8 plus ISSUES.md #91 Abnahmen 3–5.
+
+**Reviewer (Final-Whole-Branch-Review 2026-09-30, `506eb88..5e308ad`, 6 Commits).**
+- **A (Korrektheit): APPROVED** — Werte-Parität 26/26 je Schema in eigener Nachrechnung direkt gegen `hermes_tokens.dart` (nicht dem Test vertrauend); Tone-Formel 24/24 selbst nachgerechnet; Mutations-Test real durchgeführt (`#FEFCF7`→`#FEFCF6` ⇒ 8 Failures — das Gate fängt selbst 1/255-Drift); WCAG-Mathematik über alle 256 Kanalwerte als identisch mit der Dart-Implementierung verifiziert (Dart-Schwelle 0.03928 vs. 0.04045 ohne Auswirkung auf 8-bit-Werte); Provider-Mechanismus sauber (Initialisierung vor Fenster, kein Doppel-Add, keine Provider-Lecks, Prioritäten unkollidiert); Handoff-Pixelwerte gegen die /tmp-Screenshots reproduziert.
+- **B (Sicherheit/Spec): READY_FOR_PR** — Scope exakt die 8 erlaubten Dateien, Trinitäts-Diff leer, keine Secrets/Hostnamen/IPs, kein PNG committet, stale≠ok durchgängig (Doc + CSS + Test), Doku ohne 3:1-Überbehauptung, CI-Schritt YAML-valid und korrekt platziert, Abnahme-Mapping der 5 #91-Kriterien korrekt und ohne criterion-Washing.
+- **Gesamt: READY_FOR_PR.** Minors: focusRing-Dark-Rundung ≈2,6→≈2,5 und Test-Kommentar 1.06→1.03 im Verdict-Commit korrigiert; Plan-Erratum nachgetragen. **FOLLOW-UP (bewusst offen):** (a) Die Parität TOKENS.md↔`hermes_tokens.dart` ist nur manuell geprüft — das Token-Gate liest die Dart-Quelle nicht (Kandidat für den Follow-up-Pool, analog Issue #110); (b) `self.title`-Schattierung in `mla_app.py` (seit Basis vorhanden, harmlos — für #92 merken); (c) `spineWidth`/`opacity*`-Tokens dokumentiert, aber in der Shell noch ohne Anwendung (Andockpunkt A2/#92).
+
+**Task-5-Frischlauf (2026-09-30, auf Handoff-Stand):** `check-versions.sh` ok · `dart format` 123 Dateien 0 geändert · `flutter analyze` 0 Findings · `flutter test` +208 · additional/python 53 OK · GTK-Token-Gate 10 OK · la_core format 0 geändert / analyze clean / +61.
+
+**Rückfallplan.** `git revert` der #91-Commits (`f8a080e` … Handoff-Commit) genügt: neue Dateien (TOKENS.md, tokens.css, tokens-dark.css, test_tokens.py, Plan-Datei) plus kleine Änderungen (mla_app.py, build.yml, VERIFY.md); kein Datenpfad, keine Unit, kein Packaging, polkit-Trinität unberührt.
 ## Handoff #110-A — Registry-Race-Härtung (Nachtlauf 2026-09-30, abgeschlossen 2026-10-01)
 
 **Status:** Pool-Position A aus Issue #110 (Registry-Race-Härtung la_core) umgesetzt auf Branch `night/pool-a` (Basis-SHA `506eb88`). Umsetzung aus dem Nachtlauf (Automation) vom 2026-09-30 (`b13bdd7`, 2 Dateien, +298/−26); Review-Fix `530ea0f`, Handoff-Sektion, Gate-Frischlauf, RED-Belege, Ledger und Push/PR am 2026-10-01 interaktiv ergänzt.
