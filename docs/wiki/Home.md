@@ -15,7 +15,7 @@ eingebetteten Werkzeugen in der Sidebar.
 | Seite | Inhalt |
 |---|---|
 | [[Getting-Started]] | Bauen, Installieren, Starten, Hotkey, Deinstallieren |
-| [[Architecture]] | Schichten, Hub-Shell, Screen-Tool-Pattern, Services, Stats-Polling |
+| [[Architecture]] | Schichten, Hub-Shell, Modul-Registry, Services, Stats-Polling |
 | [[Admin-Hub]] | Die vier Werkzeuge (Browser, Quick Notes, Dateimanager, Systemmonitor) |
 | [[Design-System]] | Mint-Y/Hermes-Tokens, Widget-Katalog, Regeln |
 | [[Testing]] | Suite-Überblick, Test-Patterns, Golden-Status |

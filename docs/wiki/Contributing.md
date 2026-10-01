@@ -22,8 +22,8 @@
 - **Tokens statt Hardcodes:** `HermesTokens.of(context)` / `context.mintY`
   (nach PR B). Keine neuen `Colors.*`/Hex-Werte in Screens. Bestehende
   Verstöße: `docs/design/design-audit-inconsistencies.md`.
-- **Screens swappen, nicht pushen:** Neue Hub-Bereiche folgen dem
-  Screen-Tool-Pattern ([[Architecture]]). Kein `Navigator.push` für
+- **Screens swappen, nicht pushen:** Neue Hub-Bereiche registrieren sich in
+  der Modul-Registry ([[Architecture]]). Kein `Navigator.push` für
   Hub-interne Navigation.
 - **Ressourcen-Disziplin:** Kein `Timer` in `build()`; Futures einmal in
   `initState` starten; `mounted` nach jedem `await`; Controller/Timer in
