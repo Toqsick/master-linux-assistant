@@ -1,7 +1,33 @@
+import 'dart:async';
+
 import 'event_bus.dart';
 import 'module_descriptor.dart';
 
 enum ModuleState { registered, starting, started, stopping, stopped }
+
+/// Richtung der unter [ModuleRegistry._inflight] angemeldeten Operation.
+/// Nur gleichgerichtete Aufrufe teilen sich eine Future; Gegenrichtungen
+/// laufen nacheinander (geordnetes Last-Wins, Issue #110).
+enum _Direction { activate, deactivate }
+
+/// Laufender Vorgang einer Modul-ID. Der Vorgang wird ueber [complete] bzw.
+/// [fail] abgeschlossen; Nachfolger in Gegenrichtung warten auf [operation].
+class _Inflight {
+  _Inflight(this.direction);
+
+  final _Direction direction;
+  final Completer<void> _done = Completer<void>();
+
+  Future<void> get operation => _done.future;
+
+  void complete() {
+    if (!_done.isCompleted) _done.complete();
+  }
+
+  void fail(Object error, StackTrace stackTrace) {
+    if (!_done.isCompleted) _done.completeError(error, stackTrace);
+  }
+}
 
 abstract interface class ModuleActivator {
   Future<void> start(ModuleDescriptor module);
@@ -30,7 +56,12 @@ class ModuleRegistry {
   final Map<String, ModuleDescriptor> _modules = {};
   final Map<String, ModuleState> _states = {};
   final Map<String, bool> _visible = {};
-  final Map<String, Future<void>> _inflight = {};
+
+  /// Laufende Operation je Modul-ID. Vorher lag hier nur eine Future, wodurch
+  /// ein `activate` eine laufende Deaktivierung still als eigenes Ergebnis
+  /// teilte und ein Modul ueber einem bereits gestoppten Abhaengigen starten
+  /// konnte (Issue #110).
+  final Map<String, _Inflight> _inflight = {};
   final List<String> _activationOrder = [];
   bool _validated = false;
 
@@ -90,24 +121,105 @@ class ModuleRegistry {
       throw ModuleRegistryError('unknown module id: $id');
     }
     if (!_validated) validate();
-    return _inflight[id] ??= _activateSubtree(id);
+    return _enqueue(id, _Direction.activate);
+  }
+
+  /// Reiht eine Operation fuer [id] ein. Gleichgerichtete Aufrufe teilen sich
+  /// die laufende Future (Single-Flight); ein Gegenrichtungs-Aufruf wartet auf
+  /// den laufenden Vorgang und startet danach — geordnetes Last-Wins, damit
+  /// `activate` nach einem `deactivate` tatsaechlich wieder startet (Issue
+  /// #110).
+  Future<void> _enqueue(String id, _Direction direction) {
+    final existing = _inflight[id];
+    if (existing == null) {
+      final entry = _Inflight(direction);
+      _inflight[id] = entry;
+      unawaited(_run(id, direction, entry));
+      return entry.operation;
+    }
+    if (existing.direction == direction) return existing.operation;
+
+    final entry = _Inflight(direction);
+    _inflight[id] = entry;
+    unawaited(
+      existing.operation
+          // Das Ergebnis des Vorgaengers ist nur fuer die Reihenfolge
+          // relevant; ein Fehler dort gehoert seinem Aufrufer, nicht dem
+          // Nachfolger.
+          .then<void>((_) {}, onError: (Object _, StackTrace _) {})
+          .then((_) => _run(id, direction, entry)),
+    );
+    return entry.operation;
+  }
+
+  /// Fuehrt die angemeldete Operation aus und schliesst [entry] ab. Fehler
+  /// laufen auf die Future des Eintrags, damit der `unawaited`-Start in
+  /// [_enqueue] keinen unbehandelten Fehler erzeugt.
+  Future<void> _run(String id, _Direction direction, _Inflight entry) async {
+    try {
+      if (direction == _Direction.activate) {
+        await _activateSubtree(id);
+      } else {
+        await _deactivateWithDependents(id);
+      }
+      entry.complete();
+    } catch (error, stackTrace) {
+      entry.fail(error, stackTrace);
+    } finally {
+      // Nur den eigenen Eintrag raeumen: eine bereits eingereihte
+      // Gegenrichtung haengt unter demselben Key und wartet auf uns.
+      if (identical(_inflight[id], entry)) {
+        _inflight.remove(id);
+      }
+    }
   }
 
   Future<void> _activateSubtree(String id) async {
     for (final depId in _dependenciesOf(id)) {
-      if (_states[depId] != ModuleState.started) {
-        await (_inflight[depId] ??= _activateSubtree(depId));
+      // Auch bei laufendem Vorgang anmelden: ist das eine Deaktivierung,
+      // reiht sich der Start dahinter ein und startet das Dep danach neu,
+      // statt still ueber einem gestoppten Dep zu starten (Issue #110).
+      final pending = _inflight[depId];
+      if (pending != null || _states[depId] != ModuleState.started) {
+        await _enqueue(depId, _Direction.activate);
       }
+      _requireStarted(id, depId);
     }
     if (_states[id] == ModuleState.started) return;
     _states[id] = ModuleState.starting;
-    try {
-      await _activator.start(_modules[id]!);
-      _states[id] = ModuleState.started;
-      _activationOrder.add(id);
-    } finally {
-      _inflight.remove(id);
+    await _activator.start(_modules[id]!);
+    // Re-Check nach dem Await: waehrend des Starts kann ein Dep gestoppt
+    // worden sein. Dann nicht als started stehen bleiben, sondern den Start
+    // zurueckrollen und laut werfen (Requires-Invariante).
+    for (final depId in _dependenciesOf(id)) {
+      final pending = _inflight[depId];
+      final depWillStop =
+          pending != null && pending.direction == _Direction.deactivate;
+      if (_states[depId] != ModuleState.started || depWillStop) {
+        await _rollbackStart(id);
+        throw ModuleRegistryError(
+          '$id requires $depId, which is no longer started',
+        );
+      }
     }
+    _states[id] = ModuleState.started;
+    _activationOrder.add(id);
+  }
+
+  void _requireStarted(String id, String depId) {
+    if (_states[depId] != ModuleState.started) {
+      throw ModuleRegistryError('$id requires $depId, which is not started');
+    }
+  }
+
+  /// Rollt einen Start zurueck, dessen Abhaengigkeiten waehrend des Starts
+  /// gestoppt wurden: das Modul laeuft, darf aber nicht als gestartet gefuehrt
+  /// werden.
+  Future<void> _rollbackStart(String id) async {
+    _states[id] = ModuleState.stopping;
+    await _activator.stop(_modules[id]!);
+    _states[id] = ModuleState.stopped;
+    _activationOrder.remove(id);
   }
 
   List<String> _dependenciesOf(String id) {
@@ -129,7 +241,7 @@ class ModuleRegistry {
     if (!_modules.containsKey(id)) {
       throw ModuleRegistryError('unknown module id: $id');
     }
-    return _inflight[id] ??= _deactivateWithDependents(id);
+    return _enqueue(id, _Direction.deactivate);
   }
 
   Future<void> _deactivateWithDependents(String id) async {
@@ -139,29 +251,21 @@ class ModuleRegistry {
       if (active == id) break;
       if (_states[active] == ModuleState.started &&
           _transitivelyDependsOn(active, id)) {
-        await (_inflight[active] ??= _stopModule(active));
+        await _stopModule(active);
       }
     }
-    // Direkt stoppen: _inflight[id] enthaelt bereits die Future DIESES
-    // Deactivate-Laufs (Eintrag in deactivate()); `??=` wuerde sonst auf
-    // uns selbst warten -> Deadlock. Single-Flight bleibt am EntryPoint
-    // von deactivate() gewaehrleistet.
+    // _inflight raeumt ausschliesslich _run: der eigene Eintrag traegt die
+    // Future, auf die eine bereits eingereihte Gegenrichtung wartet.
     if (_states[id] == ModuleState.started) {
       await _stopModule(id);
-    } else {
-      _inflight.remove(id);
     }
   }
 
   Future<void> _stopModule(String id) async {
     _states[id] = ModuleState.stopping;
-    try {
-      await _activator.stop(_modules[id]!);
-      _states[id] = ModuleState.stopped;
-      _activationOrder.remove(id);
-    } finally {
-      _inflight.remove(id);
-    }
+    await _activator.stop(_modules[id]!);
+    _states[id] = ModuleState.stopped;
+    _activationOrder.remove(id);
   }
 
   bool _transitivelyDependsOn(String m, String target, [Set<String>? seen]) {
@@ -177,8 +281,13 @@ class ModuleRegistry {
 
   Future<void> deactivateAll() async {
     for (final id in List.of(_activationOrder).reversed) {
-      if (_states[id] == ModuleState.started) {
-        await (_inflight[id] ??= _stopModule(id));
+      // Auch Module im Uebergang (stopping/starting) erfassen: haengt dort
+      // bereits eine Gegenrichtungs-Aktivierung als Nachfolger unter
+      // _inflight, muss sich das "alles stoppen" dahinter einreihen — sonst
+      // gewinnt die gequeute Aktivierung und das Modul endet started, obwohl
+      // deactivateAll der zeitlich letzte Aufruf war (Issue #110).
+      if (_states[id] == ModuleState.started || _inflight.containsKey(id)) {
+        await _enqueue(id, _Direction.deactivate);
       }
     }
   }
