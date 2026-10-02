@@ -220,9 +220,14 @@ class AppLauncher {
   static List<String> _defaultXdgDataDirs() {
     final env = Platform.environment;
     final home = env['HOME'];
-    final dataHome =
-        env['XDG_DATA_HOME'] ?? (home != null ? '$home/.local/share' : null);
-    final dirsRaw = env['XDG_DATA_DIRS'] ?? '/usr/local/share:/usr/share';
+    final configuredDataHome = env['XDG_DATA_HOME'];
+    final dataHome = configuredDataHome != null && configuredDataHome.isNotEmpty
+        ? configuredDataHome
+        : (home != null ? '$home/.local/share' : null);
+    final configuredDataDirs = env['XDG_DATA_DIRS'];
+    final dirsRaw = configuredDataDirs != null && configuredDataDirs.isNotEmpty
+        ? configuredDataDirs
+        : '/usr/local/share:/usr/share';
     return [
       if (dataHome != null) dataHome,
       ...dirsRaw.split(':').where((dir) => dir.isNotEmpty),
