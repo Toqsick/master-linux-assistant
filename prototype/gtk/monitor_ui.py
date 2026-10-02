@@ -9,7 +9,7 @@ Captions und Zeichenflächen nach (D6, Single-Source-Timer).
 """
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk
+from gi.repository import Gdk, Gtk
 
 from monitor_model import VALUE_SPECS, format_caption
 
@@ -50,6 +50,7 @@ class MonitorView(Gtk.Box):
             row.append(caption)
             row.append(area)
             gesture = Gtk.GestureClick()
+            gesture.set_button(Gdk.BUTTON_PRIMARY)  # nur Primärklick; Touch/Tap zählt als primär
             gesture.connect('released', self._on_row_clicked, spec.id)
             row.add_controller(gesture)
             self.append(row)

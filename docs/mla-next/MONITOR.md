@@ -158,7 +158,8 @@ Je `VALUE_SPECS`-Eintrag eine Zeile aus Caption-Label und
 `Gtk.DrawingArea` (Mindesthöhe 72 px, `hexpand`/`vexpand`); Zeilenabstand
 space3, Label↔Diagramm space1 (TOKENS.md §2). Ein `Gtk.GestureClick` je
 Zeile (Signal `released`, `value_id` als Signal-User-Data) öffnet das
-Drill-down; die ganze Zeile ist Klickfläche.
+Drill-down (nur Primärklick, `Gdk.BUTTON_PRIMARY`); die ganze Zeile ist
+Klickfläche.
 
 ### Caption (exakt, `format_caption`)
 
