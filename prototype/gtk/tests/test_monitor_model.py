@@ -1,4 +1,4 @@
-"""Tests für die /proc-Parser und die Wertespec des Monitors (Issue #96, Task 1).
+"""Tests für die /proc-Parser, die Wertespec und den Ringpuffer (Issue #96).
 
 Die erwarteten Werte rechnet jeder Test unabhängig aus den Fixture-Texten
 nach (kleine Inline-Zerlegung, bewusst NICHT die Produktionsfunktionen) —
@@ -257,6 +257,81 @@ class ValueSpecTests(unittest.TestCase):
             with self.subTest(spec=spec.id):
                 self.assertTrue((FIXTURE_DIR / spec.fixture).is_file(),
                                 'fehlende Fixture: %s' % spec.fixture)
+
+
+class RingBufferTests(unittest.TestCase):
+    """Ringpuffer (D3, Task 2): Monotonie, Überlauf, Tupel-Momentaufnahme."""
+
+    def test_sample_is_a_timestamped_payload_pair(self):
+        sample = monitor_model.Sample(ts=3.0, payload='wert')
+        self.assertEqual(sample.ts, 3.0)
+        self.assertEqual(sample.payload, 'wert')
+        self.assertEqual(tuple(sample), (3.0, 'wert'))
+
+    def test_first_append_is_always_accepted(self):
+        ring = monitor_model.RingBuffer(3)
+        self.assertEqual(len(ring), 0)
+        self.assertEqual(ring.rejected, 0)
+        self.assertTrue(ring.append(1, 'erst'))
+        self.assertEqual(len(ring), 1)
+
+    def test_overflow_keeps_the_newest_entries_in_order(self):
+        ring = monitor_model.RingBuffer(3)
+        for ts in (1, 2, 3, 4, 5):
+            self.assertTrue(ring.append(ts, 'p%d' % ts))
+        self.assertEqual(len(ring), 3)
+        self.assertEqual([sample.ts for sample in ring.entries], [3, 4, 5])
+        self.assertEqual([sample.payload for sample in ring.entries],
+                         ['p3', 'p4', 'p5'])
+
+    def test_capacity_one_keeps_only_the_newest_entry(self):
+        ring = monitor_model.RingBuffer(1)
+        self.assertTrue(ring.append(1, 'alt'))
+        self.assertTrue(ring.append(2, 'neu'))
+        self.assertEqual(len(ring), 1)
+        self.assertEqual(ring.entries, (monitor_model.Sample(2, 'neu'),))
+
+    def test_same_or_smaller_timestamp_is_rejected_without_mutation(self):
+        ring = monitor_model.RingBuffer(3)
+        self.assertTrue(ring.append(5, 'a'))
+        before_len = len(ring)
+        before_entries = ring.entries
+        self.assertFalse(ring.append(5, 'b'))  # gleicher ts wie der letzte
+        self.assertEqual(ring.rejected, 1)
+        self.assertFalse(ring.append(4, 'c'))  # kleinerer ts
+        self.assertEqual(ring.rejected, 2)
+        self.assertEqual(len(ring), before_len)
+        self.assertEqual(ring.entries, before_entries)
+
+    def test_rejected_counter_does_not_block_a_larger_timestamp(self):
+        ring = monitor_model.RingBuffer(3)
+        ring.append(5, 'a')
+        self.assertFalse(ring.append(5, 'b'))
+        self.assertFalse(ring.append(4, 'c'))
+        self.assertTrue(ring.append(6, 'd'))
+        self.assertEqual(ring.rejected, 2)
+        self.assertEqual([sample.ts for sample in ring.entries], [5, 6])
+
+    def test_entries_is_a_tuple_snapshot(self):
+        ring = monitor_model.RingBuffer(3)
+        ring.append(1, 'a')
+        entries = ring.entries
+        self.assertIsInstance(entries, tuple)
+        self.assertEqual(entries, (monitor_model.Sample(1, 'a'),))
+        self.assertIsInstance(ring.entries, tuple)
+
+    def test_payload_is_not_restricted_to_one_type(self):
+        ring = monitor_model.RingBuffer(2)
+        ring.append(1, ('value-sample', 37.8))
+        ring.append(2, None)
+        self.assertEqual(ring.entries[0].payload, ('value-sample', 37.8))
+        self.assertIsNone(ring.entries[1].payload)
+
+    def test_capacity_below_one_raises_value_error(self):
+        for capacity in (0, -1):
+            with self.subTest(capacity=capacity):
+                with self.assertRaises(ValueError):
+                    monitor_model.RingBuffer(capacity)
 
 
 if __name__ == '__main__':

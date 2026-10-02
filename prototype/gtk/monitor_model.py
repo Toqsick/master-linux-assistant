@@ -1,4 +1,4 @@
-"""Reine /proc-Parser und Wertespec für den GTK-Systemmonitor (Issue #96).
+"""Reine /proc-Parser, Wertespec und Ringpuffer für den GTK-Systemmonitor (Issue #96).
 
 Spec: `docs/mla-next/MONITOR.md` §1 (Werte & Quellen); die maschinenlesbare
 Fassung der Tabelle liegt hier als `VALUE_SPECS`. Das Modul ist gi-frei und
@@ -172,3 +172,47 @@ def parse_pressure_avg10(text: str) -> float:
                     return float(token.split('=', 1)[1])
             raise ValueError('some-Zeile ohne avg10=')
     raise ValueError('keine some-Zeile gefunden')
+
+
+class Sample(NamedTuple):
+    """Zeitgestempelter Eintrag des Ringpuffers: Zeitstempel + beliebiger Payload."""
+
+    ts: float
+    payload: object
+
+
+class RingBuffer:
+    """Ringpuffer fester Kapazität für zeitgestempelte Einträge (D3).
+
+    Reine Datenstruktur ohne Wertelogik, Parsing oder I/O. `append` nimmt nur
+    streng größere Zeitstempel als der letzte Eintrag an (strikte
+    Zeitmonotonie); abgelehnte Appends mutieren nichts und zählen in
+    `rejected`. Bei Überlauf fällt der älteste Eintrag heraus, die Reihenfolge
+    bleibt älteste→neueste und `len(ring) <= capacity` gilt immer.
+    """
+
+    def __init__(self, capacity: int):
+        if capacity < 1:
+            raise ValueError(
+                'capacity muss mindestens 1 sein, ist %d' % capacity)
+        self._capacity = capacity
+        self._entries: list[Sample] = []
+        self.rejected = 0
+
+    def __len__(self) -> int:
+        return len(self._entries)
+
+    @property
+    def entries(self) -> tuple[Sample, ...]:
+        """Momentaufnahme älteste→neueste; nie die interne Liste."""
+        return tuple(self._entries)
+
+    def append(self, ts: float, payload: object) -> bool:
+        """Eintrag anhängen, wenn `ts` streng größer als der letzte ist."""
+        if self._entries and ts <= self._entries[-1].ts:
+            self.rejected += 1
+            return False
+        self._entries.append(Sample(ts=ts, payload=payload))
+        if len(self._entries) > self._capacity:
+            del self._entries[0]
+        return True

@@ -67,7 +67,25 @@ daher ±0,5 pp.
 
 ## 2. Ringpuffer & Serien
 
-> Platzhalter — folgt in Task 3.
+### Puffer-Regeln (bindend, umgesetzt in Task 2)
+
+`RingBuffer(capacity)` hält zeitgestempelte Einträge `Sample(ts, payload)`;
+der Payload ist beliebig — der Sampler nutzt in Task 3 `ValueSample(wall,
+value)`. Der Puffer ist eine reine Datenstruktur: keine Wertelogik, kein
+Parsing, kein I/O.
+
+- `capacity < 1` → `ValueError`.
+- `append(ts, payload) -> bool` akzeptiert nur **streng größere** Zeitstempel
+  als der letzte Eintrag (strikte Zeitmonotonie). `ts <= letzter ts` wird
+  abgelehnt: Rückgabe `False`, Zähler `rejected` erhöht, **keine Mutation**.
+  Der erste Append ist immer akzeptiert.
+- Überlauf: Bei voller Kapazität fällt der älteste Eintrag heraus; die
+  Reihenfolge bleibt älteste→neueste, `len(ring) <= capacity` gilt immer.
+- `entries` liefert eine Tupel-Momentaufnahme älteste→neueste — nie die
+  interne Liste; `__len__` und `rejected` (Start 0) sind lesbar.
+
+> Der Serien-/Lücken-Teil (`build_series`, `stale_count`, Slots als `None`)
+> folgt in Task 3.
 
 ## 3. Sampler & Leseregeln
 
