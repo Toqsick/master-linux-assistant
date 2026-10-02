@@ -9,6 +9,7 @@ Captions und Zeichenflächen nach (D6, Single-Source-Timer).
 """
 import gi
 gi.require_version('Gtk', '4.0')
+gi.require_version('Gdk', '4.0')
 from gi.repository import Gdk, Gtk
 
 from monitor_model import VALUE_SPECS, format_caption
