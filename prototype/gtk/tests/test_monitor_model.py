@@ -8,8 +8,10 @@ im Test verdeckt werden.
 Läuft mit: python3 -m unittest discover -s prototype/gtk/tests (Repo-Root).
 Kein gi-Import: die CI läuft headless.
 """
+import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -678,6 +680,106 @@ class SamplerTests(unittest.TestCase):
         self.assertEqual(len(sampler.samples('ram_percent')), 1)
         # CPU: zweite Probe unverändert → Δtotal 0 → 'Delta ungueltig'.
         self.assertEqual(sampler.gaps['cpu_percent'], 'Delta ungueltig')
+
+
+def value_spec(value_id):
+    """ValueSpec per id aus VALUE_SPECS (Reihenfolge prüft die Spec-Klasse)."""
+    return next(spec for spec in monitor_model.VALUE_SPECS if spec.id == value_id)
+
+
+class FormatterTests(unittest.TestCase):
+    """Formatierer (Task 4): Anzeige, Caption, Drill-down — exakte Strings.
+
+    Die Zeitfälle laufen mit `TZ=UTC` (setUp/tearDown, `time.tzset()`);
+    Wall 1000.0 → `00:16:40`, 1003.0 → `00:16:43`.
+    """
+
+    def setUp(self):
+        self._old_tz = os.environ.get('TZ')
+        os.environ['TZ'] = 'UTC'
+        time.tzset()
+
+    def tearDown(self):
+        if self._old_tz is None:
+            os.environ.pop('TZ', None)
+        else:
+            os.environ['TZ'] = self._old_tz
+        time.tzset()
+
+    def test_format_value_uses_spec_decimals_and_unit(self):
+        # Punkt als Dezimaltrenner; Anzeige-Rundung der Plan-Anker.
+        self.assertEqual(
+            monitor_model.format_value(
+                value_spec('cpu_percent'), 100.0 * 376 / 996), '37.8 %')
+        self.assertEqual(
+            monitor_model.format_value(
+                value_spec('ram_percent'), 100.0 * 7066996 / 16066996),
+            '44.0 %')
+        self.assertEqual(
+            monitor_model.format_value(value_spec('psi_cpu_avg10'), 0.52),
+            '0.52 %')
+
+    def test_format_value_none_is_stale_never_zero(self):
+        cpu = value_spec('cpu_percent')
+        self.assertEqual(monitor_model.format_value(cpu, None), 'stale')
+        self.assertNotEqual(monitor_model.format_value(cpu, None), '0.0 %')
+        self.assertNotEqual(monitor_model.format_value(cpu, None), '0 %')
+
+    def test_format_caption_pins_source_unit_and_wall_clock(self):
+        self.assertEqual(
+            monitor_model.format_caption(value_spec('cpu_percent'), 1000.0, 0),
+            'Quelle: /proc/stat · Einheit: % · Messzeit: 00:16:40')
+
+    def test_format_caption_appends_stale_suffix_only_when_stale(self):
+        cpu = value_spec('cpu_percent')
+        self.assertEqual(
+            monitor_model.format_caption(cpu, 1000.0, 57),
+            'Quelle: /proc/stat · Einheit: % · Messzeit: 00:16:40 · stale: 57')
+        self.assertEqual(
+            monitor_model.format_caption(cpu, 1000.0, 0),
+            'Quelle: /proc/stat · Einheit: % · Messzeit: 00:16:40')
+
+    def test_format_caption_without_sample_shows_dash_and_stale(self):
+        self.assertEqual(
+            monitor_model.format_caption(value_spec('cpu_percent'), None, 60),
+            'Quelle: /proc/stat · Einheit: % · Messzeit: – · stale: 60')
+
+    def test_format_drilldown_pins_full_multiline_text(self):
+        samples = [monitor_model.ValueSample(wall=1000.0, value=10.0),
+                   monitor_model.ValueSample(wall=1003.0, value=20.0)]
+        self.assertEqual(
+            monitor_model.format_drilldown(
+                value_spec('cpu_percent'), samples, 58),
+            'CPU: 20.0 %\n'
+            'Quelle: /proc/stat\n'
+            'Formel: 100 × Δbusy/Δtotal, busy = total − idle − iowait, '
+            'Delta zweier aufeinanderfolgender Proben\n'
+            'Toleranz: ±0.5 pp\n'
+            'stale: 58\n'
+            '00:16:40  10.0 %\n'
+            '00:16:43  20.0 %')
+
+    def test_format_drilldown_without_samples_has_no_sample_lines(self):
+        lines = monitor_model.format_drilldown(
+            value_spec('cpu_percent'), [], 60).splitlines()
+        self.assertEqual(lines, [
+            'CPU: stale',
+            'Quelle: /proc/stat',
+            'Formel: 100 × Δbusy/Δtotal, busy = total − idle − iowait, '
+            'Delta zweier aufeinanderfolgender Proben',
+            'Toleranz: ±0.5 pp',
+            'stale: 60',
+        ])
+
+    def test_format_drilldown_keeps_only_the_last_ten_samples(self):
+        samples = [monitor_model.ValueSample(wall=1000.0 + 3 * index,
+                                             value=10.0 + index)
+                   for index in range(12)]
+        lines = monitor_model.format_drilldown(
+            value_spec('cpu_percent'), samples, 48).splitlines()
+        self.assertEqual(len(lines), 5 + 10)
+        self.assertEqual(lines[5], '00:16:46  12.0 %')   # ältestes der letzten 10
+        self.assertEqual(lines[-1], '00:17:13  21.0 %')  # jüngstes
 
 
 if __name__ == '__main__':

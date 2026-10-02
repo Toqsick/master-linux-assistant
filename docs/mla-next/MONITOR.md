@@ -152,7 +152,64 @@ nutzt als Payload `ValueSample(wall, value)` (Wanduhr + Wert, §3).
 
 ## 4. Darstellung & Drill-down
 
-> Platzhalter — folgt in Task 4.
+### Aufbau je Wert (umgesetzt in Task 4)
+
+Je `VALUE_SPECS`-Eintrag eine Zeile aus Caption-Label und
+`Gtk.DrawingArea` (Mindesthöhe 72 px, `hexpand`/`vexpand`); Zeilenabstand
+space3, Label↔Diagramm space1 (TOKENS.md §2). Ein `Gtk.GestureClick` je
+Zeile (Signal `released`, `value_id` als Signal-User-Data) öffnet das
+Drill-down; die ganze Zeile ist Klickfläche.
+
+### Caption (exakt, `format_caption`)
+
+`Quelle: <spec.source> · Einheit: <spec.unit> · Messzeit: HH:MM:SS`
+
+- Zeit aus `latest(value_id).wall` (Wanduhr, ausschließlich Anzeige — §3)
+  über `time.localtime`; ohne Messwert steht `–` (Halbgeviertstrich) im
+  Zeitfeld.
+- Das Suffix ` · stale: N` erscheint nur bei `N > 0`
+  (N = `stale_count(value_id)`).
+
+### Anzeigewert (exakt, `format_value`)
+
+`spec.decimals` Dezimalen mit Punkt als Trenner plus Einheit (`37.8 %`,
+`0.52 %`); `None` wird exakt `stale` — nie `0.0 %` oder `0 %` (D4).
+
+### Drill-down (exakt, `format_drilldown`)
+
+Kopfzeilen `Label: Wert`, `Quelle:`, `Formel:`, `Toleranz: ±{spec.tolerance} pp`,
+`stale: N`, danach höchstens die letzten 10 Samples älteste→neueste als
+`HH:MM:SS␣␣Wert` (zwei Leerzeichen; Zeit aus `sample.wall`). Ohne Samples
+bleiben die Sample-Zeilen weg (der Kopf sagt dann `Label: stale`). Der
+Text steht in der rechten Detail-Leiste und trägt dort die farbfreie
+Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
+`messend` (Tone `running`).
+
+### Diagramme (Cairo, `MonitorView._draw_chart`)
+
+- Grundlinie in `border-subtle`, Datenpolyline in `accent` — beide zur
+  Laufzeit über `StyleContext.lookup_color()` geholt (Fallback: aktuelle
+  Textfarbe); kein Farbwert im Quelltext (TOKENS.md §8).
+- Feste Y-Skala 0–100 %: Grundlinie = 0 %, Oberkante = 100 %; Werte
+  werden fürs Zeichnen auf [0, 100] geklemmt.
+- X-Raster = `sampler.series(value_id)`: Slot `i` liegt bei
+  `(i + 0,5) × Breite/Kapazität` (älteste links); `None`-Slots brechen
+  die Linie — es wird nie durch eine Lücke (oder gar 0) gezogen; eine
+  leere Serie zeigt nur die Grundlinie.
+
+### Zeitgeber & Refresh (D6, Single-Source)
+
+- Der einzige Mess-Zeitgeber lebt in der Shell:
+  `GLib.timeout_add_seconds(int(sampler.interval), self._tick)`; `_tick`
+  ruft `sampler.tick()` + `MonitorView.refresh()` und gibt
+  `GLib.SOURCE_CONTINUE`. Doppelstart-Guard über `_tick_source_id`
+  (armt nur, solange keine Source-ID steht).
+- `MonitorView` besitzt bewusst keinen eigenen Timer; `refresh()` zieht
+  Captions (auf den letzten Tick) und stößt `queue_draw` für alle
+  Flächen an.
+- `App.do_shutdown` bestellt die Source über `GLib.source_remove` ab
+  (`Window.stop_ticking`, idempotent).
+- MODULES-Untertitel des Monitor-Eintrags exakt `60 × 3 s · /proc`.
 
 ## 5. Vergleichsbasis Flutter
 
@@ -160,7 +217,41 @@ nutzt als Payload `ValueSample(wall, value)` (Wanduhr + Wert, §3).
 
 ## 6. Tests & Fixtures
 
-> Platzhalter — folgt in Task 4.
+### Modell-Suite `prototype/gtk/tests/test_monitor_model.py`
+
+- Tasks 1–3 (Parser, Ringpuffer, Serien, Sampler) sind dort vollständig
+  gepinnt; Fixture-Anker siehe §1.
+- Task 4 ergänzt `FormatterTests` (8 Tests) mit exakten Strings; TZ wird
+  in setUp/tearDown auf `UTC` erzwungen (`TZ` + `time.tzset()`), damit
+  die `HH:MM:SS`-Felder deterministisch sind:
+  - `format_value`: `37.751` → `37.8 %`, `43.98455…` → `44.0 %`,
+    `0.52` → `0.52 %`; `None` → exakt `stale` (mit
+    `assertNotEqual`-Pins gegen `0.0 %`/`0 %`).
+  - `format_caption`: exakt
+    `Quelle: /proc/stat · Einheit: % · Messzeit: 00:16:40`; mit Lücken
+    `… · stale: 57`, ohne Messwert `… · Messzeit: – · stale: 60`.
+  - `format_drilldown`: exakter Mehrzeiler aus Kopf und letzten 10
+    Samples; ohne Samples exakt 5 Zeilen (`CPU: stale` als erste); bei
+    12 Samples nur die letzten 10 (`00:16:46 …` bis `00:17:13 …`).
+
+### Token-Suite `prototype/gtk/tests/test_tokens.py`
+
+- Das Hardcode-Gate prüft seit #96 alle drei Shell-Dateien
+  (`SCANNED_PY`: `mla_app.py`, `monitor_ui.py`, `monitor_model.py`);
+  der Known-Bad-Nachweis (`#B8860B`, `rgba(`) bleibt als RED-Beleg
+  bestehen. Die Erweiterung lief zunächst rot (`monitor_ui.py` fehlte
+  noch, `FileNotFoundError`), danach grün.
+- Konsistenz-/Kontrast-Tests (§1, §5) bleiben unverändert.
+
+### Ausführung (Gates)
+
+- GTK: `python3 -m unittest discover -s prototype/gtk/tests` (aus dem
+  Repo-Root) — 72 Tests.
+- Bestehende Python-Suite: `cd additional/python && python3 -m unittest
+  discover -s tests -t .` — 53 Tests, unabhängig vom GTK-Track.
+- Start-Gates (BASELINE §2): Start unter Wayland und X11 je
+  `timeout 6` → Exit 124 (App läuft, kein stderr); Screenshot nur als
+  /tmp-Artefakt, nie im Repo (TOKENS.md §7).
 
 ## 7. Grenzen / #97
 

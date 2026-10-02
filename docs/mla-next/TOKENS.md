@@ -156,10 +156,17 @@ kein `@media` in provider-geladenem CSS (Parser: «Unknown @ rule», verifiziert
 CSS-Klassen mit Präfix `mla-` — semantische Klassen, deren Padding-/Border-Werte die Struktur-Tokens mit px-Kommentar anwenden (z. B. `.mla-nav-label` = 12/16 px = space3/space4; keine generischen `.mla-space-*`-Utility-Klassen):
 `.mla-screen` (Seitenrahmen), `.mla-details` (rechte Leiste),
 `.mla-chip` + `.mla-tone-ok` … `.mla-tone-stale` (Status; stale mit
-gestrichelter Border), Fokus-Outline global über `:focus-visible`. Für
-Abstände gelten padding/margin-Klassen; `Gtk.Box`-`spacing`, Paned-Position
-und Fenstergröße sind dokumentierte Tokens (§2), die im Code Anwendung finden
-(GTK bietet dafür kein CSS-Äquivalent). Keine Hex-Farben außerhalb der
-Token-Dateien — durchgesetzt per Regex-Gate in `test_tokens.py`
-(vormaliger Verstoß `#b8860b` in `mla_app.py:84` ist mit diesem Paket
-beseitigt).
+gestrichelter Border), `.mla-drilldown` (Monitor-Drill-down, `fontMono`
+aus §2, farbfrei — Textfarbe bleibt `@text`), Fokus-Outline global über
+`:focus-visible`. Für Abstände gelten padding/margin-Klassen;
+`Gtk.Box`-`spacing`, Paned-Position und Fenstergröße sind dokumentierte
+Tokens (§2), die im Code Anwendung finden (GTK bietet dafür kein
+CSS-Äquivalent). Die Monitor-Diagramme (#96) zeichnen mit Cairo und
+beziehen ihre Farben ausschließlich zur Laufzeit über
+`StyleContext.lookup_color()` (`border-subtle` = Grundlinie, `accent` =
+Polyline; Fallback: aktuelle Textfarbe) — kein Farbwert im Quelltext.
+Keine Hex-Farben außerhalb der Token-Dateien — durchgesetzt per
+Regex-Gate in `test_tokens.py`, seit #96 über alle drei Shell-Dateien
+`mla_app.py`, `monitor_ui.py` und `monitor_model.py` (`SCANNED_PY`);
+der vormalige Verstoß `#b8860b` in `mla_app.py:84` war bereits mit dem
+#91-Paket beseitigt.

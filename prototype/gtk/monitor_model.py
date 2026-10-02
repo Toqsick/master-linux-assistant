@@ -11,7 +11,8 @@ Botschaft. Datei-I/O gibt es ausschließlich in `ProcReader`/`Sampler`
 """
 import math
 import os
-from collections.abc import Callable, Iterable
+import time
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -411,3 +412,59 @@ class Sampler:
     def stale_count(self, value_id: str, now: float | None = None) -> int:
         """Anzahl stale-Slots dieses Werts (Modul-Funktion auf `series`)."""
         return stale_count(self.series(value_id, now))
+
+
+# --- Anzeige-Formatierer (Task 4, MONITOR.md §4) ---------------------------
+# Rein und gi-frei; die Zeitfelder nutzen die Wanduhr `ValueSample.wall`
+# (bzw. `newest_wall`) ausschließlich zur Anzeige, nie für Slot-Logik (D5).
+# Kein `None` wird je zu `0` — Lücken heißen exakt `stale` (D4).
+
+def format_value(spec: ValueSpec, value: float | None) -> str:
+    """Anzeigewert aus `spec.decimals` + `spec.unit`, Punkt als Trenner.
+
+    `None` (Lücke) wird exakt `stale` — nie `0.0` oder `0`.
+    """
+    if value is None:
+        return 'stale'
+    return f'{value:.{spec.decimals}f} {spec.unit}'
+
+
+def format_caption(spec: ValueSpec, newest_wall: float | None,
+                   stale: int) -> str:
+    """Bildunterschrift `Quelle: … · Einheit: … · Messzeit: HH:MM:SS`.
+
+    Zeit aus `newest_wall` per `time.localtime`; ohne Messwert steht `–`
+    (Halbgeviertstrich) im Zeitfeld. Das Suffix ` · stale: N` erscheint nur
+    bei `stale > 0`.
+    """
+    if newest_wall is None:
+        when = '–'
+    else:
+        when = time.strftime('%H:%M:%S', time.localtime(newest_wall))
+    caption = f'Quelle: {spec.source} · Einheit: {spec.unit} · Messzeit: {when}'
+    if stale > 0:
+        caption += f' · stale: {stale}'
+    return caption
+
+
+def format_drilldown(spec: ValueSpec, samples: Sequence[ValueSample],
+                     stale: int) -> str:
+    """Drill-down-Text: Kopfzeilen plus höchstens die letzten 10 Samples.
+
+    Reihenfolge: `Label: Wert`, `Quelle:`, `Formel:`, `Toleranz: ±N pp`,
+    `stale: N`, danach die Samples älteste→neueste als
+    `HH:MM:SS  Wert` (zwei Leerzeichen; Zeit aus `sample.wall`). Ohne
+    Samples bleiben die Sample-Zeilen weg.
+    """
+    newest = format_value(spec, samples[-1].value) if samples else 'stale'
+    lines = [
+        f'{spec.label}: {newest}',
+        f'Quelle: {spec.source}',
+        f'Formel: {spec.formula}',
+        f'Toleranz: ±{spec.tolerance} pp',
+        f'stale: {stale}',
+    ]
+    for sample in samples[-10:]:
+        stamp = time.strftime('%H:%M:%S', time.localtime(sample.wall))
+        lines.append(f'{stamp}  {format_value(spec, sample.value)}')
+    return '\n'.join(lines)

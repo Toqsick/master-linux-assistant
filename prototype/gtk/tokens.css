@@ -111,6 +111,12 @@ window {
   color: @text;
 }
 
+/* Drill-down des Monitors: Monospace für die Zeit-/Wert-Spalten
+ * (fontMono, TOKENS.md §2) — farbfrei, Textfarbe bleibt @text. */
+.mla-drilldown {
+  font-family: monospace;
+}
+
 /* Status-Chips: Radius pill, Hairline-Border; stale per gestrichelter
  * Border strukturell von ok getrennt (TOKENS.md §4). */
 .mla-chip {
