@@ -6,8 +6,9 @@ Deeper instructions override `~/AGENTS.md` for this subtree.
 
 **Purpose and stack:** Flutter/Dart Linux desktop app (C++/GTK runner,
 localized en/de/it/fi) with privileged Python helpers and Debian packaging.
-Read `MANIFEST.md` (philosophy) and `features.csv` (distro/desktop support
-matrix) before changing distro-conditional behavior. Requires
+Read `MANIFEST.md` (philosophy; reference system: Zorin OS 18.1) and
+`features.csv` (distro/desktop support matrix; distro columns frozen at
+upstream state) before changing distro-conditional behavior. Requires
 Dart ≥3.4 / Flutter ≥3.27.
 
 **Key files:** `version` (single source of truth), `pubspec.yaml`,

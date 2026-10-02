@@ -55,8 +55,8 @@ sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev
 To run an installed package, only the runtime libraries are needed — the `.deb`
 declares them, so `apt` pulls them in for you. The declared runtime set is
 `libgtk-3-0, libkeybinder-3.0-0, python3, python3-gi,
-gir1.2-gtk-3.0, python3-apt, mesa-utils, pkexec | policykit-1` (see
-`deb/DEBIAN/control`).
+gir1.2-gtk-3.0, python3-apt, mesa-utils, pkexec | policykit-1, xdg-utils,
+libgtk-3-bin, libglib2.0-bin` (see `deb/DEBIAN/control`).
 
 If you build with `flutter build linux` and run the bundle directly (Option 1
 under [Build](#build)), `apt` does not install those packages for you. The
@@ -64,7 +64,8 @@ Python helpers need GObject introspection, so install them by hand first:
 
 ```bash
 sudo apt install libgtk-3-0 libkeybinder-3.0-0 python3 python3-gi \
-     gir1.2-gtk-3.0 python3-apt mesa-utils policykit-1
+     gir1.2-gtk-3.0 python3-apt mesa-utils policykit-1 \
+     xdg-utils libgtk-3-bin libglib2.0-bin
 ```
 
 ## Build

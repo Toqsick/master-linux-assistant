@@ -140,11 +140,11 @@ class _HubShellState extends State<HubShell>
     SystemStatsService().setSectionActive(false);
   }
 
-  /// Starts the configured (or detected) browser as a detached process.
+  /// Starts the configured or XDG default browser as a detached process.
   ///
   /// Feedback mirrors the [BrowserLaunchResult]: silent on preferred launch,
-  /// informational snackbar on the xdg-open fallback, error snackbar when no
-  /// browser could be found or started at all.
+  /// informational snackbar on the known-browsers list fallback, error
+  /// snackbar when no browser could be found or started at all.
   Future<void> _launchBrowser() async {
     final result = await AppLauncher.launchBrowser();
     if (!mounted) return;
@@ -153,8 +153,8 @@ class _HubShellState extends State<HubShell>
         break; // Nothing to report – the browser window is the feedback.
       case BrowserLaunchResult.launchedFallback:
         _showSnack(_tr(context,
-            de: 'Brave nicht gefunden – Standard-Browser geöffnet.',
-            en: 'Brave not found – opened the default browser.'));
+            de: 'Standard-Browser nicht ermittelbar – ersatzweise bekannten Browser gestartet.',
+            en: 'Default browser unavailable – started a known browser instead.'));
         break;
       case BrowserLaunchResult.failed:
         _showSnack(_tr(context,
