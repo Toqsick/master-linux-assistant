@@ -70,7 +70,7 @@ class AppLauncher {
   }) {
     _which = whichRunner ?? _defaultWhich;
     _starter = processStarter ?? _defaultStarter;
-    _outputReader = outputReader ?? _defaultOutputReader;
+    _outputReader = outputReader ?? ((_, __) async => null);
     _desktopEntryExists = desktopEntryExists ?? desktopEntryExistsIn;
     _configuredBrowser = configuredBrowser ?? _defaultConfiguredBrowser;
   }

@@ -185,6 +185,25 @@ void main() {
       expect(fake.started.single, 'brave-browser');
     });
 
+    test('debug override does not run xdg-settings without an output reader',
+        () async {
+      final started = <String>[];
+      AppLauncher.debugOverride(
+        whichRunner: (binary) async => binary == 'brave',
+        processStarter: (binary, _) async {
+          started.add(binary);
+          return true;
+        },
+        configuredBrowser: () => null,
+      );
+
+      expect(
+        await AppLauncher.launchBrowser(),
+        BrowserLaunchResult.launchedFallback,
+      );
+      expect(started, ['brave']);
+    });
+
     test('fällt auf die Binary-Liste zurück, wenn die .desktop-Datei fehlt',
         () async {
       final fake = LauncherFake()
