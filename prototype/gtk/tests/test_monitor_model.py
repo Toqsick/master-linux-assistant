@@ -606,6 +606,29 @@ class SamplerTests(unittest.TestCase):
                 self.assertAlmostEqual(sampler.latest(value_id).value,
                                        expected, delta=0.01)
 
+    def test_meminfo_without_usable_total_is_a_named_value_gap(self):
+        reader = fixture_reader()
+        # Parsebar (beide Pflichtfelder da), aber total 0 → meminfo_percent None.
+        reader['meminfo'] = 'MemTotal: 0 kB\nMemAvailable: 0 kB\n'
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0)]))
+        sampler.tick()
+
+        self.assertEqual(
+            sampler.gaps['ram_percent'], 'Wert ungueltig: meminfo')
+        self.assertEqual(
+            sampler.gaps,
+            {'cpu_percent': 'Delta-Basis fehlt (erster Tick)',
+             'ram_percent': 'Wert ungueltig: meminfo'})
+        self.assertIsNone(sampler.latest('ram_percent'))
+        self.assertEqual(sampler.samples('ram_percent'), ())
+        for value_id, expected in (('psi_cpu_avg10', 0.52),
+                                   ('psi_memory_avg10', 1.25),
+                                   ('psi_io_avg10', 2.50)):
+            with self.subTest(value_id=value_id):
+                self.assertAlmostEqual(sampler.latest(value_id).value,
+                                       expected, delta=0.01)
+
     def test_series_after_three_ticks_has_stale_gaps_and_fresh_tails(self):
         reader = fixture_reader()
         sampler = monitor_model.Sampler(

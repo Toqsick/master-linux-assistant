@@ -215,12 +215,16 @@ class RingBuffer:
     def append(self, ts: float, payload: object) -> bool:
         """Eintrag anhängen, wenn `ts` streng größer als der letzte ist.
 
-        `NaN` wird durch den Guard abgelehnt (`not ts > letzter` ist für
-        NaN stets wahr); `+inf`/`-inf` sind dagegen geordnete Werte und
-        passieren ihn regulär.
+        `NaN`-Zeitstempel werden abgelehnt (sobald verglichen wird, ist `not
+        ts > letzter ts` für NaN wahr); `+inf`/`-inf` nehmen als geordnete
+        Werte (größter/kleinster Zeitstempel) am normalen Vergleich teil:
+        `+inf` wird angenommen, solange der letzte Eintrag kleiner ist;
+        `-inf` wird bei bestehendem Puffer abgelehnt (nur als erster Append
+        akzeptiert).
         """
         if self._entries and not ts > self._entries[-1].ts:
-            # 'not >' weist NaN ab (NaN > x ist False); ±inf bleiben geordnet.
+            # 'not >' weist NaN ab (NaN > x ist False); ±inf laufen durch den
+            # normalen Vergleich: +inf wird angenommen, -inf nur als Erstappend.
             self.rejected += 1
             return False
         self._entries.append(Sample(ts=ts, payload=payload))

@@ -79,9 +79,11 @@ Parsing, kein I/O.
   als der letzte Eintrag (strikte Zeitmonotonie). `ts <= letzter ts` wird
   abgelehnt: Rückgabe `False`, Zähler `rejected` erhöht, **keine Mutation**.
   Der erste Append ist immer akzeptiert.
-- `NaN`-Zeitstempel werden ebenfalls abgelehnt (der Guard `not ts > letzter
-  ts` ist für NaN stets wahr); `+inf`/`-inf` sind dagegen **geordnete Werte**
-  (größter/kleinster Zeitstempel) und passieren den Guard regulär.
+- `NaN`-Zeitstempel werden abgelehnt (sobald verglichen wird, ist `not ts >
+  letzter ts` für NaN wahr); `+inf`/`-inf` nehmen als geordnete Werte
+  (größter/kleinster Zeitstempel) am normalen Vergleich teil: `+inf` wird
+  angenommen, solange der letzte Eintrag kleiner ist; `-inf` wird bei
+  bestehendem Puffer abgelehnt (nur als erster Append akzeptiert).
 - Überlauf: Bei voller Kapazität fällt der älteste Eintrag heraus; die
   Reihenfolge bleibt älteste→neueste, `len(ring) <= capacity` gilt immer.
 - `entries` liefert eine Tupel-Momentaufnahme älteste→neueste — nie die
