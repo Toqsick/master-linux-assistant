@@ -111,7 +111,7 @@ Hostwerte, Namen oder IPs enthalten.
 | `proc_stat_a.txt` | `cpu_percent` (Basis) | erste von zwei Proben desselben Paares |
 | `proc_stat_b.txt` | `cpu_percent` (jünger) | Δtotal 996, Δbusy 376 → `100 × 376/996 = 37,7510… %` |
 | `proc_stat_truncated.txt` | — | `cpu `-Zeile mit nur zwei Feldern → Parser wirft `ValueError` |
-| `proc_meminfo.txt` | `ram_percent` | MemTotal 16066996 kB, MemAvailable 9000000 kB → `100 × 7066996/16066996 = 43,9841… %` |
+| `proc_meminfo.txt` | `ram_percent` | MemTotal 16066996 kB, MemAvailable 9000000 kB → `100 × 7066996/16066996 = 43,98455… %` |
 | `proc_pressure_cpu.txt` | `psi_cpu_avg10` | `some avg10` = 0.52 |
 | `proc_pressure_memory.txt` | `psi_memory_avg10` | `some avg10` = 1.25 |
 | `proc_pressure_io.txt` | `psi_io_avg10` | `some avg10` = 2.50 |
@@ -205,7 +205,7 @@ Lese-Konvention; in `prototype/gtk/` existiert dazu bewusst noch kein Code.
 | `proc_stat_a.txt` | synthetisch | /proc/stat-Snapshot, Basisprobe der CPU-Delta-Rechnung |
 | `proc_stat_b.txt` | synthetisch | /proc/stat-Snapshot, jüngere Probe (Δ → 37,7510 %) |
 | `proc_stat_truncated.txt` | synthetisch | zu kurze `cpu `-Zeile → ValueError-Pfad |
-| `proc_meminfo.txt` | synthetisch | /proc/meminfo-Snapshot (RAM 43,9841 %) |
+| `proc_meminfo.txt` | synthetisch | /proc/meminfo-Snapshot (RAM 43,98455 %) |
 | `proc_pressure_cpu.txt` | synthetisch | /proc/pressure/cpu, `some avg10=0.52` |
 | `proc_pressure_memory.txt` | synthetisch | /proc/pressure/memory, `some avg10=1.25` |
 | `proc_pressure_io.txt` | synthetisch | /proc/pressure/io, `some avg10=2.50` |

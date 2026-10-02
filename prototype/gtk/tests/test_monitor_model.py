@@ -74,6 +74,15 @@ class CpuParserTests(unittest.TestCase):
         self.assertEqual(times.total, 120)
         self.assertEqual(times.idle, 100)
 
+    def test_steal_counts_but_guest_does_not_double_count(self):
+        # Felder 1–8 (user … steal) ergeben 36; die Felder 9/10
+        # (guest/guest_nice = 9/10) dürfen laut man proc nicht zusätzlich
+        # zählen. Damit fallen die Mutanten sum(fields[:7]) → 28 und
+        # sum(fields[:10]) → 55.
+        times = monitor_model.parse_cpu_times('cpu 1 2 3 4 5 6 7 8 9 10\n')
+        self.assertEqual(
+            times, monitor_model.CpuTimes(total=36, idle=4, iowait=5))
+
     def test_four_fields_are_the_minimum_and_missing_iowait_is_zero(self):
         # Feld 4 ist idle (hier 4), Feld 5 fehlt → iowait 0.
         times = monitor_model.parse_cpu_times('cpu 1 2 3 4\n')
@@ -193,6 +202,31 @@ class ValueSpecTests(unittest.TestCase):
         'psi_io_avg10': ('PSI I/O', 2, 0.01),
     }
 
+    # Quelle und Formel wörtlich aus VALUE_SPECS — Spec-Drift wird rot.
+    SOURCES_AND_FORMULAS = {
+        'cpu_percent': (
+            '/proc/stat',
+            '100 × Δbusy/Δtotal, busy = total − idle − iowait, '
+            'Delta zweier aufeinanderfolgender Proben',
+        ),
+        'ram_percent': (
+            '/proc/meminfo',
+            '100 × (MemTotal − MemAvailable)/MemTotal',
+        ),
+        'psi_cpu_avg10': (
+            '/proc/pressure/cpu',
+            'some avg10 unverändert übernommen',
+        ),
+        'psi_memory_avg10': (
+            '/proc/pressure/memory',
+            'some avg10 unverändert übernommen',
+        ),
+        'psi_io_avg10': (
+            '/proc/pressure/io',
+            'some avg10 unverändert übernommen',
+        ),
+    }
+
     def test_five_specs_with_unique_ids_in_order(self):
         specs = monitor_model.VALUE_SPECS
         self.assertEqual(len(specs), 5)
@@ -209,6 +243,14 @@ class ValueSpecTests(unittest.TestCase):
                 self.assertEqual(spec.decimals, decimals)
                 self.assertGreater(spec.tolerance, 0.0)
                 self.assertAlmostEqual(spec.tolerance, tolerance, places=6)
+
+    def test_sources_and_formulas_are_pinned(self):
+        by_id = {spec.id: spec for spec in monitor_model.VALUE_SPECS}
+        self.assertEqual(set(by_id), set(self.SOURCES_AND_FORMULAS))
+        for value_id, (source, formula) in self.SOURCES_AND_FORMULAS.items():
+            with self.subTest(spec=value_id):
+                self.assertEqual(by_id[value_id].source, source)
+                self.assertEqual(by_id[value_id].formula, formula)
 
     def test_fixture_files_exist(self):
         for spec in monitor_model.VALUE_SPECS:

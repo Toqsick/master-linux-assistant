@@ -48,7 +48,7 @@ liefern Rohwerte (0–100 %), die Anzeige-Rundung übernimmt der Formatierer
 
 - `proc_stat_a.txt` → `proc_stat_b.txt`: Δtotal 996, Δbusy 376 →
   `100 × 376/996 = 37,7510… %` (Anzeige in Task 4: `37.8 %`).
-- `proc_meminfo.txt`: `100 × 7066996/16066996 = 43,9841… %`
+- `proc_meminfo.txt`: `100 × 7066996/16066996 = 43,98455… %`
   (Anzeige: `44.0 %`).
 - `proc_pressure_cpu.txt` / `proc_pressure_memory.txt` /
   `proc_pressure_io.txt`: `some avg10` 0.52 / 1.25 / 2.50.
