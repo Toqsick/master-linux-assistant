@@ -9,6 +9,7 @@ Läuft mit: python3 -m unittest discover -s prototype/gtk/tests (Repo-Root).
 Kein gi-Import: die CI läuft headless.
 """
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -350,6 +351,310 @@ class RingBufferTests(unittest.TestCase):
             with self.subTest(capacity=capacity):
                 with self.assertRaises(ValueError):
                     monitor_model.RingBuffer(capacity)
+
+
+def inline_ram_percent(text):
+    """Unabhängige RAM-Nachrechnung in Prozent aus einem meminfo-Text."""
+    total, available = inline_meminfo(text)
+    return 100.0 * (total - available) / total
+
+
+def series_entry(ts, value):
+    """Sample-Eintrag mit ValueSample-Payload für build_series-Tests."""
+    return monitor_model.Sample(
+        ts=ts, payload=monitor_model.ValueSample(wall=ts, value=value))
+
+
+class FakeReader(dict):
+    """Injizierter Reader: Dict {relpath: text}; fehlender Key wirft OSError."""
+
+    def __init__(self, files):
+        super().__init__(files)
+        self.read_paths = []
+
+    def __call__(self, relpath):
+        self.read_paths.append(relpath)
+        if relpath not in self:
+            raise OSError('Fake-Reader ohne %s' % relpath)
+        return self[relpath]
+
+
+class FakeClock:
+    """Deterministische Uhr: liefert die (mono, wall)-Paare der Reihe nach."""
+
+    def __init__(self, stamps):
+        self._stamps = list(stamps)
+
+    def __call__(self):
+        return self._stamps.pop(0)
+
+
+def fixture_reader():
+    """Voll bestückter Fake-/proc-Reader: alle fünf VALUE_SPECS-Pfade."""
+    return FakeReader({
+        'stat': fixture_text('proc_stat_a.txt'),
+        'meminfo': fixture_text('proc_meminfo.txt'),
+        'pressure/cpu': fixture_text('proc_pressure_cpu.txt'),
+        'pressure/memory': fixture_text('proc_pressure_memory.txt'),
+        'pressure/io': fixture_text('proc_pressure_io.txt'),
+    })
+
+
+class BuildSeriesTests(unittest.TestCase):
+    """Serienraster (D4, Task 3): Slots, stale-Lücken, jüngster Eintrag."""
+
+    def test_gap_sequence_keeps_stale_slots_as_none_not_zero(self):
+        entries = [series_entry(0, 10.0), series_entry(15, 20.0)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=5, now=15)
+        self.assertEqual(len(series), 5)
+        self.assertEqual(series, (None, None, None, None, 20.0))
+        for slot in series[:-1]:
+            self.assertIsNone(slot)
+            self.assertNotEqual(slot, 0.0)
+
+    def test_full_grid_keeps_all_five_values_in_order(self):
+        entries = [series_entry(ts, float(ts))
+                   for ts in (3, 6, 9, 12, 15)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=5, now=15)
+        self.assertEqual(series, (3.0, 6.0, 9.0, 12.0, 15.0))
+        self.assertEqual(monitor_model.stale_count(series), 0)
+
+    def test_window_overflow_keeps_only_the_newest_values(self):
+        entries = [series_entry(ts, float(ts)) for ts in range(3, 31, 3)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=5, now=30)
+        self.assertEqual(series, (18.0, 21.0, 24.0, 27.0, 30.0))
+
+    def test_newest_entry_wins_within_one_slot(self):
+        entries = [series_entry(3, 10.0), series_entry(4, 20.0)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=2, now=4)
+        self.assertEqual(series, (None, 20.0))
+
+    def test_newest_entry_wins_regardless_of_input_order(self):
+        entries = [series_entry(4, 20.0), series_entry(3, 10.0)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=2, now=4)
+        self.assertEqual(series, (None, 20.0))
+
+    def test_now_exactly_on_slot_boundary_keeps_the_boundary_slot(self):
+        entries = [series_entry(15, 20.0)]
+        boundary = monitor_model.build_series(
+            entries, interval=3, capacity=5, now=15)
+        self.assertEqual(boundary[-1], 20.0)
+        # Knapp davor liegt ts=15 (Slot 5) in der Zukunft → fällt weg.
+        before = monitor_model.build_series(
+            entries, interval=3, capacity=5, now=14.999)
+        self.assertEqual(before, (None, None, None, None, None))
+
+    def test_stale_count_counts_none_slots(self):
+        self.assertEqual(
+            monitor_model.stale_count((None, None, None, None, 20.0)), 4)
+        self.assertEqual(monitor_model.stale_count([None, 1.0, None]), 2)
+        self.assertEqual(monitor_model.stale_count(()), 0)
+
+    def test_empty_entries_yield_full_none_grid_of_capacity_length(self):
+        series = monitor_model.build_series(
+            (), interval=3, capacity=5, now=0)
+        self.assertEqual(series, (None,) * 5)
+        self.assertEqual(monitor_model.stale_count(series), 5)
+
+
+class ProcReaderTests(unittest.TestCase):
+    """ProcReader (D5): Datei-I/O mit injizierbarem root, kein /proc-Zugriff."""
+
+    def test_read_returns_file_content_below_root(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            nested = Path(tmpdir) / 'x'
+            nested.mkdir()
+            (nested / 'y').write_text('inhalt\n', encoding='utf-8')
+            reader = monitor_model.ProcReader(root=tmpdir)
+            self.assertEqual(reader.read('x/y'), 'inhalt\n')
+
+    def test_missing_file_raises_os_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            reader = monitor_model.ProcReader(root=tmpdir)
+            with self.assertRaises(OSError):
+                reader.read('fehlt/nicht')
+
+
+class SamplerTests(unittest.TestCase):
+    """Sampler (D5, Task 3): Injektion, Lücken, CPU-Delta, Serien."""
+
+    def test_value_sample_pairs_wall_clock_and_value(self):
+        sample = monitor_model.ValueSample(wall=1000.5, value=43.98)
+        self.assertEqual((sample.wall, sample.value), (1000.5, 43.98))
+        self.assertEqual(tuple(sample), (1000.5, 43.98))
+
+    def test_defaults_and_configured_interval_capacity_are_readable(self):
+        default = monitor_model.Sampler(fixture_reader(), FakeClock([]))
+        self.assertEqual(default.interval, 3.0)
+        self.assertEqual(default.capacity, 60)
+        custom = monitor_model.Sampler(
+            fixture_reader(), FakeClock([]), interval=1.5, capacity=8)
+        self.assertEqual(custom.interval, 1.5)
+        self.assertEqual(custom.capacity, 8)
+
+    def test_tick_reads_exactly_the_spec_sources_once(self):
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0)]))
+        sampler.tick()
+        self.assertEqual(
+            reader.read_paths,
+            ['stat', 'meminfo', 'pressure/cpu',
+             'pressure/memory', 'pressure/io'])
+
+    def test_first_tick_reports_cpu_gap_and_reads_the_other_values(self):
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0)]))
+        sampler.tick()
+
+        self.assertEqual(
+            sampler.gaps,
+            {'cpu_percent': 'Delta-Basis fehlt (erster Tick)'})
+        self.assertEqual(sampler.samples('cpu_percent'), ())
+        self.assertIsNone(sampler.latest('cpu_percent'))
+
+        expected_ram = inline_ram_percent(fixture_text('proc_meminfo.txt'))
+        # Anker gegen Erratum E1: 100 × 7066996/16066996 = 43,98455… %.
+        self.assertAlmostEqual(
+            expected_ram, 100.0 * 7066996 / 16066996, places=6)
+        ram = sampler.latest('ram_percent')
+        self.assertAlmostEqual(ram.value, expected_ram, delta=0.2)
+        self.assertEqual(ram.wall, 1000.0)
+
+        for value_id, expected in (('psi_cpu_avg10', 0.52),
+                                   ('psi_memory_avg10', 1.25),
+                                   ('psi_io_avg10', 2.50)):
+            with self.subTest(value_id=value_id):
+                got = sampler.latest(value_id)
+                self.assertAlmostEqual(got.value, expected, delta=0.01)
+                self.assertEqual(got.wall, 1000.0)
+
+        series = sampler.series('ram_percent', now=0.0)
+        self.assertEqual(len(series), 60)  # Default: 60 Slots (D2)
+        self.assertAlmostEqual(series[-1], expected_ram, delta=0.2)
+
+    def test_second_tick_reports_cpu_delta_and_clears_gaps(self):
+        stat_a = fixture_text('proc_stat_a.txt')
+        stat_b = fixture_text('proc_stat_b.txt')
+        total_a, idle_a, iowait_a = inline_cpu_times(stat_a)
+        total_b, idle_b, iowait_b = inline_cpu_times(stat_b)
+        expected = 100.0 * (
+            (total_b - idle_b - iowait_b) - (total_a - idle_a - iowait_a)
+        ) / (total_b - total_a)
+        # Anker gegen den Plan: Δbusy 376 / Δtotal 996.
+        self.assertAlmostEqual(expected, 100.0 * 376 / 996, places=6)
+
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0), (3.0, 1003.0)]))
+        sampler.tick()
+        reader['stat'] = stat_b  # Probe a → b zwischen den Ticks
+        sampler.tick()
+
+        self.assertEqual(sampler.gaps, {})
+        cpu = sampler.latest('cpu_percent')
+        self.assertAlmostEqual(cpu.value, expected, delta=0.5)
+        self.assertEqual(cpu.wall, 1003.0)
+        self.assertEqual(len(sampler.samples('cpu_percent')), 1)
+        # Ring-ts ist mono, nicht wall: ts=3.0 ist bei now=3.0 der letzte Slot.
+        series = sampler.series('cpu_percent', now=3.0)
+        self.assertAlmostEqual(series[-1], expected, delta=0.5)
+
+    def test_missing_file_is_a_gap_and_the_others_stay_fresh(self):
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0), (3.0, 1003.0)]))
+        sampler.tick()
+        reader['stat'] = fixture_text('proc_stat_b.txt')  # CPU-Delta Tick 2
+        del reader['pressure/io']
+        sampler.tick()
+
+        self.assertTrue(sampler.gaps['psi_io_avg10'].startswith('OSError'))
+        self.assertEqual(
+            sampler.gaps, {'psi_io_avg10': 'OSError: pressure/io'})
+        for value_id in ('cpu_percent', 'ram_percent', 'psi_cpu_avg10',
+                         'psi_memory_avg10'):
+            with self.subTest(value_id=value_id):
+                self.assertNotIn(value_id, sampler.gaps)
+                self.assertEqual(sampler.latest(value_id).wall, 1003.0)
+        # IO behält die Tick-1-Probe, kein neuer Eintrag.
+        self.assertEqual(len(sampler.samples('psi_io_avg10')), 1)
+
+    def test_broken_meminfo_is_a_value_error_gap(self):
+        reader = fixture_reader()
+        reader['meminfo'] = 'MemFree: 2111222 kB\n'  # ohne Pflichtfelder
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0)]))
+        sampler.tick()
+
+        self.assertTrue(sampler.gaps['ram_percent'].startswith('ValueError'))
+        self.assertEqual(
+            sampler.gaps,
+            {'cpu_percent': 'Delta-Basis fehlt (erster Tick)',
+             'ram_percent': 'ValueError: meminfo'})
+        self.assertIsNone(sampler.latest('ram_percent'))
+        for value_id, expected in (('psi_cpu_avg10', 0.52),
+                                   ('psi_memory_avg10', 1.25),
+                                   ('psi_io_avg10', 2.50)):
+            with self.subTest(value_id=value_id):
+                self.assertAlmostEqual(sampler.latest(value_id).value,
+                                       expected, delta=0.01)
+
+    def test_series_after_three_ticks_has_stale_gaps_and_fresh_tails(self):
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0), (3.0, 1003.0),
+                               (6.0, 1006.0)]))
+        sampler.tick()
+        reader['stat'] = fixture_text('proc_stat_b.txt')
+        sampler.tick()
+        # Dritte Probe mit denselben Deltas wie a→b (CPU bleibt 37,7510).
+        reader['stat'] = 'cpu  1600 70 320 6200 140 14 28 0 0 0\n'
+        sampler.tick()
+
+        ram_series = sampler.series('ram_percent')
+        self.assertEqual(len(ram_series), 60)
+        ram_values = [sample.value
+                      for sample in sampler.samples('ram_percent')]
+        self.assertEqual(len(ram_values), 3)
+        self.assertEqual(ram_series[-3:], tuple(ram_values))
+        self.assertTrue(all(slot is None for slot in ram_series[:-3]))
+        self.assertEqual(sampler.stale_count('ram_percent'), 57)
+
+        cpu_series = sampler.series('cpu_percent')
+        self.assertEqual(len(cpu_series), 60)
+        # Tick 1 war die Delta-Basis-Lücke → stale (None), nie 0.
+        self.assertEqual(sampler.stale_count('cpu_percent'), 58)
+        self.assertIsNone(cpu_series[-3])
+        self.assertIsNotNone(cpu_series[-2])
+        self.assertIsNotNone(cpu_series[-1])
+        self.assertEqual(len(sampler.samples('cpu_percent')), 2)
+
+    def test_series_before_first_tick_is_a_full_none_grid(self):
+        sampler = monitor_model.Sampler(fixture_reader(), FakeClock([]))
+        series = sampler.series('ram_percent')
+        self.assertEqual(series, (None,) * 60)
+        self.assertEqual(sampler.stale_count('ram_percent'), 60)
+        self.assertIsNone(sampler.latest('ram_percent'))
+        self.assertEqual(sampler.samples('ram_percent'), ())
+
+    def test_repeated_clock_is_rejected_as_non_monotonic_gap(self):
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0), (0.0, 1003.0)]))
+        sampler.tick()
+        sampler.tick()
+
+        self.assertEqual(sampler.gaps['ram_percent'], 'Zeit nicht monoton')
+        self.assertEqual(len(sampler.samples('ram_percent')), 1)
+        # CPU: zweite Probe unverändert → Δtotal 0 → 'Delta ungueltig'.
+        self.assertEqual(sampler.gaps['cpu_percent'], 'Delta ungueltig')
 
 
 if __name__ == '__main__':

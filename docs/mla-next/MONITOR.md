@@ -79,18 +79,74 @@ Parsing, kein I/O.
   als der letzte Eintrag (strikte Zeitmonotonie). `ts <= letzter ts` wird
   abgelehnt: Rückgabe `False`, Zähler `rejected` erhöht, **keine Mutation**.
   Der erste Append ist immer akzeptiert.
-- Nicht-endliche Zeitstempel (NaN) werden ebenfalls abgelehnt.
+- `NaN`-Zeitstempel werden ebenfalls abgelehnt (der Guard `not ts > letzter
+  ts` ist für NaN stets wahr); `+inf`/`-inf` sind dagegen **geordnete Werte**
+  (größter/kleinster Zeitstempel) und passieren den Guard regulär.
 - Überlauf: Bei voller Kapazität fällt der älteste Eintrag heraus; die
   Reihenfolge bleibt älteste→neueste, `len(ring) <= capacity` gilt immer.
 - `entries` liefert eine Tupel-Momentaufnahme älteste→neueste — nie die
   interne Liste; `__len__` und `rejected` (Start 0) sind lesbar.
 
-> Der Serien-/Lücken-Teil (`build_series`, `stale_count`, Slots als `None`)
-> folgt in Task 3.
+### Serien-Regeln (bindend, umgesetzt in Task 3)
+
+`build_series(entries, *, interval, capacity, now)` bildet das feste Raster
+über den Puffereinträgen, `stale_count(series)` zählt die Lücken; der Sampler
+nutzt als Payload `ValueSample(wall, value)` (Wanduhr + Wert, §3).
+
+- Das Raster hat **exakt `capacity`** Slots. Der Slot eines Eintrags ist
+  `floor(ts/interval)`; das Raster endet bei `floor(now/interval)` und beginnt
+  `capacity − 1` Slots davor. `now` exakt auf einer Slot-Grenze zählt diesen
+  Slot als letzten; Einträge in der Zukunft fallen weg.
+- Enthält ein Slot mehrere Einträge, gewinnt der **jüngste** (größter `ts`) —
+  unabhängig von der Eingabereihenfolge.
+- Leere Slots sind `None` (stale) und damit strikt unterscheidbar von `0.0`:
+  eine Lücke wird nie als 0 dargestellt oder interpretiert (D4). Einträge
+  älter als das Fenster fallen weg.
+- Rückgabe ist ein Tupel der `payload.value`-Werte älteste→neueste
+  (links→rechts im Raster); vor dem ersten Tick ist die Serie vollständig
+  `None` der Länge `capacity` (kein Fehler).
+- `stale_count(series)` ist die Anzahl der `None`-Slots.
 
 ## 3. Sampler & Leseregeln
 
-> Platzhalter — folgt in Task 3.
+### Sampler-Regeln (bindend, umgesetzt in Task 3)
+
+`Sampler(read, clock, interval=3.0, capacity=60)` misst die fünf Werte aus
+`VALUE_SPECS` bei jedem `tick()` — bewusst **start/stop-frei**:
+
+- **Injektion:** `read(relpath)` und `clock()` kommen als Konstruktor-
+  Parameter. Produktionsuhr: `(time.monotonic(), time.time())`. Der Lese-Pfad
+  je Wert ist `spec.source` ohne Präfix `/proc/` (z. B. `'stat'`,
+  `'pressure/cpu'`) — `VALUE_SPECS` bleibt die einzige Pfad-Quelle.
+- **Lesen:** `ProcReader(root='/proc')` liest ausschließlich per `open` +
+  `read` (kein Subprozess, kein Shell); der Produktions-Sampler wird mit
+  `ProcReader().read` verdrahtet.
+- **Zeitbasen:** `clock()` liefert `(mono, wall)`. Ringpuffer-Zeitstempel ist
+  die **monotone** Uhr (immun gegen Wanduhr-Sprünge/NTP); `ValueSample.wall`
+  trägt die Wanduhr nur für die Anzeige („Messzeit"). `series`/`stale_count`
+  nehmen `now` monoton entgegen; `now=None` bedeutet „letzter Tick" (vor dem
+  ersten Tick: komplett `None`).
+- **Per-Wert-Lücken:** Jeder Wert hat sein eigenes `try/except (OSError,
+  ValueError)`; ein Fehler wird zur Lücke, kein Crash, die übrigen Werte
+  laufen weiter. Ein Wert mit frischem Sample steht **nicht** in `gaps`.
+- **Erster CPU-Tick:** ohne Vorprobe fehlt die Delta-Basis → bewusst Lücke
+  („Delta-Basis fehlt (erster Tick)"), nie ein Fake-Wert. Die Probe wird
+  trotzdem gespeichert und nach jedem Tick aktualisiert.
+- **Fehlende Dateien:** fehlende `pressure`-Dateien (alte Kernel) nehmen
+  denselben Lücken-Pfad; kaputtes/trunkiertes `meminfo` wirft `ValueError`.
+- **`gaps`:** Dict `value_id → Kurztext`, auf den **letzten Tick** beschränkt
+  (zu Tick-Beginn geleert). Format `Typ: relpath`, z. B. `OSError:
+  pressure/io` oder `ValueError: meminfo`; dazu die Sonderfälle „Delta-Basis
+  fehlt (erster Tick)", „Delta ungueltig", „Wert ungueltig: relpath" und
+  „Zeit nicht monoton" (abgelehnter Append). Keine Inhalte, keine Secrets.
+- **Zugänge für die UI:** `series(value_id, now=None)`, `samples(value_id)`
+  (älteste→neueste, fürs Drill-down), `latest(value_id)` und
+  `stale_count(value_id, now=None)`; `interval`/`capacity` sind lesbar.
+- **Start/stop-frei:** Den 3-s-Zeitgeber besitzt die UI im GLib-Main-Loop —
+  Andockpunkt für #97. Sampler, Ringpuffer und Serien laufen
+  **single-threaded** im Main-Loop; `RingBuffer.append` braucht deshalb keinen
+  Lock (der kurze Zwischenzustand `len == capacity + 1` innerhalb eines
+  Appends ist unkritisch).
 
 ## 4. Darstellung & Drill-down
 

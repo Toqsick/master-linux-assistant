@@ -1,12 +1,17 @@
-"""Reine /proc-Parser, Wertespec und Ringpuffer für den GTK-Systemmonitor (Issue #96).
+"""Reine /proc-Parser, Wertespec, Ringpuffer, Serienbildung und Sampler für
+den GTK-Systemmonitor (Issue #96).
 
-Spec: `docs/mla-next/MONITOR.md` §1 (Werte & Quellen); die maschinenlesbare
-Fassung der Tabelle liegt hier als `VALUE_SPECS`. Das Modul ist gi-frei und
-macht kein I/O — es parst übergebene Textinhalte. Fehlende Pflichtfelder
-werfen `ValueError` mit klarer Botschaft; das Lücken-Handling (stale statt 0)
-übernimmt ausschließlich der Sampler aus Task 3. Kein Import aus dem
-GTK-Stack — die CI läuft headless.
+Spec: `docs/mla-next/MONITOR.md` §1–§3; die maschinenlesbare Fassung der
+Tabelle liegt hier als `VALUE_SPECS`. Die Parser und `build_series` sind
+gi-frei und machen kein I/O — sie arbeiten auf übergebenen Textinhalten
+bzw. Einträgen; fehlende Pflichtfelder werfen `ValueError` mit klarer
+Botschaft. Datei-I/O gibt es ausschließlich in `ProcReader`/`Sampler`
+(nur lesend, ohne Subprozess); das Lücken-Handling (stale statt 0)
+übernimmt der Sampler. Kein Import aus dem GTK-Stack — die CI läuft headless.
 """
+import math
+import os
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -210,13 +215,195 @@ class RingBuffer:
     def append(self, ts: float, payload: object) -> bool:
         """Eintrag anhängen, wenn `ts` streng größer als der letzte ist.
 
-        Nicht-endliche Zeitstempel werden abgelehnt.
+        `NaN` wird durch den Guard abgelehnt (`not ts > letzter` ist für
+        NaN stets wahr); `+inf`/`-inf` sind dagegen geordnete Werte und
+        passieren ihn regulär.
         """
         if self._entries and not ts > self._entries[-1].ts:
-            # 'not >' weist auch nicht-endliche ts wie NaN ab (NaN > x ist False).
+            # 'not >' weist NaN ab (NaN > x ist False); ±inf bleiben geordnet.
             self.rejected += 1
             return False
         self._entries.append(Sample(ts=ts, payload=payload))
         if len(self._entries) > self._capacity:
             del self._entries[0]
         return True
+
+
+class ValueSample(NamedTuple):
+    """Ein Messwert für die Anzeige: Wanduhr (`wall`) und Wert (`value`).
+
+    Der Ringpuffer-Zeitstempel (`Sample.ts`) ist die monotone Uhr; `wall`
+    trägt die Wanduhr nur für die „Messzeit"-Anzeige und wird nie für
+    Slot-Zuordnung oder Monotonie verwendet (D5).
+    """
+
+    wall: float
+    value: float
+
+
+def build_series(entries: Iterable[Sample], *, interval: float,
+                 capacity: int, now: float) -> tuple:
+    """Feste Raster-Serie der Länge `capacity` aus Ringpuffer-Einträgen (D4).
+
+    Slot eines Eintrags ist `floor(ts/interval)`; das Raster endet bei
+    `floor(now/interval)` und beginnt `capacity - 1` Slots davor — bei
+    `now` exakt auf einer Slot-Grenze zählt dieser Slot als letzter.
+    Enthält ein Slot mehrere Einträge, gewinnt der jüngste (größter `ts`);
+    leere Slots werden `None` (stale, strikt unterscheidbar von `0.0`).
+    Einträge außerhalb des Rasters — älter als das Fenster oder in der
+    Zukunft — fallen weg. Rückgabe: Tupel der `payload.value`-Werte
+    älteste→neueste (links→rechts im Raster).
+    """
+    last_slot = math.floor(now / interval)
+    first_slot = last_slot - (capacity - 1)
+    values = [None] * capacity
+    newest_ts = [None] * capacity
+    for entry in entries:
+        slot = math.floor(entry.ts / interval)
+        if not first_slot <= slot <= last_slot:
+            continue
+        index = slot - first_slot
+        if newest_ts[index] is None or entry.ts > newest_ts[index]:
+            values[index] = entry.payload.value
+            newest_ts[index] = entry.ts
+    return tuple(values)
+
+
+def stale_count(series: Iterable[float | None]) -> int:
+    """Anzahl der `None`-Slots (stale-Lücken) einer Serie."""
+    return sum(1 for slot in series if slot is None)
+
+
+class ProcReader:
+    """Minimaler Lese-Zugriff auf Dateien unter `/proc` (D5).
+
+    Nur `open` + `read`, ausschließlich lesend: keine Subprozesse, kein
+    Shell-Aufruf. `root` ist injizierbar (Tests lesen aus einem
+    tmp-Verzeichnis); `read` bekommt Pfade relativ zu `root`, abgeleitet
+    aus dem `source`-Feld der `VALUE_SPECS` (z. B. `'stat'`,
+    `'pressure/cpu'`).
+    """
+
+    def __init__(self, root: str = '/proc'):
+        self._root = root
+
+    def read(self, relpath: str) -> str:
+        """Datei `root/relpath` vollständig als Text lesen."""
+        path = os.path.join(self._root, relpath)
+        with open(path, encoding='utf-8') as handle:
+            return handle.read()
+
+
+class Sampler:
+    """Zeitgeberfreier /proc-Sampler für die fünf Werte (D5).
+
+    `read(relpath)` und `clock()` sind injiziert; `clock()` liefert
+    `(mono, wall)` — Ringpuffer-Zeitstempel ist die monotone Uhr,
+    `ValueSample.wall` die Wanduhr für die Anzeige. `tick()` liest jeden
+    Wert einzeln: Lesefehler und Parser-Fehler werden je Wert zur Lücke in
+    `gaps`, nie zu einem Ersatzwert. Bewusst ohne `start`/`stop` — den
+    Zeitgeber besitzt die UI (GLib-Main-Loop, Andockpunkt #97); die ganze
+    Kette läuft single-threaded, darum braucht der Puffer keinen Lock.
+    """
+
+    def __init__(self, read: Callable[[str], str],
+                 clock: Callable[[], tuple[float, float]],
+                 interval: float = 3.0, capacity: int = 60):
+        self._read = read
+        self._clock = clock
+        self._interval = interval
+        self._capacity = capacity
+        self._rings = {spec.id: RingBuffer(capacity) for spec in VALUE_SPECS}
+        self._previous_cpu: CpuTimes | None = None
+        self._last_mono: float | None = None
+        #: Grund je Wert, der im letzten Tick keine frische Probe bekam.
+        self.gaps: dict[str, str] = {}
+
+    @property
+    def interval(self) -> float:
+        """Messintervall in Sekunden (für den Zeitgeber der UI, #97)."""
+        return self._interval
+
+    @property
+    def capacity(self) -> int:
+        """Slots je Serie (Rasterbreite der Diagramme)."""
+        return self._capacity
+
+    def tick(self) -> None:
+        """Alle fünf Werte einmal lesen und je Wert in den Puffer anhängen.
+
+        Zu Tick-Beginn wird `gaps` geleert. Jeder Wert hat sein eigenes
+        `try/except (OSError, ValueError)`; Fehler werden zur Lücke, die
+        übrigen Werte laufen weiter. Der erste CPU-Tick hat keine
+        Delta-Basis und wird bewusst zur Lücke (kein Fake-Wert); die
+        Vorprobe wird trotzdem gespeichert und nach jedem Tick aktualisiert.
+        """
+        mono, wall = self._clock()
+        self.gaps.clear()
+        self._last_mono = mono
+        for spec in VALUE_SPECS:
+            relpath = spec.source.removeprefix('/proc/')
+            try:
+                value, gap = self._measure(spec, relpath)
+            except (OSError, ValueError) as exc:
+                self.gaps[spec.id] = '%s: %s' % (type(exc).__name__, relpath)
+                continue
+            if gap is not None:
+                self.gaps[spec.id] = gap
+                continue
+            sample = ValueSample(wall=wall, value=value)
+            if not self._rings[spec.id].append(mono, sample):
+                self.gaps[spec.id] = 'Zeit nicht monoton'
+
+    def _measure(self, spec: ValueSpec,
+                 relpath: str) -> tuple[float | None, str | None]:
+        """Einen Wert lesen und berechnen: `(value, None)` oder `(None, Grund)`.
+
+        Bewusste Nicht-Werte (fehlende CPU-Delta-Basis, ungültiges Delta,
+        meminfo ohne belegbaren Wert) bekommen einen Lücken-Grund; Lesen
+        und Parsen werfen `OSError`/`ValueError` wie Reader und Parser.
+        """
+        text = self._read(relpath)
+        if spec.id == 'cpu_percent':
+            current = parse_cpu_times(text)
+            previous = self._previous_cpu
+            self._previous_cpu = current
+            value = cpu_percent(previous, current)
+            if value is None:
+                if previous is None:
+                    return None, 'Delta-Basis fehlt (erster Tick)'
+                return None, 'Delta ungueltig'
+            return value, None
+        if spec.id == 'ram_percent':
+            value = meminfo_percent(parse_meminfo(text))
+        else:
+            value = parse_pressure_avg10(text)
+        if value is None:
+            return None, 'Wert ungueltig: %s' % relpath
+        return value, None
+
+    def samples(self, value_id: str) -> tuple[ValueSample, ...]:
+        """Alle gesammelten Werte älteste→neueste (fürs Drill-down)."""
+        entries = self._rings[value_id].entries
+        return tuple(entry.payload for entry in entries)
+
+    def latest(self, value_id: str) -> ValueSample | None:
+        """Jüngster Wert oder `None`, solange keiner gesammelt wurde."""
+        entries = self._rings[value_id].entries
+        return entries[-1].payload if entries else None
+
+    def series(self, value_id: str, now: float | None = None) -> tuple:
+        """Serie dieses Werts über das feste Raster (`now=None` → letzter Tick).
+
+        Vor dem ersten Tick ist die Serie vollständig `None` der Länge
+        `capacity` (kein Fehler).
+        """
+        if now is None:
+            now = 0.0 if self._last_mono is None else self._last_mono
+        return build_series(
+            self._rings[value_id].entries,
+            interval=self._interval, capacity=self._capacity, now=now)
+
+    def stale_count(self, value_id: str, now: float | None = None) -> int:
+        """Anzahl stale-Slots dieses Werts (Modul-Funktion auf `series`)."""
+        return stale_count(self.series(value_id, now))
