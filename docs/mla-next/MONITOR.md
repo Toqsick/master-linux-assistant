@@ -79,6 +79,7 @@ Parsing, kein I/O.
   als der letzte Eintrag (strikte Zeitmonotonie). `ts <= letzter ts` wird
   abgelehnt: Rückgabe `False`, Zähler `rejected` erhöht, **keine Mutation**.
   Der erste Append ist immer akzeptiert.
+- Nicht-endliche Zeitstempel (NaN) werden ebenfalls abgelehnt.
 - Überlauf: Bei voller Kapazität fällt der älteste Eintrag heraus; die
   Reihenfolge bleibt älteste→neueste, `len(ring) <= capacity` gilt immer.
 - `entries` liefert eine Tupel-Momentaufnahme älteste→neueste — nie die

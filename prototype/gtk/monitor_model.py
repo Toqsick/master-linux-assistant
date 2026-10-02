@@ -194,7 +194,7 @@ class RingBuffer:
     def __init__(self, capacity: int):
         if capacity < 1:
             raise ValueError(
-                'capacity muss mindestens 1 sein, ist %d' % capacity)
+                'capacity muss mindestens 1 sein, ist %r' % capacity)
         self._capacity = capacity
         self._entries: list[Sample] = []
         self.rejected = 0
@@ -208,8 +208,12 @@ class RingBuffer:
         return tuple(self._entries)
 
     def append(self, ts: float, payload: object) -> bool:
-        """Eintrag anhängen, wenn `ts` streng größer als der letzte ist."""
-        if self._entries and ts <= self._entries[-1].ts:
+        """Eintrag anhängen, wenn `ts` streng größer als der letzte ist.
+
+        Nicht-endliche Zeitstempel werden abgelehnt.
+        """
+        if self._entries and not ts > self._entries[-1].ts:
+            # 'not >' weist auch nicht-endliche ts wie NaN ab (NaN > x ist False).
             self.rejected += 1
             return False
         self._entries.append(Sample(ts=ts, payload=payload))

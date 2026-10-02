@@ -275,10 +275,17 @@ class RingBufferTests(unittest.TestCase):
         self.assertTrue(ring.append(1, 'erst'))
         self.assertEqual(len(ring), 1)
 
+    def test_first_append_with_zero_timestamp_is_accepted(self):
+        # Truthiness-Falle: ts=0 ist ein gültiger erster Zeitstempel.
+        ring = monitor_model.RingBuffer(3)
+        self.assertTrue(ring.append(0, 'null'))
+        self.assertEqual(len(ring), 1)
+
     def test_overflow_keeps_the_newest_entries_in_order(self):
         ring = monitor_model.RingBuffer(3)
         for ts in (1, 2, 3, 4, 5):
             self.assertTrue(ring.append(ts, 'p%d' % ts))
+        self.assertEqual(ring.rejected, 0)  # Überlauf ist Annahme, keine Ablehnung
         self.assertEqual(len(ring), 3)
         self.assertEqual([sample.ts for sample in ring.entries], [3, 4, 5])
         self.assertEqual([sample.payload for sample in ring.entries],
@@ -312,6 +319,17 @@ class RingBufferTests(unittest.TestCase):
         self.assertEqual(ring.rejected, 2)
         self.assertEqual([sample.ts for sample in ring.entries], [5, 6])
 
+    def test_nan_timestamp_is_rejected_and_guard_stays_active(self):
+        ring = monitor_model.RingBuffer(3)
+        self.assertTrue(ring.append(1.0, 'a'))
+        before_len = len(ring)
+        before_entries = ring.entries
+        self.assertFalse(ring.append(float('nan'), 'n'))
+        self.assertEqual(ring.rejected, 1)
+        self.assertEqual(len(ring), before_len)
+        self.assertEqual(ring.entries, before_entries)
+        self.assertTrue(ring.append(2.0, 'b'))
+
     def test_entries_is_a_tuple_snapshot(self):
         ring = monitor_model.RingBuffer(3)
         ring.append(1, 'a')
@@ -328,7 +346,7 @@ class RingBufferTests(unittest.TestCase):
         self.assertIsNone(ring.entries[1].payload)
 
     def test_capacity_below_one_raises_value_error(self):
-        for capacity in (0, -1):
+        for capacity in (0, -1, 0.5):
             with self.subTest(capacity=capacity):
                 with self.assertRaises(ValueError):
                     monitor_model.RingBuffer(capacity)
