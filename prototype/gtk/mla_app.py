@@ -48,6 +48,21 @@ def apply_forced_color_scheme():
     elif scheme == 'dark':
         manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
 
+def build_detail_pane(work_area, detail_panel):
+    """Arbeitsfläche links, Detail-Leiste rechts (Trenner PANE_POSITION).
+
+    PANE_POSITION zählt ab der linken Paned-Kante, also rechts der
+    Nav-Sidebar (bei 1200 px Fenster ist der Paned nur 920 px breit).
+    shrink-end-child=False macht DETAILS_MIN_WIDTH zur echten Grenze für den
+    Trenner; mit dem GTK4-Default TRUE schob er die Leiste über den rechten
+    Rand, wo der Paned sie abschnitt (Triage vor #97, MONITOR.md §7)."""
+    pane = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+    pane.set_start_child(work_area)
+    pane.set_end_child(detail_panel)
+    pane.set_shrink_end_child(False)
+    pane.set_position(PANE_POSITION)
+    return pane
+
 class Window(Adw.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title='Master Linux Assistant · Prototyp')
@@ -107,11 +122,7 @@ class Window(Adw.ApplicationWindow):
         detail_panel.append(detail_heading)
         detail_panel.append(self.status_chip)
         detail_panel.append(self.details)
-        pane = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
-        pane.set_start_child(self.stack)
-        pane.set_end_child(detail_panel)
-        pane.set_position(PANE_POSITION)
-        content_view.set_content(pane)
+        content_view.set_content(build_detail_pane(self.stack, detail_panel))
         nav.set_content(Adw.NavigationPage.new(content_view, 'Arbeitsbereich'))
         self.set_content(nav)
         sidebar.select_row(sidebar.get_row_at_index(0))

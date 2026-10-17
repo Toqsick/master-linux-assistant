@@ -65,7 +65,7 @@ Schemata dunkle Tinte. Elevation entsteht aus 1px-Border, nicht aus Schatten.
 | opacityFaint / opacityMuted / opacityStrong | 0.42 / 0.56 / 0.75 | Entwertung von Metadaten über Opacity, nie über andere Farbe |
 | fontMono | `monospace` | generischer Alias (kein gebundelter Font) |
 | layoutSidebarMin | 280 | Mindestbreite rechte Detail-Leiste |
-| layoutPanePos | 850 | Startposition des Trenners (Gtk.Paned) |
+| layoutPanePos | 850 | Startposition des Trenners (Gtk.Paned), ab dessen linker Kante (rechts der Nav-Sidebar); auf `Paned-Breite − 1 − layoutSidebarMin` geklemmt (`shrink-end-child=False`) |
 | layoutWindow | 1200 × 780 | Fenster-Defaultgröße |
 
 ## 3. Typografie (Adw-Klassen als Typo-Tokens)

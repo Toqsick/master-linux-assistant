@@ -319,8 +319,11 @@ RAM-Kurven sind bis auf die Lückensemantik vergleichbar.
 ### Ausführung (Gates)
 
 - GTK: `python3 -m unittest discover -s prototype/gtk/tests` (aus dem
-  Repo-Root) — 94 Tests (84 Modell + 10 Token; davon 4 aus dem
-  PR-Review #119: NaN als Erst-Zeitstempel, ungültige Kapazitäten).
+  Repo-Root) — 96 Tests (84 Modell + 10 Token + 2 Shell-Layout; davon 4
+  Modell-Tests aus dem PR-Review #119: NaN als Erst-Zeitstempel, ungültige
+  Kapazitäten). Die Layout-Klasse in `test_shell_layout.py` braucht GTK
+  4/libadwaita und ein Display und wird ohne beides — so in CI —
+  übersprungen.
 - Bestehende Python-Suite: `cd additional/python && python3 -m unittest
   discover -s tests -t .` — 53 Tests, unabhängig vom GTK-Track.
 - Start-Gates (BASELINE §2): Start unter Wayland und X11 je
@@ -337,10 +340,20 @@ Bewusst **nicht** in #96 (Scope-Grenze laut Plan „Nicht-Ziele"):
   Textalternativen; Fokusreihenfolge und Kontrast der Chart-Flächen sind
   ungeprüft. #97 braucht hierfür einen Test oder Trace „unsichtbar ⇒ kein
   Tick" (Abnahme 1 dort).
-- **Gequetschte rechte Detail-Leiste** (vorbestehend, nicht #96-verursacht —
-  per BASE-Gegenlauf `28a0b3f` belegt: Pixel-Scan mit identischen Strukturmaßen/Clippings): bei Erst-Allokation
-  ~60 px breit, der Drill-down ist dann nur eingeschränkt lesbar. Vor #97
-  triagieren (Geometrie der Shell, nicht des Monitors).
+- **Gequetschte rechte Detail-Leiste** (vorbestehend seit dem Scaffold
+  `6c5c625`, nicht #96-verursacht) — **triagiert und behoben** auf
+  `fix/mla-details-pane-width`. Root Cause: `Gtk.Paned` liegt im
+  Inhaltsbereich der NavigationSplitView (1200 px Fenster − 280 px
+  Nav-Sidebar = 920 px), `PANE_POSITION` 850 zählt ab dessen linker Kante;
+  mit dem GTK4-Default `shrink-end-child=TRUE` ignoriert der Trenner die
+  280-px-Mindestbreite. GTK alloziert die Leiste trotzdem mit 280 px, aber
+  ab Fenster-x 1131 — 211 px liegen jenseits des rechten Rands und werden
+  abgeschnitten (sichtbar 69 px unter X11; unter Wayland skaliert der
+  Paned 850 nach dem Compositor-Resize auf 954 px proportional auf 661 →
+  54 px). Fix: `shrink-end-child=False` in `build_detail_pane`; der
+  Trenner wird jetzt auf `Paned-Breite − 1 − 280` geklemmt (bei 1200 px:
+  639, Leiste 280 px bis exakt zur Fensterkante). Regression:
+  `test_shell_layout.py` (RED 69/54/51/100 px sichtbar → GREEN).
 - **Start-Gate-Teardown-Flake**: in T4 einmal 116 B
   `GLib-GIO-CRITICAL … check_unclosed` beim SIGTERM-Teardown unter
   Wayland (1 von 4 Läufen), Exit stets 124; im T5-Frischlauf 0 von 6 (3 Wayland + 3 X11).
