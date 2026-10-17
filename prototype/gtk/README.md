@@ -1,6 +1,6 @@
 # MLA GTK4-Prototyp
 
-Isolierter, unprivilegierter UI-Spike auf `feature/mla-gtk-scaffold`. `mla_app.py` zeigt ausschließlich Demo-Daten. Kein IPC, keine echten Backup-/Security-Checks, keine Admin-Aktionen und keine Paketintegration. Der bestehende Flutter-Hub bleibt unverändert.
+Isolierter, unprivilegierter UI-Spike auf `feature/mla-gtk-scaffold`. `mla_app.py` zeigt Demo-Daten; nur der Monitor-Screen (#96) liest echte Werte, ausschließlich lesend aus fünf festen `/proc`-Dateien (Spec `docs/mla-next/MONITOR.md`). Kein IPC, keine echten Backup-/Security-Checks, keine Admin-Aktionen und keine Paketintegration. Der bestehende Flutter-Hub bleibt unverändert.
 
 ## Lokaler Start auf Zorin
 
@@ -15,6 +15,6 @@ python3 prototype/gtk/mla_app.py
 
 ## Geplanter Aufbau
 
-`mla_app.py` ist die minimale Shell mit NavigationSplitView, HeaderBar, vier Fixture-Screens und rechter Kontextfläche. Module, Services, Tests und IPC werden erst in getrennten, überprüften Arbeitspaketen ergänzt. `docs/mla-next/AGENT_PLAN.md` gibt Reihenfolge und Sicherheitsgrenzen vor; `docs/mla-next/IPC_CONTRACT.md` ist ein Wire-Entwurf; `docs/mla-next/VERIFY.md` beschreibt Gates.
+`mla_app.py` ist die minimale Shell mit NavigationSplitView, HeaderBar, drei Fixture-Screens, dem lesenden Monitor-Screen (#96: `monitor_model.py`, `monitor_ui.py`, Tests unter `tests/`) und rechter Kontextfläche. IPC und weitere Module folgen in getrennten, überprüften Arbeitspaketen. `docs/mla-next/AGENT_PLAN.md` gibt Reihenfolge und Sicherheitsgrenzen vor; `docs/mla-next/IPC_CONTRACT.md` ist ein Wire-Entwurf; `docs/mla-next/VERIFY.md` beschreibt Gates.
 
 Der frühere rsync-Democode aus der Unterhaltung gehört **nicht** zum produktiven Backup-Cockpit aus Issue #63 und wird hier nicht eingecheckt.

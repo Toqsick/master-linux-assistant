@@ -1,13 +1,15 @@
 # MLA-Next Systemmonitor — Werte, Quellen, Semantik (Issue #96, A5)
 
-> Stand: 2026-10-02 · Branch `feature/mla-96-monitor` · Plan:
+> Stand: 2026-10-17 (Task 5, nach Final-Review) · Branch `feature/mla-96-monitor` (T5 via Session-Worktree) · Plan:
 > `docs/superpowers/plans/2026-10-02-mla-96-monitor.md`
 >
 > Spec-Artefakt des lesenden GTK-Systemmonitors (#96). Die maschinenlesbare
 > Fassung der Wertespec liegt in `prototype/gtk/monitor_model.py`
 > (`VALUE_SPECS`); diese Datei dokumentiert sie und die Regeln dahinter.
-> §1 ist mit Task 1 vollständig; §2–§7 formulieren die Folgetasks aus,
-> Task 5 prüft final kreuz.
+> §1–§7 sind vollständig. §1–§4 und §6 hat das Final-Whole-Branch-Review
+> (`de0026d..7f01b7b`) gegen Code und Tests kreuzgeprüft, §2–§4 nach den
+> Errata E2/E3 die Scoped-Re-Reviews; §5, §7 und die §6-Nachträge entstanden
+> im Handoff-Commit (Controller plus Claim-Check).
 >
 > Der Monitor ist rein lesend: kein Root, keine IPC, keine Admin-Aktionen;
 > gelesen werden ausschließlich Dateien unter `/proc`.
@@ -241,7 +243,33 @@ Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
 
 ## 5. Vergleichsbasis Flutter
 
-> Platzhalter — folgt in Task 5.
+Gegenstück in der Flutter-App ist `SystemStatsService`
+(`lib/services/system_stats_service.dart`); die Werte unten sind dort
+zeilengenau belegt (Zeilenangaben ohne Dateinamen =
+`system_stats_service.dart`). Daneben hat die Flutter-App den
+Systemmonitor `SystemMonitorService` (`lib/services/system_monitor_service.dart`,
+Admin-Hub E3): CPU aus `/proc/stat` (Δbusy/Δtotal, `total` inkl.
+guest-Felder), RAM aus `/proc/meminfo` mit derselben Formel, 60 × 1 s,
+Pause über `TickerMode`, Lücken werden dort 0. Er ist inhaltlich näher,
+aber nicht die Vergleichsbasis aus ISSUES #96. Gleich ist nur das Raster — Quellen und
+Lückensemantik unterscheiden sich bewusst.
+
+| Aspekt | Flutter (`SystemStatsService`) | GTK-Monitor (#96) |
+|---|---|---|
+| Raster | `historyLength = 60`, `defaultInterval = 3 s` (`:85-86`) | `60 × 3 s` (`Sampler`-Default, MODULES-Untertitel) — identisch |
+| CPU | 1-Minuten-`loadavg` aus `/proc/loadavg` geteilt durch die Thread-Zahl (`lib/linux/linux_system.dart:55-60`) — eine Last-Kennzahl, keine Auslastung | `100 × Δbusy/Δtotal` aus `/proc/stat` (§1) — Auslastung in % zwischen zwei Ticks; **nicht** direkt mit dem Flutter-Wert vergleichbar |
+| RAM | Subprozess `free -m` je Tick (`:187-188`), `usedRatio` | `/proc/meminfo`: `100 × (MemTotal − MemAvailable)/MemTotal`, kein Subprozess |
+| PSI | kein Gegenstück | `some avg10` für CPU, Speicher, I/O (§1) |
+| Lücken | Ist `free` nicht parsebar, wiederholt die Historie den letzten Wert (`memory ?? previous.memory`) bzw. schreibt **0**, solange noch nie ein Wert vorlag (`:210-213`); bei einer Exception bleibt die alte Historie unverändert stehen (`:216-231`) — in der Historie ist eine Lücke nie als Lücke sichtbar (nur der Exception-Pfad setzt `error`, den das Dashboard als Warnkarte zeigt) | Lücke = `None` → `stale`, nie 0 (§2/§3); Linie bricht (§4) |
+| Zeitstempel | ein `updatedAt` je Snapshot (Wanduhr) | Monotonie-Uhr für Puffer/Raster, Wanduhr nur für die Anzeige (§3) |
+| Pausieren | pollt nur bei `acquire` + aktiver Sektion + sichtbarem Fenster (`:66-77`, `_sync` `:151-159`) | **noch keine Pause** — der Tick läuft, solange die App lebt → #97 (§7) |
+| Prozesse je Tick | mehrere Subprozesse (`free`, `df`, `ps` …) über `Future.wait` (`:183-195`; der Doc-Kommentar `:73-77` spricht von acht) | 0 Subprozesse; nur Lesen von 5 festen `/proc`-Dateien |
+
+Folgerung für spätere Vergleiche (#95-Baseline, #97): CPU-Kurven beider
+Apps nebeneinander zu legen, ist nur nach Umrechnung sinnvoll (gegen `SystemStatsService`; gegen
+`SystemMonitorService` sind CPU und RAM direkt vergleichbar, bis auf
+Raster 1 s statt 3 s, guest-Felder und Lückensemantik); die
+RAM-Kurven sind bis auf die Lückensemantik vergleichbar.
 
 ## 6. Tests & Fixtures
 
@@ -249,9 +277,12 @@ Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
 
 - Tasks 1–3 (Parser, Ringpuffer, Serien, Sampler) sind dort vollständig
   gepinnt; Fixture-Anker siehe §1.
-- Task 4 ergänzt `FormatterTests` (8 Tests) mit exakten Strings; TZ wird
-  in setUp/tearDown auf `UTC` erzwungen (`TZ` + `time.tzset()`), damit
-  die `HH:MM:SS`-Felder deterministisch sind:
+- Task 4 ergänzt `FormatterTests` (8 Tests, heute 10) mit exakten Strings; TZ
+  wird in setUp/tearDown auf `UTC` erzwungen (`TZ` + `time.tzset()`), damit
+  die `HH:MM:SS`-Felder deterministisch sind; Fix-Runde 1 (`18a63df`) ergänzt einen Test auf
+  die Nicht-UTC-Zone `XXX-02` und pinnt so die Lokalzeit-Anzeige
+  (`Messzeit: 02:16:40`), ein weiterer die festen zwei Dezimalen
+  (`2.50 %`):
   - `format_value`: `37.751` → `37.8 %`, `43.98455…` → `44.0 %`,
     `0.52` → `0.52 %`; `None` → exakt `stale` (mit
     `assertNotEqual`-Pins gegen `0.0 %`/`0 %`).
@@ -261,6 +292,16 @@ Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
   - `format_drilldown`: exakter Mehrzeiler aus Kopf und letzten 10
     Samples; ohne Samples exakt 5 Zeilen (`CPU: stale` als erste); bei
     12 Samples nur die letzten 10 (`00:16:46 …` bis `00:17:13 …`).
+
+- Der in T5 übernommene Pin-Commit `7f01b7b` (Fremd-Diff, Mutationsbelege
+  in T5) pinnt den ±inf-Monotonievertrag (§2),
+  den stat-Lesefehler ohne gespeicherte Delta-Basis, den
+  truncated-stat-`ValueError` und den Durchgriff von `interval`/`capacity`
+  ins Serienraster — je mit Mutationsbeleg.
+- Die Final-Review-Fixes (`18a63df`, `e7e8145`) pinnen Jitter und
+  Zeitgeber-Phasendrift (Kettenraster, §2; je ein `build_series`- und ein
+  Sampler-Test), eine echte Lücke ab 1,5 Intervallen, die Fenstergrenze,
+  Einträge in der Zukunft (`ts > now`), nicht-endliche `ts`/`now`/`avg10` und den meminfo-Leerwert.
 
 ### Token-Suite `prototype/gtk/tests/test_tokens.py`
 
@@ -274,7 +315,7 @@ Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
 ### Ausführung (Gates)
 
 - GTK: `python3 -m unittest discover -s prototype/gtk/tests` (aus dem
-  Repo-Root) — 72 Tests.
+  Repo-Root) — 90 Tests (80 Modell + 10 Token).
 - Bestehende Python-Suite: `cd additional/python && python3 -m unittest
   discover -s tests -t .` — 53 Tests, unabhängig vom GTK-Track.
 - Start-Gates (BASELINE §2): Start unter Wayland und X11 je
@@ -283,4 +324,47 @@ Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
 
 ## 7. Grenzen / #97
 
-> Platzhalter — folgt in Task 5.
+Bewusst **nicht** in #96 (Scope-Grenze laut Plan „Nicht-Ziele"):
+
+- **Hintergrund-Pause, Langlauf, Accessibility** → #97. Der
+  `GLib`-Tick läuft auch bei unsichtbarer Monitor-Ansicht oder
+  minimiertem Fenster weiter; Diagramme haben noch keine
+  Textalternativen; Fokusreihenfolge und Kontrast der Chart-Flächen sind
+  ungeprüft. #97 braucht hierfür einen Test oder Trace „unsichtbar ⇒ kein
+  Tick" (Abnahme 1 dort).
+- **Gequetschte rechte Detail-Leiste** (vorbestehend, nicht #96-verursacht —
+  per BASE-Gegenlauf `28a0b3f` belegt: Pixel-Scan mit identischen Strukturmaßen/Clippings): bei Erst-Allokation
+  ~60 px breit, der Drill-down ist dann nur eingeschränkt lesbar. Vor #97
+  triagieren (Geometrie der Shell, nicht des Monitors).
+- **Start-Gate-Teardown-Flake**: in T4 einmal 116 B
+  `GLib-GIO-CRITICAL … check_unclosed` beim SIGTERM-Teardown unter
+  Wayland (1 von 4 Läufen), Exit stets 124; im T5-Frischlauf 0 von 6 (3 Wayland + 3 X11).
+  In den Final-Fix-Runden etwa 1 von 5 Läufen (115 B), auch auf dem
+  unveränderten Vor-Fix-Stand `4e61a80` (1 von 8); Gate-Frischlauf nach den Fixes 0 von 6.
+  Gilt als umgebungsbedingt und vorbestehend; Root Cause in #97
+  (Langlauf/Shutdown-Pfad).
+- **Methodik-Hinweise für UI-Belege** (aus T4): vor `xdotool`-Klicks das
+  mutter-Guard-Fenster unmappen; teil-offscreen Fenster stoppen den
+  Ticker-Repaint; PNG-`md5` taugt nicht als Pixelvergleich (tIME-Chunk) —
+  `compare -metric AE` verwenden.
+- **Geparkter Test-Pin**: Der `%r`-Wortlaut der Kapazitätsmeldung
+  (`RingBuffer`) ist nicht wortgleich gepinnt (T2-N2), nur der
+  `ValueError`-Typ.
+- **Getrennte Ketten je Wert** (Final-Review N3, geparkt): Jeder Wert bildet
+  sein Kettenraster (§2) für sich. Fällt bei einem Wert ein Tick durch einen
+  Lesefehler aus, während benachbarte Abstände durch Zeitgeber-Stalls
+  gedehnt sind, kann dieser Wert eine Lücke zu viel zeigen und seine ältere
+  Historie um einen Slot gegen die anderen Diagramme versetzen — stets in
+  die vorsichtige Richtung (mehr `stale`, nie verdeckt). Kandidat für #97:
+  eine gemeinsame Tick-Kette im Sampler, in die jeder Wert seine Lücke
+  einträgt.
+- **Suspend/Uhrensprung:** Puffer und Raster laufen auf `time.monotonic()`
+  (= `CLOCK_MONOTONIC`, ohne Suspend-Zeit, §3). Nach einem Suspend schließt
+  das Raster die Werte vor dem Suspend ohne Lücke an die frischen an — der
+  Messausfall ist im Diagramm **nicht** als `stale` sichtbar, nur am Sprung
+  der Wanduhr in Caption-`Messzeit` und Drill-down-Zeilen. Langlauf und
+  Suspend-Verhalten (z. B. `CLOCK_BOOTTIME`) prüft #97.
+- **Weitere Werte** (Temperaturen, Netz, Datenträger) sind spätere
+  Slices; §1 legt genau fünf Werte fest.
+- **Keine IPC, kein Root, keine Schreibzugriffe** — der Monitor bleibt bis
+  A4 (#100) ein reiner Datei-Leser in der unprivilegierten Shell.
