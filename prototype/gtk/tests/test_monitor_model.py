@@ -333,6 +333,34 @@ class RingBufferTests(unittest.TestCase):
         self.assertEqual(ring.entries, before_entries)
         self.assertTrue(ring.append(2.0, 'b'))
 
+    def test_positive_inf_follows_the_documented_monotonic_contract(self):
+        # Doku (RingBuffer.append-Docstring + MONITOR.md §3): +inf wird
+        # angenommen, solange der letzte Eintrag kleiner ist — inf > 1 gilt;
+        # ein zweiter inf-Append scheitert, weil inf > inf falsch ist.
+        ring = monitor_model.RingBuffer(3)
+        self.assertTrue(ring.append(1.0, 'a'))
+        self.assertTrue(ring.append(float('inf'), 'inf'))
+        self.assertEqual(len(ring), 2)
+        self.assertFalse(ring.append(float('inf'), 'nochmals'))
+        self.assertEqual(ring.rejected, 1)
+        self.assertEqual([sample.ts for sample in ring.entries],
+                         [1.0, float('inf')])
+
+    def test_negative_inf_is_rejected_once_the_buffer_has_entries(self):
+        # Doku: -inf wird bei bestehendem Puffer abgelehnt (nicht monoton
+        # gegenüber dem letzten Eintrag); nur als erster Append akzeptiert,
+        # weil der Guard bei leerem Puffer kurzschließt.
+        ring = monitor_model.RingBuffer(3)
+        self.assertTrue(ring.append(1.0, 'a'))
+        before_entries = ring.entries
+        self.assertFalse(ring.append(float('-inf'), 'minus'))
+        self.assertEqual(ring.rejected, 1)
+        self.assertEqual(ring.entries, before_entries)
+
+        empty = monitor_model.RingBuffer(3)
+        self.assertTrue(empty.append(float('-inf'), 'erster'))
+        self.assertEqual(len(empty), 1)
+
     def test_entries_is_a_tuple_snapshot(self):
         ring = monitor_model.RingBuffer(3)
         ring.append(1, 'a')
@@ -680,6 +708,56 @@ class SamplerTests(unittest.TestCase):
         self.assertEqual(len(sampler.samples('ram_percent')), 1)
         # CPU: zweite Probe unverändert → Δtotal 0 → 'Delta ungueltig'.
         self.assertEqual(sampler.gaps['cpu_percent'], 'Delta ungueltig')
+
+    def test_stat_read_failure_keeps_cpu_a_gap_without_storing_a_basis(self):
+        # Der CPU-Zweig ist der einzige mit zustandstragendem Delta: Liest
+        # self._read (monitor_model.py:371) für stat schon bei Tick 1 nicht,
+        # wirft er VOR der Zuweisung self._previous_cpu = current (:375) —
+        # es wird nie eine Delta-Basis gespeichert. Tick 2 mit wieder
+        # lesbarem stat muss deshalb erneut 'Delta-Basis fehlt' melden
+        # statt aus einer nie vorhandenen Basis zu rechnen.
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0), (3.0, 1003.0)]))
+        del reader['stat']
+        sampler.tick()
+        self.assertEqual(sampler.gaps['cpu_percent'], 'OSError: stat')
+        self.assertIsNone(sampler.latest('cpu_percent'))
+
+        reader['stat'] = fixture_text('proc_stat_a.txt')
+        sampler.tick()
+        self.assertEqual(sampler.gaps['cpu_percent'],
+                         'Delta-Basis fehlt (erster Tick)')
+        self.assertIsNone(sampler.latest('cpu_percent'))
+
+    def test_truncated_stat_is_a_value_error_gap(self):
+        # ValueError-Zweig derselben Naht: proc_stat_truncated.txt wirft
+        # beim Parsen, die Meldung folgt dem gaps-Format '%s: %s' (:354).
+        reader = fixture_reader()
+        reader['stat'] = fixture_text('proc_stat_truncated.txt')
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(0.0, 1000.0)]))
+        sampler.tick()
+        self.assertEqual(sampler.gaps['cpu_percent'], 'ValueError: stat')
+
+    def test_custom_interval_and_capacity_flow_into_the_series_grid(self):
+        # Serie über den Sampler: Werden interval/capacity im Konstruktor
+        # gesetzt, müssen build_series-Aufrufe in Sampler.series (:408-410)
+        # diese Werte weiterreichen — ein hardcodiertes 3.0/60 dort würde
+        # die Slots hier falsch rasterieren.
+        reader = fixture_reader()
+        stamps = [(0.0, 1000.0), (1.5, 1001.5), (3.0, 1003.0), (4.5, 1004.5)]
+        sampler = monitor_model.Sampler(
+            reader, FakeClock(stamps), interval=1.5, capacity=4)
+        for _ in stamps:
+            sampler.tick()
+
+        series = sampler.series('ram_percent', now=4.5)
+        self.assertEqual(len(series), 4)
+        self.assertEqual(sampler.stale_count('ram_percent', now=4.5), 0)
+        ram_values = [sample.value
+                      for sample in sampler.samples('ram_percent')]
+        self.assertEqual(series, tuple(ram_values))
 
 
 def value_spec(value_id):
