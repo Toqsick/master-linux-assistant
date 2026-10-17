@@ -256,39 +256,48 @@ class ValueSample(NamedTuple):
 
 def build_series(entries: Iterable[Sample], *, interval: float,
                  capacity: int, now: float) -> tuple:
-    """Feste Raster-Serie der Länge `capacity` aus Ringpuffer-Einträgen (D4/E2).
+    """Feste Raster-Serie der Länge `capacity` aus Ringpuffer-Einträgen (D4/E3).
 
-    Das Raster ist am letzten Tick (`now`) verankert: ein Eintrag mit
-    `ts <= now` liegt `k = floor((now − ts)/interval + 0,5)` Slots vor dem
-    letzten Slot und bekommt den Index `capacity − 1 − k`; nur
-    `0 <= k < capacity` zählt. Jitter unter `interval/2` verschiebt damit
-    keinen Eintrag (der Zeitgeber taktet mit genau der Slotbreite — ein
-    absolutes `floor(ts/interval)`-Raster würde schon bei kleiner
-    Verspätung Slots leeren oder doppelt belegen). Enthält ein Slot mehrere
-    Einträge, gewinnt der jüngste (größter `ts`); leere Slots werden `None`
-    (stale, strikt unterscheidbar von `0.0`). Einträge in der Zukunft
-    (`ts > now`), außerhalb des Fensters oder mit nicht-endlichem `ts`
-    fallen weg; ein nicht-endliches `now` ergibt das leere Raster.
-    Rückgabe: Tupel der `payload.value`-Werte älteste→neueste
-    (links→rechts im Raster).
+    Kettenraster: Der jüngste Eintrag mit endlichem `ts <= now` liegt
+    `k0 = floor((now − ts)/interval + 0,5)` Slots vor dem letzten Slot
+    (Index `capacity − 1 − k0`); jeder ältere liegt
+    `step = floor(Δ/interval + 0,5)` Slots vor dem zuletzt berücksichtigten,
+    nächstjüngeren Eintrag (Δ = dessen `ts` minus eigenes `ts`). `step == 0`
+    heißt selber Slot — der jüngere Wert bleibt; ein Index unter 0 beendet
+    die Kette (alle älteren fallen ebenfalls weg). Lücken (`None`, stale,
+    strikt unterscheidbar von `0.0`) entstehen so nur bei echten Abständen
+    ab 1,5 Intervallen; Jitter und die Phasendrift des Zeitgebers (er
+    taktet mit genau der Slotbreite, jeder Main-Loop-Stall verschiebt seine
+    Phase) verschieben keinen Eintrag. Viele Abstände knapp unter 1,5
+    Intervallen können das Fenster zeitlich stauchen. Einträge in der
+    Zukunft (`ts > now`) oder mit nicht-endlichem `ts` fallen weg; ein
+    nicht-endliches `now` ergibt das leere Raster. Rückgabe: Tupel der
+    `payload.value`-Werte älteste→neueste (links→rechts im Raster).
     """
     values = [None] * capacity
     if not math.isfinite(now):
         return tuple(values)
-    newest_ts = [None] * capacity
-    for entry in entries:
-        if not math.isfinite(entry.ts) or entry.ts > now:
-            continue
-        offset = (now - entry.ts) / interval
+    candidates = sorted(
+        (entry for entry in entries
+         if math.isfinite(entry.ts) and entry.ts <= now),
+        key=lambda entry: entry.ts, reverse=True)
+    anchor_ts = now           # erst der jüngste Eintrag verankert die Kette
+    anchor_index = capacity - 1
+    chained = False
+    for entry in candidates:
+        offset = (anchor_ts - entry.ts) / interval
         if not math.isfinite(offset):
             continue
-        back = math.floor(offset + 0.5)
-        if not 0 <= back < capacity:
-            continue
-        index = capacity - 1 - back
-        if newest_ts[index] is None or entry.ts > newest_ts[index]:
-            values[index] = entry.payload.value
-            newest_ts[index] = entry.ts
+        step = math.floor(offset + 0.5)
+        if chained and step == 0:
+            continue  # selber Slot wie der jüngere, berücksichtigte Eintrag
+        index = anchor_index - step
+        if index < 0:
+            break
+        values[index] = entry.payload.value
+        anchor_ts = entry.ts
+        anchor_index = index
+        chained = True
     return tuple(values)
 
 

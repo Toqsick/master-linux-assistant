@@ -506,6 +506,38 @@ class BuildSeriesTests(unittest.TestCase):
             entries, interval=3, capacity=5, now=8.94)
         self.assertEqual(series, (None, None, 1.0, 2.0, 3.0))
 
+    def test_timer_phase_drift_does_not_create_inner_gaps(self):
+        # E3: Main-Loop-Stalls verschieben die Phase von timeout_add_seconds
+        # um +1 s; Abstände 3,3,4,3,3,4,3,3 driften auf 26 s auseinander.
+        # Gegen ein am letzten Tick verankertes Raster (E2) rutscht ts=6
+        # um einen Slot (Summe-Drift >= 1,5 s) -> falsche innere Lücke.
+        stamps = (0, 3, 6, 10, 13, 16, 20, 23, 26)
+        entries = [series_entry(ts, float(ts)) for ts in stamps]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=12, now=26)
+        self.assertEqual(
+            series, (None, None, None) + tuple(float(ts) for ts in stamps))
+        self.assertEqual(monitor_model.stale_count(series), 3)
+
+    def test_real_gap_of_one_and_a_half_intervals_is_exactly_one_stale_slot(self):
+        # Kontrolle: erst ein echter Abstand >= 1,5 Intervalle lässt einen
+        # Slot leer; knapp darunter (4,49 s) bleibt das Raster lückenlos.
+        gap = monitor_model.build_series(
+            [series_entry(0, 1.0), series_entry(4.5, 2.0)],
+            interval=3, capacity=5, now=4.5)
+        self.assertEqual(gap, (None, None, 1.0, None, 2.0))
+        no_gap = monitor_model.build_series(
+            [series_entry(0, 1.0), series_entry(4.49, 2.0)],
+            interval=3, capacity=5, now=4.49)
+        self.assertEqual(no_gap, (None, None, None, 1.0, 2.0))
+
+    def test_entry_one_slot_beyond_the_window_is_dropped(self):
+        # Fenstergrenze: k = floor(15/3 + 0.5) = 5 == capacity -> fällt weg
+        # (kein negativer Index, der in den letzten Slot zurückwickelt).
+        series = monitor_model.build_series(
+            [series_entry(0, 1.0)], interval=3, capacity=5, now=15)
+        self.assertEqual(series, (None,) * 5)
+
     def test_entries_after_now_are_dropped(self):
         entries = [series_entry(3, 1.0), series_entry(9, 2.0)]
         series = monitor_model.build_series(
@@ -753,6 +785,21 @@ class SamplerTests(unittest.TestCase):
         self.assertEqual(len(ram_series), 10)
         self.assertTrue(all(slot is not None for slot in ram_series[-3:]))
         self.assertEqual(sampler.stale_count('ram_percent'), 10 - 3)
+
+    def test_timer_phase_drift_sequence_has_no_false_stale_gaps(self):
+        # E3 über den Sampler: Tick-Abstände 3,3,4,3,3,4,3,3 (Phasendrift
+        # durch Main-Loop-Stalls) dürfen keine innere Lücke erzeugen.
+        stamps = (0.0, 3.0, 6.0, 10.0, 13.0, 16.0, 20.0, 23.0, 26.0)
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(mono, 1000.0 + mono) for mono in stamps]),
+            interval=3.0, capacity=12)
+        for _ in stamps:
+            sampler.tick()
+        ram_series = sampler.series('ram_percent')
+        self.assertEqual(len(ram_series), 12)
+        self.assertTrue(all(slot is not None for slot in ram_series[-9:]))
+        self.assertEqual(sampler.stale_count('ram_percent'), 12 - 9)
 
     def test_series_before_first_tick_is_a_full_none_grid(self):
         sampler = monitor_model.Sampler(fixture_reader(), FakeClock([]))

@@ -95,16 +95,27 @@ Parsing, kein I/O.
 über den Puffereinträgen, `stale_count(series)` zählt die Lücken; der Sampler
 nutzt als Payload `ValueSample(wall, value)` (Wanduhr + Wert, §3).
 
-- Das Raster hat **exakt `capacity`** Slots und ist **am letzten Tick
-  verankert** (Plan-Erratum E2): ein Eintrag mit `ts <= now` liegt
-  `k = floor((now − ts)/interval + 0,5)` Slots vor dem letzten Slot und
-  bekommt den Index `capacity − 1 − k`; nur `0 <= k < capacity` zählt.
-  Einträge in der Zukunft (`ts > now`) und ältere als das Fenster fallen weg.
-  Jitter unter `interval/2` verschiebt damit keinen Eintrag. Grund: der
-  Zeitgeber (§4) taktet mit genau der Slotbreite — ein absolutes
-  `floor(ts/interval)`-Raster ließe schon wenige Dutzend Millisekunden
-  Main-Loop-Verspätung eine Probe in den Nachbarslot rutschen (falsche
-  `stale`-Lücke plus doppelt belegter Slot).
+- Das Raster hat **exakt `capacity`** Slots und ist ein **Kettenraster**
+  (Plan-Erratum E3, das E2 verfeinert): Einträge mit endlichem `ts <= now`
+  werden nach `ts` absteigend durchlaufen. Der jüngste liegt
+  `k0 = floor((now − ts)/interval + 0,5)` Slots vor dem letzten Slot (Index
+  `capacity − 1 − k0`); jeder ältere liegt `step = floor(Δ/interval + 0,5)`
+  Slots vor dem zuletzt berücksichtigten, nächstjüngeren Eintrag (Δ = dessen
+  `ts` minus eigenes `ts`; Index = dessen Index − `step`). `step == 0` heißt
+  derselbe Slot: der jüngere Wert bleibt stehen. Ein Index unter 0 beendet
+  die Kette — alle älteren Einträge fallen ebenfalls weg, ebenso Einträge in
+  der Zukunft (`ts > now`).
+- **Wann eine Lücke entsteht:** nur bei echtem Abstand ab 1,5 Intervallen
+  zwischen zwei aufeinanderfolgenden Einträgen (`step >= 2` lässt `step − 1`
+  Slots leer). Jitter unter `interval/2` und die Phasendrift des Zeitgebers
+  (§4 taktet mit genau der Slotbreite; jeder Main-Loop-Stall verschiebt die
+  Phase von `timeout_add_seconds` dauerhaft) verschieben keinen Eintrag: ein
+  absolutes `floor(ts/interval)`-Raster oder ein nur am letzten Tick
+  verankertes Raster ließe dagegen schon wenige Dutzend Millisekunden
+  Verspätung bzw. eine aufsummierte Drift von 1,5 s eine falsche
+  `stale`-Lücke erzeugen. Grenzfall: viele Abstände knapp unter 1,5
+  Intervallen (je ein Slot) können das Fenster zeitlich stauchen — das
+  Raster zählt Ticks, nicht Wanduhr.
 - **Nicht-endliche Zahlen:** Einträge mit nicht-endlichem `ts` (`±inf`, `NaN`)
   werden übersprungen, ein nicht-endliches `now` ergibt das leere Raster
   (`(None,) * capacity`); `build_series` wirft dafür nie. Der
