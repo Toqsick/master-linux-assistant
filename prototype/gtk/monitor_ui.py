@@ -7,6 +7,8 @@ bestehenden Tokens (TOKENS.md §1/§8) — kein Hex/rgba im Quelltext. Den
 einzigen Zeitgeber besitzt die Shell (`mla_app.py`); `refresh()` zieht nur
 Captions und Zeichenflächen nach (D6, Single-Source-Timer).
 """
+import math
+
 import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
@@ -20,6 +22,8 @@ LABEL_SPACING = 4          # space1 (TOKENS.md §2)
 BASELINE_TOKEN = 'border-subtle'
 LINE_TOKEN = 'accent'
 Y_MAX_PERCENT = 100.0      # feste Y-Skala 0…100 % (D6)
+LINE_WIDTH = 1.0           # Linienbreite von Grundlinie und Polyline
+POINT_RADIUS = 1.5         # Einzelpunkt (Wert ohne Nachbarn), > Linienbreite/2
 
 
 class MonitorView(Gtk.Box):
@@ -76,12 +80,14 @@ class MonitorView(Gtk.Box):
         X: Slot `i` liegt bei `(i + 0,5) × Breite/Kapazität` (älteste
         links, Raster wie `build_series`). Y: 0 % auf der Grundlinie,
         100 % am oberen Rand. `None`-Slots brechen die Linie — nie durch
-        0 ziehen; eine leere Serie zeigt nur die Grundlinie.
+        0 ziehen; ein Wert ohne Nicht-`None`-Nachbarn links und rechts
+        (eine Linie hätte keine Länge) wird als gefüllter Punkt in der
+        Linienfarbe gezeichnet; eine leere Serie zeigt nur die Grundlinie.
         """
         if width <= 0 or height <= 0:
             return
         ground_y = height - 1.0
-        context.set_line_width(1.0)
+        context.set_line_width(LINE_WIDTH)
         context.set_source_rgba(*self._color(area, BASELINE_TOKEN))
         context.move_to(0.0, ground_y)
         context.line_to(width, ground_y)
@@ -93,6 +99,8 @@ class MonitorView(Gtk.Box):
         context.set_source_rgba(*self._color(area, LINE_TOKEN))
         step = width / self._sampler.capacity
         drawing = False
+        dots = []
+        last = len(series) - 1
         for index, value in enumerate(series):
             if value is None:
                 drawing = False  # Linie bricht an Lücken (D4)
@@ -100,12 +108,19 @@ class MonitorView(Gtk.Box):
             x = (index + 0.5) * step
             ratio = min(max(value, 0.0), Y_MAX_PERCENT) / Y_MAX_PERCENT
             y = ground_y - ratio * ground_y
+            if (index == 0 or series[index - 1] is None) and (
+                    index == last or series[index + 1] is None):
+                dots.append((x, y))  # Einzelwert: eine Linie bliebe unsichtbar
             if drawing:
                 context.line_to(x, y)
             else:
                 context.move_to(x, y)
                 drawing = True
         context.stroke()
+        for x, y in dots:
+            context.new_sub_path()
+            context.arc(x, y, POINT_RADIUS, 0.0, 2.0 * math.pi)
+            context.fill()
 
     def refresh(self):
         """Captions auf den letzten Tick ziehen und alles neu zeichnen."""

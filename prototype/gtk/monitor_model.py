@@ -1,13 +1,14 @@
-"""Reine /proc-Parser, Wertespec, Ringpuffer, Serienbildung und Sampler für
-den GTK-Systemmonitor (Issue #96).
+"""Monitor-Modell des GTK-Systemmonitors (Issue #96): /proc-Parser,
+Wertespec, Ringpuffer, Serienbildung, Sampler und Anzeige-Formatierer.
 
-Spec: `docs/mla-next/MONITOR.md` §1–§3; die maschinenlesbare Fassung der
-Tabelle liegt hier als `VALUE_SPECS`. Die Parser und `build_series` sind
-gi-frei und machen kein I/O — sie arbeiten auf übergebenen Textinhalten
-bzw. Einträgen; fehlende Pflichtfelder werfen `ValueError` mit klarer
-Botschaft. Datei-I/O gibt es ausschließlich in `ProcReader`/`Sampler`
-(nur lesend, ohne Subprozess); das Lücken-Handling (stale statt 0)
-übernimmt der Sampler. Kein Import aus dem GTK-Stack — die CI läuft headless.
+Spec: `docs/mla-next/MONITOR.md` §1–§4; die maschinenlesbare Fassung der
+Tabelle liegt hier als `VALUE_SPECS`. Die Parser, `build_series` und die
+Formatierer sind gi-frei und machen kein I/O — sie arbeiten auf übergebenen
+Textinhalten bzw. Einträgen; fehlende Pflichtfelder und nicht-endliche
+Messwerte werfen `ValueError` mit klarer Botschaft. Datei-I/O gibt es
+ausschließlich in `ProcReader`/`Sampler` (nur lesend, ohne Subprozess); das
+Lücken-Handling (stale statt 0) übernimmt der Sampler. Kein Import aus dem
+GTK-Stack — die CI läuft headless.
 """
 import math
 import os
@@ -170,12 +171,19 @@ def meminfo_percent(info: MemInfo) -> float | None:
 
 
 def parse_pressure_avg10(text: str) -> float:
-    """`some avg10` aus /proc/pressure/*; some-Zeile und avg10= sind Pflicht."""
+    """`some avg10` aus /proc/pressure/*; some-Zeile und avg10= sind Pflicht.
+
+    Ein nicht-endlicher Wert (`nan`, `inf`) ist kein Messwert → ValueError.
+    """
     for line in text.splitlines():
         if line.startswith('some '):
             for token in line.split()[1:]:
                 if token.startswith('avg10='):
-                    return float(token.split('=', 1)[1])
+                    value = float(token.split('=', 1)[1])
+                    if not math.isfinite(value):
+                        raise ValueError(
+                            'avg10 ist nicht endlich: %r' % token)
+                    return value
             raise ValueError('some-Zeile ohne avg10=')
     raise ValueError('keine some-Zeile gefunden')
 
@@ -248,26 +256,36 @@ class ValueSample(NamedTuple):
 
 def build_series(entries: Iterable[Sample], *, interval: float,
                  capacity: int, now: float) -> tuple:
-    """Feste Raster-Serie der Länge `capacity` aus Ringpuffer-Einträgen (D4).
+    """Feste Raster-Serie der Länge `capacity` aus Ringpuffer-Einträgen (D4/E2).
 
-    Slot eines Eintrags ist `floor(ts/interval)`; das Raster endet bei
-    `floor(now/interval)` und beginnt `capacity - 1` Slots davor — bei
-    `now` exakt auf einer Slot-Grenze zählt dieser Slot als letzter.
-    Enthält ein Slot mehrere Einträge, gewinnt der jüngste (größter `ts`);
-    leere Slots werden `None` (stale, strikt unterscheidbar von `0.0`).
-    Einträge außerhalb des Rasters — älter als das Fenster oder in der
-    Zukunft — fallen weg. Rückgabe: Tupel der `payload.value`-Werte
-    älteste→neueste (links→rechts im Raster).
+    Das Raster ist am letzten Tick (`now`) verankert: ein Eintrag mit
+    `ts <= now` liegt `k = floor((now − ts)/interval + 0,5)` Slots vor dem
+    letzten Slot und bekommt den Index `capacity − 1 − k`; nur
+    `0 <= k < capacity` zählt. Jitter unter `interval/2` verschiebt damit
+    keinen Eintrag (der Zeitgeber taktet mit genau der Slotbreite — ein
+    absolutes `floor(ts/interval)`-Raster würde schon bei kleiner
+    Verspätung Slots leeren oder doppelt belegen). Enthält ein Slot mehrere
+    Einträge, gewinnt der jüngste (größter `ts`); leere Slots werden `None`
+    (stale, strikt unterscheidbar von `0.0`). Einträge in der Zukunft
+    (`ts > now`), außerhalb des Fensters oder mit nicht-endlichem `ts`
+    fallen weg; ein nicht-endliches `now` ergibt das leere Raster.
+    Rückgabe: Tupel der `payload.value`-Werte älteste→neueste
+    (links→rechts im Raster).
     """
-    last_slot = math.floor(now / interval)
-    first_slot = last_slot - (capacity - 1)
     values = [None] * capacity
+    if not math.isfinite(now):
+        return tuple(values)
     newest_ts = [None] * capacity
     for entry in entries:
-        slot = math.floor(entry.ts / interval)
-        if not first_slot <= slot <= last_slot:
+        if not math.isfinite(entry.ts) or entry.ts > now:
             continue
-        index = slot - first_slot
+        offset = (now - entry.ts) / interval
+        if not math.isfinite(offset):
+            continue
+        back = math.floor(offset + 0.5)
+        if not 0 <= back < capacity:
+            continue
+        index = capacity - 1 - back
         if newest_ts[index] is None or entry.ts > newest_ts[index]:
             values[index] = entry.payload.value
             newest_ts[index] = entry.ts

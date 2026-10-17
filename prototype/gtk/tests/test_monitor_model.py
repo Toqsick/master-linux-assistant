@@ -1,4 +1,5 @@
-"""Tests für die /proc-Parser, die Wertespec und den Ringpuffer (Issue #96).
+"""Tests für das Monitor-Modell (Issue #96): /proc-Parser, Wertespec,
+Ringpuffer, Serienbildung, Sampler und Anzeige-Formatierer.
 
 Die erwarteten Werte rechnet jeder Test unabhängig aus den Fixture-Texten
 nach (kleine Inline-Zerlegung, bewusst NICHT die Produktionsfunktionen) —
@@ -150,6 +151,12 @@ class MeminfoTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             monitor_model.parse_meminfo('MemTotal: 1024 kB\n')
 
+    def test_meminfo_field_without_value_raises_value_error(self):
+        # Feldname ohne Wert (leerer Rest nach dem Doppelpunkt) ist ein
+        # ValueError — kein IndexError, den tick() nicht zur Lücke macht.
+        with self.assertRaises(ValueError):
+            monitor_model.parse_meminfo('MemTotal:\nMemAvailable: 1 kB\n')
+
     def test_percent_matches_independent_fixture_value(self):
         text = fixture_text('proc_meminfo.txt')
         total, available = inline_meminfo(text)
@@ -193,6 +200,16 @@ class PressureTests(unittest.TestCase):
     def test_some_line_without_avg10_raises(self):
         with self.assertRaises(ValueError):
             monitor_model.parse_pressure_avg10('some avg60=0.31 total=1234567\n')
+
+    def test_non_finite_avg10_raises_value_error(self):
+        # nan/inf sind keine Messwerte → ValueError (der Sampler macht
+        # daraus eine Lücke statt eines 'nan %'-Samples).
+        for token in ('nan', 'inf', '-inf'):
+            with self.subTest(token=token):
+                with self.assertRaises(ValueError):
+                    monitor_model.parse_pressure_avg10(
+                        'some avg10=%s avg60=0.00 avg300=0.00 total=0\n'
+                        % token)
 
 
 class ValueSpecTests(unittest.TestCase):
@@ -334,7 +351,7 @@ class RingBufferTests(unittest.TestCase):
         self.assertTrue(ring.append(2.0, 'b'))
 
     def test_positive_inf_follows_the_documented_monotonic_contract(self):
-        # Doku (RingBuffer.append-Docstring + MONITOR.md §3): +inf wird
+        # Doku (RingBuffer.append-Docstring + MONITOR.md §2): +inf wird
         # angenommen, solange der letzte Eintrag kleiner ist — inf > 1 gilt;
         # ein zweiter inf-Append scheitert, weil inf > inf falsch ist.
         ring = monitor_model.RingBuffer(3)
@@ -474,10 +491,42 @@ class BuildSeriesTests(unittest.TestCase):
         boundary = monitor_model.build_series(
             entries, interval=3, capacity=5, now=15)
         self.assertEqual(boundary[-1], 20.0)
-        # Knapp davor liegt ts=15 (Slot 5) in der Zukunft → fällt weg.
+        # Knapp davor liegt ts=15 > now (Zukunft) → fällt weg.
         before = monitor_model.build_series(
             entries, interval=3, capacity=5, now=14.999)
         self.assertEqual(before, (None, None, None, None, None))
+
+    def test_jitter_below_half_interval_does_not_shift_entries(self):
+        # E2: Raster am letzten Tick verankert. Ticks mit Phase 2.94 s
+        # (knapp vor der Slotgrenze) und ~0.1 s Verspätung beim zweiten
+        # Tick dürfen keinen Slot leeren oder doppelt belegen.
+        entries = [series_entry(2.94, 1.0), series_entry(6.04, 2.0),
+                   series_entry(8.94, 3.0)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=5, now=8.94)
+        self.assertEqual(series, (None, None, 1.0, 2.0, 3.0))
+
+    def test_entries_after_now_are_dropped(self):
+        entries = [series_entry(3, 1.0), series_entry(9, 2.0)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=3, now=6)
+        self.assertEqual(series, (None, 1.0, None))
+
+    def test_non_finite_entry_timestamp_is_skipped_without_raising(self):
+        entries = [series_entry(6, 1.0),
+                   series_entry(float('inf'), 2.0),
+                   series_entry(float('nan'), 3.0)]
+        series = monitor_model.build_series(
+            entries, interval=3, capacity=3, now=6)
+        self.assertEqual(series, (None, None, 1.0))
+
+    def test_non_finite_now_yields_full_none_grid(self):
+        entries = [series_entry(3, 1.0), series_entry(6, 2.0)]
+        for now in (float('inf'), float('-inf'), float('nan')):
+            with self.subTest(now=now):
+                series = monitor_model.build_series(
+                    entries, interval=3, capacity=5, now=now)
+                self.assertEqual(series, (None,) * 5)
 
     def test_stale_count_counts_none_slots(self):
         self.assertEqual(
@@ -689,6 +738,22 @@ class SamplerTests(unittest.TestCase):
         self.assertIsNotNone(cpu_series[-1])
         self.assertEqual(len(sampler.samples('cpu_percent')), 2)
 
+    def test_jittering_clock_does_not_create_false_stale_gaps(self):
+        # E2: Tick-Phase knapp vor der Slotgrenze (2.94 s) mit ~0.1 s
+        # Verspätung beim zweiten Tick; die drei Proben bleiben in den
+        # letzten drei Slots, stale zählt nur das leere Restfenster.
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(2.94, 1000.0), (6.04, 1003.1),
+                               (8.94, 1006.0)]),
+            interval=3.0, capacity=10)
+        for _ in range(3):
+            sampler.tick()
+        ram_series = sampler.series('ram_percent')
+        self.assertEqual(len(ram_series), 10)
+        self.assertTrue(all(slot is not None for slot in ram_series[-3:]))
+        self.assertEqual(sampler.stale_count('ram_percent'), 10 - 3)
+
     def test_series_before_first_tick_is_a_full_none_grid(self):
         sampler = monitor_model.Sampler(fixture_reader(), FakeClock([]))
         series = sampler.series('ram_percent')
@@ -797,6 +862,12 @@ class FormatterTests(unittest.TestCase):
             monitor_model.format_value(value_spec('psi_cpu_avg10'), 0.52),
             '0.52 %')
 
+    def test_format_value_pins_two_decimals_for_psi(self):
+        # Feste Dezimalen: 2.50 bleibt '2.50 %' (kein round()/str()-Kürzen).
+        self.assertEqual(
+            monitor_model.format_value(value_spec('psi_io_avg10'), 2.50),
+            '2.50 %')
+
     def test_format_value_none_is_stale_never_zero(self):
         cpu = value_spec('cpu_percent')
         self.assertEqual(monitor_model.format_value(cpu, None), 'stale')
@@ -807,6 +878,19 @@ class FormatterTests(unittest.TestCase):
         self.assertEqual(
             monitor_model.format_caption(value_spec('cpu_percent'), 1000.0, 0),
             'Quelle: /proc/stat · Einheit: % · Messzeit: 00:16:40')
+
+    def test_wall_clock_is_shown_in_local_time_not_utc(self):
+        # Nicht-UTC-Zone gepinnt (UTC+2): localtime, nicht gmtime. tearDown
+        # setzt TZ danach wieder auf den Ausgangszustand zurück.
+        os.environ['TZ'] = 'XXX-02'
+        time.tzset()
+        self.assertEqual(
+            monitor_model.format_caption(value_spec('cpu_percent'), 1000.0, 0),
+            'Quelle: /proc/stat · Einheit: % · Messzeit: 02:16:40')
+        drilldown = monitor_model.format_drilldown(
+            value_spec('cpu_percent'),
+            [monitor_model.ValueSample(wall=1000.0, value=10.0)], 0)
+        self.assertEqual(drilldown.splitlines()[-1], '02:16:40  10.0 %')
 
     def test_format_caption_appends_stale_suffix_only_when_stale(self):
         cpu = value_spec('cpu_percent')

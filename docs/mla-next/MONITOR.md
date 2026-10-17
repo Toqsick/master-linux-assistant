@@ -95,15 +95,24 @@ Parsing, kein I/O.
 über den Puffereinträgen, `stale_count(series)` zählt die Lücken; der Sampler
 nutzt als Payload `ValueSample(wall, value)` (Wanduhr + Wert, §3).
 
-- Das Raster hat **exakt `capacity`** Slots. Der Slot eines Eintrags ist
-  `floor(ts/interval)`; das Raster endet bei `floor(now/interval)` und beginnt
-  `capacity − 1` Slots davor. `now` exakt auf einer Slot-Grenze zählt diesen
-  Slot als letzten; Einträge in der Zukunft fallen weg.
+- Das Raster hat **exakt `capacity`** Slots und ist **am letzten Tick
+  verankert** (Plan-Erratum E2): ein Eintrag mit `ts <= now` liegt
+  `k = floor((now − ts)/interval + 0,5)` Slots vor dem letzten Slot und
+  bekommt den Index `capacity − 1 − k`; nur `0 <= k < capacity` zählt.
+  Einträge in der Zukunft (`ts > now`) und ältere als das Fenster fallen weg.
+  Jitter unter `interval/2` verschiebt damit keinen Eintrag. Grund: der
+  Zeitgeber (§4) taktet mit genau der Slotbreite — ein absolutes
+  `floor(ts/interval)`-Raster ließe schon wenige Dutzend Millisekunden
+  Main-Loop-Verspätung eine Probe in den Nachbarslot rutschen (falsche
+  `stale`-Lücke plus doppelt belegter Slot).
+- **Nicht-endliche Zahlen:** Einträge mit nicht-endlichem `ts` (`±inf`, `NaN`)
+  werden übersprungen, ein nicht-endliches `now` ergibt das leere Raster
+  (`(None,) * capacity`); `build_series` wirft dafür nie. Der
+  `RingBuffer`-Vertrag (`±inf`, s. o.) bleibt unverändert.
 - Enthält ein Slot mehrere Einträge, gewinnt der **jüngste** (größter `ts`) —
   unabhängig von der Eingabereihenfolge.
 - Leere Slots sind `None` (stale) und damit strikt unterscheidbar von `0.0`:
-  eine Lücke wird nie als 0 dargestellt oder interpretiert (D4). Einträge
-  älter als das Fenster fallen weg.
+  eine Lücke wird nie als 0 dargestellt oder interpretiert (D4).
 - Rückgabe ist ein Tupel der `payload.value`-Werte älteste→neueste
   (links→rechts im Raster); vor dem ersten Tick ist die Serie vollständig
   `None` der Länge `capacity` (kein Fehler).
@@ -141,6 +150,9 @@ nutzt als Payload `ValueSample(wall, value)` (Wanduhr + Wert, §3).
   pressure/io` oder `ValueError: meminfo`; dazu die Sonderfälle „Delta-Basis
   fehlt (erster Tick)", „Delta ungueltig", „Wert ungueltig: relpath" und
   „Zeit nicht monoton" (abgelehnter Append). Keine Inhalte, keine Secrets.
+- **Nicht-endliche Messwerte:** `parse_pressure_avg10` wirft bei `nan`/`inf`
+  als `avg10` einen `ValueError` — der Sampler macht daraus eine Lücke
+  (`ValueError: pressure/…`) statt eines `nan %`-Samples.
 - **Zugänge für die UI:** `series(value_id, now=None)`, `samples(value_id)`
   (älteste→neueste, fürs Drill-down), `latest(value_id)` und
   `stale_count(value_id, now=None)`; `interval`/`capacity` sind lesbar.
@@ -197,6 +209,10 @@ Klasse `.mla-drilldown` (Monospace, TOKENS.md §8); der Chip zeigt dabei
   `(i + 0,5) × Breite/Kapazität` (älteste links); `None`-Slots brechen
   die Linie — es wird nie durch eine Lücke (oder gar 0) gezogen; eine
   leere Serie zeigt nur die Grundlinie.
+- Ein Einzelwert ohne Nicht-`None`-Nachbarn links und rechts (z. B. der erste
+  Sample nach dem Start oder ein Wert zwischen zwei Lücken) hätte als Linie
+  keine Länge und wird deshalb als gefüllter Punkt (Radius 1,5 px) in der
+  Linienfarbe `accent` gezeichnet.
 
 ### Zeitgeber & Refresh (D6, Single-Source)
 
