@@ -76,15 +76,19 @@ der Payload ist beliebig — der Sampler nutzt in Task 3 `ValueSample(wall,
 value)`. Der Puffer ist eine reine Datenstruktur: keine Wertelogik, kein
 Parsing, kein I/O.
 
-- `capacity < 1` → `ValueError`.
+- `capacity` ist eine Slot-Anzahl: alles außer `int` ≥ 1 → `ValueError`
+  (auch `bool`, ganzzahlige Floats wie `3.0`, `nan`, `inf`; PR-Review #119,
+  Plan-Erratum E4).
 - `append(ts, payload) -> bool` akzeptiert nur **streng größere** Zeitstempel
   als der letzte Eintrag (strikte Zeitmonotonie). `ts <= letzter ts` wird
   abgelehnt: Rückgabe `False`, Zähler `rejected` erhöht, **keine Mutation**.
-  Der erste Append ist immer akzeptiert.
-- `NaN`-Zeitstempel werden abgelehnt (sobald verglichen wird, ist `not ts >
-  letzter ts` für NaN wahr); `+inf`/`-inf` nehmen als geordnete Werte
-  (größter/kleinster Zeitstempel) am normalen Vergleich teil: `+inf` wird
-  angenommen, solange der letzte Eintrag kleiner ist; `-inf` wird bei
+  Der erste Append ist akzeptiert, außer bei `NaN`.
+- `NaN`-Zeitstempel werden immer abgelehnt, auch als erster Append — ein NaN
+  im Puffer ließe jeden späteren Vergleich `ts > nan` scheitern und
+  blockierte den Wert dauerhaft (PR-Review #119). Der Sampler macht daraus
+  die Lücke `Zeit nicht monoton` (§3). `+inf`/`-inf` nehmen als geordnete
+  Werte (größter/kleinster Zeitstempel) am normalen Vergleich teil: `+inf`
+  wird angenommen, solange der letzte Eintrag kleiner ist; `-inf` wird bei
   bestehendem Puffer abgelehnt (nur als erster Append akzeptiert).
 - Überlauf: Bei voller Kapazität fällt der älteste Eintrag heraus; die
   Reihenfolge bleibt älteste→neueste, `len(ring) <= capacity` gilt immer.
@@ -315,7 +319,8 @@ RAM-Kurven sind bis auf die Lückensemantik vergleichbar.
 ### Ausführung (Gates)
 
 - GTK: `python3 -m unittest discover -s prototype/gtk/tests` (aus dem
-  Repo-Root) — 90 Tests (80 Modell + 10 Token).
+  Repo-Root) — 94 Tests (84 Modell + 10 Token; davon 4 aus dem
+  PR-Review #119: NaN als Erst-Zeitstempel, ungültige Kapazitäten).
 - Bestehende Python-Suite: `cd additional/python && python3 -m unittest
   discover -s tests -t .` — 53 Tests, unabhängig vom GTK-Track.
 - Start-Gates (BASELINE §2): Start unter Wayland und X11 je

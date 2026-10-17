@@ -288,7 +288,9 @@ class RingBufferTests(unittest.TestCase):
         self.assertEqual(sample.payload, 'wert')
         self.assertEqual(tuple(sample), (3.0, 'wert'))
 
-    def test_first_append_is_always_accepted(self):
+    def test_first_finite_append_is_accepted(self):
+        # Erster Append ohne Vergleich; einzige Ausnahme NaN (PR-Review #119,
+        # test_nan_as_first_timestamp_is_rejected_and_does_not_block).
         ring = monitor_model.RingBuffer(3)
         self.assertEqual(len(ring), 0)
         self.assertEqual(ring.rejected, 0)
@@ -350,6 +352,17 @@ class RingBufferTests(unittest.TestCase):
         self.assertEqual(ring.entries, before_entries)
         self.assertTrue(ring.append(2.0, 'b'))
 
+    def test_nan_as_first_timestamp_is_rejected_and_does_not_block(self):
+        # PR-Review #119: Ein NaN als erster Zeitstempel darf nicht im Puffer
+        # landen — sonst scheitert jeder spätere Append an `ts > nan` und der
+        # Wert wäre dauerhaft blockiert. -inf bleibt als Erstappend erlaubt.
+        ring = monitor_model.RingBuffer(3)
+        self.assertFalse(ring.append(float('nan'), 'n'))
+        self.assertEqual(len(ring), 0)
+        self.assertEqual(ring.rejected, 1)
+        self.assertTrue(ring.append(1.0, 'a'))
+        self.assertEqual([sample.ts for sample in ring.entries], [1.0])
+
     def test_positive_inf_follows_the_documented_monotonic_contract(self):
         # Doku (RingBuffer.append-Docstring + MONITOR.md §2): +inf wird
         # angenommen, solange der letzte Eintrag kleiner ist — inf > 1 gilt;
@@ -395,6 +408,16 @@ class RingBufferTests(unittest.TestCase):
 
     def test_capacity_below_one_raises_value_error(self):
         for capacity in (0, -1, 0.5):
+            with self.subTest(capacity=capacity):
+                with self.assertRaises(ValueError):
+                    monitor_model.RingBuffer(capacity)
+
+    def test_non_integer_capacity_raises_value_error(self):
+        # PR-Review #119: Die Kapazität ist eine Slot-Anzahl. Brüche, ganzzahlige
+        # Floats und nan/inf würden den Puffer verfälschen (inf/nan: nie
+        # gekürzt) oder erst in build_series scheitern ([None] * 2.5);
+        # bool ist eine int-Unterklasse, aber keine Slot-Anzahl.
+        for capacity in (2.5, 3.0, True, float('inf'), float('nan')):
             with self.subTest(capacity=capacity):
                 with self.assertRaises(ValueError):
                     monitor_model.RingBuffer(capacity)
@@ -820,6 +843,29 @@ class SamplerTests(unittest.TestCase):
         self.assertEqual(len(sampler.samples('ram_percent')), 1)
         # CPU: zweite Probe unverändert → Δtotal 0 → 'Delta ungueltig'.
         self.assertEqual(sampler.gaps['cpu_percent'], 'Delta ungueltig')
+
+    def test_nan_first_clock_is_a_gap_and_does_not_block_later_ticks(self):
+        # PR-Review #119: liefert die Uhr beim ersten Tick NaN, wird das zur
+        # Lücke 'Zeit nicht monoton'; der nächste gültige Tick misst normal.
+        reader = fixture_reader()
+        sampler = monitor_model.Sampler(
+            reader, FakeClock([(float('nan'), 1000.0), (3.0, 1003.0)]))
+        sampler.tick()
+        self.assertEqual(sampler.gaps['ram_percent'], 'Zeit nicht monoton')
+        self.assertEqual(sampler.samples('ram_percent'), ())
+
+        sampler.tick()
+        self.assertNotIn('ram_percent', sampler.gaps)
+        self.assertEqual(len(sampler.samples('ram_percent')), 1)
+        self.assertEqual(sampler.stale_count('ram_percent'),
+                         sampler.capacity - 1)
+
+    def test_non_integer_capacity_is_rejected_at_construction(self):
+        # Ohne Prüfung im RingBuffer würde Sampler(capacity=2.5) erst beim
+        # Zeichnen in build_series mit TypeError scheitern.
+        with self.assertRaises(ValueError):
+            monitor_model.Sampler(fixture_reader(), FakeClock([]),
+                                  capacity=2.5)
 
     def test_stat_read_failure_keeps_cpu_a_gap_without_storing_a_basis(self):
         # Der CPU-Zweig ist der einzige mit zustandstragendem Delta: Liest

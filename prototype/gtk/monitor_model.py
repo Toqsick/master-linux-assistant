@@ -203,12 +203,17 @@ class RingBuffer:
     Zeitmonotonie); abgelehnte Appends mutieren nichts und zählen in
     `rejected`. Bei Überlauf fällt der älteste Eintrag heraus, die Reihenfolge
     bleibt älteste→neueste und `len(ring) <= capacity` gilt immer.
+    `capacity` ist eine Slot-Anzahl: nur `int` ≥ 1, sonst `ValueError`.
     """
 
     def __init__(self, capacity: int):
-        if capacity < 1:
+        # bool ist eine int-Unterklasse, aber keine Slot-Anzahl; Floats (auch
+        # 3.0, nan, inf) würden den Überlauf aushebeln oder erst in
+        # build_series scheitern ([None] * 2.5 → TypeError).
+        if (isinstance(capacity, bool) or not isinstance(capacity, int)
+                or capacity < 1):
             raise ValueError(
-                'capacity muss mindestens 1 sein, ist %r' % capacity)
+                'capacity muss eine ganze Zahl >= 1 sein, ist %r' % capacity)
         self._capacity = capacity
         self._entries: list[Sample] = []
         self.rejected = 0
@@ -224,16 +229,19 @@ class RingBuffer:
     def append(self, ts: float, payload: object) -> bool:
         """Eintrag anhängen, wenn `ts` streng größer als der letzte ist.
 
-        `NaN`-Zeitstempel werden abgelehnt (sobald verglichen wird, ist `not
-        ts > letzter ts` für NaN wahr); `+inf`/`-inf` nehmen als geordnete
+        `NaN`-Zeitstempel werden immer abgelehnt, auch als erster Append —
+        ein NaN im Puffer ließe jeden späteren Vergleich `ts > nan` scheitern
+        und blockierte den Wert dauerhaft. `+inf`/`-inf` nehmen als geordnete
         Werte (größter/kleinster Zeitstempel) am normalen Vergleich teil:
         `+inf` wird angenommen, solange der letzte Eintrag kleiner ist;
         `-inf` wird bei bestehendem Puffer abgelehnt (nur als erster Append
         akzeptiert).
         """
-        if self._entries and not ts > self._entries[-1].ts:
-            # 'not >' weist NaN ab (NaN > x ist False); ±inf laufen durch den
-            # normalen Vergleich: +inf wird angenommen, -inf nur als Erstappend.
+        if math.isnan(ts) or (self._entries
+                              and not ts > self._entries[-1].ts):
+            # NaN vor dem Leerpuffer-Kurzschluss abweisen; ±inf laufen durch
+            # den normalen Vergleich: +inf wird angenommen, -inf nur als
+            # Erstappend.
             self.rejected += 1
             return False
         self._entries.append(Sample(ts=ts, payload=payload))
