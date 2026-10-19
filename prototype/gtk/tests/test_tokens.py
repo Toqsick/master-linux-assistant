@@ -9,8 +9,8 @@ Prüft gegen docs/mla-next/TOKENS.md:
    eine bekannte schlechte Paarung abweisen und Schwarz/Weiß mit 21:1
    bestehen. focusRing wird NICH als 3:1 behauptet, sondern unter 3:1
    gepinnt (dokumentierte Schwäche, TOKENS.md §5).
-3. Hardcode-Gate: keine Hex-/rgb()-Farben in mla_app.py (Regex muss an
-   einem Known-Bad-Snippet anschlagen).
+3. Hardcode-Gate: keine Hex-/rgb()-Farben in mla_app.py, monitor_ui.py und
+   monitor_model.py (Regex muss an einem Known-Bad-Snippet anschlagen).
 
 Läuft mit: python3 -m unittest discover -s prototype/gtk/tests (aus dem
 Repo-Root; auch als CI-Schritt in .github/workflows/build.yml).
@@ -24,6 +24,10 @@ TOKENS_CSS = GTK_DIR / 'tokens.css'
 TOKENS_DARK_CSS = GTK_DIR / 'tokens-dark.css'
 TOKENS_MD = GTK_DIR.parent.parent / 'docs' / 'mla-next' / 'TOKENS.md'
 APP_PY = GTK_DIR / 'mla_app.py'
+MONITOR_UI_PY = GTK_DIR / 'monitor_ui.py'
+MONITOR_MODEL_PY = GTK_DIR / 'monitor_model.py'
+# Hardcode-Gate (Task 4, #96): alle Python-Dateien der GTK-Shell im Scan.
+SCANNED_PY = (APP_PY, MONITOR_UI_PY, MONITOR_MODEL_PY)
 
 DEFINE_RE = re.compile(r'^\s*@define-color\s+([A-Za-z0-9-]+)\s+([^;]+);')
 DOC_ROW_RE = re.compile(
@@ -207,10 +211,11 @@ class HardcodeTests(unittest.TestCase):
     RGB_RE = re.compile(r'\brgba?\(')
 
     def test_no_color_literals_in_app(self):
-        source = APP_PY.read_text(encoding='utf-8')
-        for pattern in (self.HEX_RE, self.RGB_RE):
-            with self.subTest(pattern=pattern.pattern):
-                self.assertEqual(pattern.findall(source), [])
+        for path in SCANNED_PY:
+            source = path.read_text(encoding='utf-8')
+            for pattern in (self.HEX_RE, self.RGB_RE):
+                with self.subTest(file=path.name, pattern=pattern.pattern):
+                    self.assertEqual(pattern.findall(source), [])
 
     def test_gate_regex_flags_known_bad_snippet(self):
         # RED-Beleg: das Regex-Gate ist nicht leer — es muss #B8860B in einem

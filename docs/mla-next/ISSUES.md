@@ -249,16 +249,16 @@ Schreibfreier Monitor in der GTK-Shell: Werte aus `/proc` (CPU, RAM, PSI u. a.; 
 **Grenzen (gelten für jedes MLA-Next-Paket):** GTK-UI, Flutter-UI und Dart-Host laufen nie als Root; keine generische Root-IPC, keine Shell-Strings, keine Secrets in Logs, Screenshots oder Commits; die vorhandene polkit-Grenze bleibt unberührt.
 
 ## Abnahme
-- [ ] Je Wert sind Quelle und Einheit dokumentiert; jedes Diagramm zeigt Einheit, Messzeit und Quelle
-- [ ] Ringpuffer: Tests für Überlauf, Zeitmonotonie und Lücken (Lücke = `stale`, nie 0)
-- [ ] Plausibilisierung gegen den `/proc`-Rohwert innerhalb einer dokumentierten Toleranz — Toleranz legt der Spec fest
-- [ ] Tests laufen gegen Fixtures, ohne echtes System
+- [x] Je Wert sind Quelle und Einheit dokumentiert; jedes Diagramm zeigt Einheit, Messzeit und Quelle — 2026-10-17: `MONITOR.md` §1 (Tabelle, `VALUE_SPECS` gepinnt) + §4; Caption `Quelle: … · Einheit: … · Messzeit: HH:MM:SS[ · stale: N]` je Diagramm, exakt gepinnt (`FormatterTests`); Sichtprüfung X11 bei `9f13e67` (Ledger), Wayland-Screenshot bleibt manuell
+- [x] Ringpuffer: Tests für Überlauf, Zeitmonotonie und Lücken (Lücke = `stale`, nie 0) — 2026-10-17: `RingBufferTests`/`BuildSeriesTests`/`SamplerTests` (Überlauf, strikte Monotonie inkl. NaN/±inf, `None` ≠ `0.0`; `stale`-Formatierung in `FormatterTests`); Kettenraster gegen Zeitgeber-Jitter/Phasendrift (Errata E2/E3, `18a63df`/`e7e8145`)
+- [x] Plausibilisierung gegen den `/proc`-Rohwert innerhalb einer dokumentierten Toleranz — Toleranz legt der Spec fest — 2026-10-17: Toleranzen `MONITOR.md` §1; Tests gegen unabhängige Inline-Rechnung (CPU ±0,5 pp, RAM ±0,2 pp, PSI ±0,01); Live-Plausibilität gegen `top`/`free` bleibt manuell (VERIFY-Handoff #96)
+- [x] Tests laufen gegen Fixtures, ohne echtes System — 2026-10-17: 7 synthetische `test/fixtures/proc_*.txt`, `FakeReader`/`FakeClock`, `ProcReader` nur gegen tmp-Root; Audit-Hook-Lauf der Suite (77 Tests auf `7f01b7b`, Final-Review-Synthese): 0 Zugriffe auf `/proc`, `/sys`, subprocess, socket (Final-Review-Synthese)
 
 ## Handoff (Pflicht je Aufgabe, aus `docs/mla-next/VERIFY.md`)
-- [ ] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest
-- [ ] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft
-- [ ] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt
-- [ ] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe
+- [x] Basis-SHA, Pfade, Scope und Failing-Test/Fixture stehen vor der Umsetzung fest — Basis `de0026d`; SDD-Plan `docs/superpowers/plans/2026-10-02-mla-96-monitor.md` (`5a27740`, vor dem ersten Code-Commit); RED je Task im Abschnitt „Handoff #96" in `docs/mla-next/VERIFY.md`
+- [x] Reviewer 1 (Funktion/UX/Races) und Reviewer 2 (Privilegien/Secrets/argv/IPC) haben geprüft — je Task T1–T4 R1+R2 APPROVED (Pin-Commit `7f01b7b` nur Final-Review + Mutationsbelege); Final-Whole-Branch-Review (Opus-Workflow, R1+R2+Vollständigkeits-Kritiker, adversariale Refuter) CHANGES_REQUESTED 0/1/8 → 2 Fix-Runden → Scoped-Re-Reviews **APPROVED**
+- [x] Wirklich ausgeführte Gates mit Ausgabe; rote oder übersprungene Gates benannt; Rückfallplan genannt — Gate-Tabellen (Frischlauf vor und nach den Fixes) und Rückfallplan im Handoff-Abschnitt; übersprungen: `build-deb.sh`, Wayland-Screenshot, manuelle Zorin-Checks (benannt)
+- [x] Kein Merge, Release oder Policy-Update ohne gesonderte Freigabe — eingehalten: bis zum Handoff-Commit kein Push; Push + PR (ohne Merge) freigegeben von Basti am 2026-10-17, erst nach dem Handoff-Commit; #96 bleibt bis zur Abnahme offen
 
 ## Abhängigkeiten
 Blockiert durch: #91, #93, #94
