@@ -44,3 +44,7 @@ Computer-Use-Evaluation, Wayland-Freigaben, Stop-Schalter, Sicherheits-/Performa
 
 Erfolgskriterium: Regressionsmatrix ausgeführt und belegt; Packaging-/Upgrade-Probe belegt; Entscheidung und Rückfallplan dokumentiert. Merge, Release und Policy-Updates nur nach gesonderter Freigabe von Basti.
 
+
+## V1.1 – V1.3 (GTK, nach 0.4.x) — Produktplanung ohne `track:mla-next`
+
+> Nicht Teil des Experiments: Die Milestones **V1.1 – Cockpit-QoL & UX**, **V1.2 – Zorin/GNOME-Integration & Werkzeuge** und **V1.3 – Nice-to-haves & Parkliste** (GitHub-Nr. 19–21, Issues mit Label `shell:gtk`) planen den Ausbau der GTK-Shell **nach** dem 0.4.x-Entscheid (#106) und setzen voraus, dass er für GTK fällt. Beschreibungen und Erfolgskriterien: `meilensteine-v1.1-v1.3.md` (Repo-Root); Bodies: `issues-v1.1-v1.3.md`; Master-Plan mit Rückfallregel: `ausbauplan-v1.1-v1.3.md`.

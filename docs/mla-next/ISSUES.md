@@ -1,6 +1,8 @@
 # MLA-Next — Issues
 
 > Spiegel der GitHub-Issues mit Label `track:mla-next` (Stand 2026-09-30). Zuordnung Schlüssel → Issue-Nummer steht in der Tabelle.
+>
+> **Hinweis (2026-10-18):** Die Produktplanung V1.1–V1.3 (GTK-Shell nach 0.4.x, Label `shell:gtk`, Milestones 19–21) läuft bewusst **ohne** `track:mla-next` und ist hier nicht gespiegelt — siehe `issues-v1.1-v1.3.md` und `ausbauplan-v1.1-v1.3.md` im Repo-Root.
 
 | Schlüssel | Issue | Milestone |
 |---|---|---|

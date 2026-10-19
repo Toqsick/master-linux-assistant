@@ -9,6 +9,10 @@ sind im Repo deaktiviert).
 `meilensteine-v0.8.1-v0.8.5.md`, `issues-v0.8.1-v0.8.5.md` und
 `release-plaene-v0.8.1-v0.8.5.md` (Repo-Root).
 
+## Ausbau ab V1.1 (GTK-Shell)
+
+Nach V1.0 „Cockpit komplett" folgen drei Wellen auf der GTK-Shell: `ausbauplan-v1.1-v1.3.md`, `meilensteine-v1.1-v1.3.md`, `issues-v1.1-v1.3.md` (Repo-Root; GitHub-Milestones 19–21, Label `shell:gtk`). Prämisse ist der GTK-Entscheid aus MLA-Next 0.4.x (#106); die Rückfallregel steht im Ausbauplan.
+
 ## Kandidaten (Stand nach v0.8.0)
 
 | Thema | Quelle | Aufwand |
