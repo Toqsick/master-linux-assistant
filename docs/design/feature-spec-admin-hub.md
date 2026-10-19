@@ -41,6 +41,12 @@ visuell abgesetzt (Sektions-Label in `textDim`, 12px, uppercase, wie
 
 ## 2. Feature 1: Browser-Verknüpfung (Brave)
 
+> **Überholt (DR) seit V0.8.2:** Der Launch geht jetzt über `preferred_browser`
+> (Allowlist-geprüft, WP-B1/#47) → XDG-Standardbrowser (`xdg-settings` +
+> `.desktop`-Prüfung, `gtk-launch`/`xdg-open`) → `kKnownBrowsers`-Liste als
+> letzter Fallback. Aktueller Stand: `docs/wiki/Admin-Hub.md` (E1). Der
+> folgende Abschnitt beschreibt den historischen Erststand.
+
 ### Verhalten
 - Klick auf „Browser" → öffnet Brave als externen Prozess
 - Fallback-Kette: `brave` → `brave-browser` → `xdg-open https://`

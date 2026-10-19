@@ -20,7 +20,7 @@ flutter test
 Manuelle Checks:
 
 - [ ] WERKZEUGE-Sektion erscheint in der Sidebar (nicht collapsed)
-- [ ] Browser-Klick startet Brave/xdg-open, ändert die Section nicht
+- [ ] Browser-Klick startet preferred/XDG-Standardbrowser (gtk-launch bzw. xdg-open), ändert die Section nicht
 - [ ] Quick Notes: anlegen, tippen (Autosave 500 ms), Section wechseln,
       zurück → Inhalt + Selektion bleiben
 - [ ] Dateimanager: navigieren, Datei öffnen, Löschen mit Confirm (voller

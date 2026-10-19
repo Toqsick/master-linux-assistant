@@ -52,7 +52,7 @@ Registrierung erfolgt **statisch über zwei Enums**, nicht über eine Laufzeit-R
 3. Routing: `_onToolTap()` (:417-432) verzweigt — `browser` → `_launchBrowser()` (:171-187), sonst → `_selectTool()` (:156-164).
 4. Content: `_contentFor()` mappt `HubTool` auf Seite — `QuickNotesPage` (:287-288), `FileManagerPage` (:289-290), `SystemMonitorPage` (:291-292); `browser` wird nie Content (`SizedBox.shrink()`, :293-296).
 
-**E1 Browser-Launcher:** kein eigenes Panel. `AppLauncher.launchBrowser()` (`services/app_launcher.dart:37, :101`, Kandidaten inkl. `brave`/`brave-browser` :21-22) startet detached; Feedback über `BrowserLaunchResult` → Snackbars nur bei Fallback („Brave nicht gefunden – Standard-Browser geöffnet.") und Fehler (:174-186).
+**E1 Browser-Launcher:** kein eigenes Panel. `AppLauncher.launchBrowser()` (`services/app_launcher.dart:44, :173`; XDG-Stufe `xdg-settings` + `.desktop`-Prüfung + `gtk-launch`/`xdg-open`, letzter Fallback `kKnownBrowsers` :21-28) startet detached; Feedback über `BrowserLaunchResult` → Snackbars nur bei Listen-Fallback („Standard-Browser nicht ermittelbar – ersatzweise bekannten Browser gestartet.") und Fehler (:174-186).
 
 **E2 Quick Notes:** `layouts/tools/quick_notes.dart` (`QuickNotesPage`, :13) — nutzt `MintYText.mono` für das Textfeld (:298, 301).
 

@@ -4,6 +4,7 @@
 import gettext
 import json
 import os
+import shutil
 
 def does_file_exist(file_path):
     return os.path.exists(file_path) and os.path.isfile(file_path)
@@ -178,7 +179,7 @@ def get_string_of_file(file_path):
 
 
 def copy_file(source_path, destination_path):
-    os.system("cp '" + source_path + "' '" + destination_path + "'")
+    shutil.copy2(source_path, destination_path)
 
 def get_dict_of_json_file(file_path):
     return json.load(open(file_path, 'r'))

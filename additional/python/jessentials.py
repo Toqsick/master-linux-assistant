@@ -31,13 +31,17 @@ def get_environment_variable(key, default=""):
 
 # example for environment={'DEBIAN_FRONTEND': 'noninteractive'}
 # if return_output==true: function returns a array of strings
+# A list is used as argv unchanged; a string is shlex-split. Callers that
+# build commands from values (paths, URLs) must pass a list, so a space
+# stays inside one argument.
 def run_command(command, print_output=True, return_output=False, environment = {}, user=None):
+    argv = list(command) if isinstance(command, list) else shlex.split(command)
     if sys.version_info < (3, 9):
         if user == None:
             user = os.getuid()
-        process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, env=environment, preexec_fn=_demote(user, user))
+        process = subprocess.Popen(argv, stdout=subprocess.PIPE, env=environment, preexec_fn=_demote(user, user))
     else:
-        process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, env=environment, user=user)
+        process = subprocess.Popen(argv, stdout=subprocess.PIPE, env=environment, user=user)
     output_lines = [] # In this the output is saved line per line
     if print_output or return_output:
         while True:
@@ -164,7 +168,8 @@ def get_accessible_table_of_raw_csv_table(csv_raw_table):
 
 
 def download_file(link, destination_folder):
-    run_command("wget %s -P %s" % (link, destination_folder), False)
+    # `--` keeps a leading-dash link from becoming wget options.
+    run_command(["wget", "-P", destination_folder, "--", link], False)
 
 
 def get_filename_of_path(path):
@@ -176,8 +181,9 @@ def unzip_file(file_path):
     file_name_zip = get_filename_of_path(file_path)
     file_name = os.path.splitext(file_name_zip)[0]
     path = file_path.replace(file_name_zip, "")
-    run_command("mkdir %s%s" % (path, file_name), False)
-    run_command("unzip -o %s -d %s%s" % (file_path, path, file_name), False)
+    # No `--` fence here: after it, unzip would read `-d` as a member name.
+    run_command(["mkdir", path + file_name], False)
+    run_command(["unzip", "-o", file_path, "-d", path + file_name], False)
     return "%s%s" % (path, file_name)
 
 def import_json_string(string):
