@@ -197,9 +197,11 @@ class AppLauncher {
       }
     }
 
-    final fallback = await detectBrowser();
-    if (fallback != null && await _starter(fallback, args)) {
-      return BrowserLaunchResult.launchedFallback;
+    for (final browser in kKnownBrowsers) {
+      if (browser == preferred || !await _which(browser)) continue;
+      if (await _starter(browser, args)) {
+        return BrowserLaunchResult.launchedFallback;
+      }
     }
     return BrowserLaunchResult.failed;
   }
