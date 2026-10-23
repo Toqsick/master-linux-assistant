@@ -68,6 +68,11 @@ _Quelle: Implementierungsplan V0.8.X, Task 1._
 
 **Meilenstein:** V0.8.2 · **Labels:** `bug`, `xdg-launcher`, `gate:test`
 
+**Status (2026-10-23):** erledigt — Tests in `test/app_launcher_test.dart`
+(`defaultBrowserDesktopId` 4, `desktopEntryExistsIn` 2, `launchBrowser` 9), Squash-Merge
+`add73e3`. GitHub-Issue #33 geschlossen. Nachweis:
+`docs/handoff/v0.8.2-xdg-browser-abschluss.md`.
+
 ### Body
 
 ```markdown
@@ -93,6 +98,13 @@ _Quelle: Implementierungsplan V0.8.X, Task 2 (Steps 1–2)._
 ## Issue 4 — [V0.8.2] XDG-Stufe in AppLauncher implementieren + Snackbar-Feedback + Doku
 
 **Meilenstein:** V0.8.2 · **Labels:** `bug`, `xdg-launcher`, `gate:test`, `gate:verify`
+
+**Status (2026-10-23):** erledigt — `app_launcher.dart` (XDG-Stufe, 5 injizierbare Zugriffe),
+`hub_shell.dart` (5-Zeilen-Doc-Kommentar, Fallback-Snackbar), vier Doku-Stellen
+(`Admin-Hub.md`, `hub-shell.md`, `feature-spec-admin-hub.md`, `admin-hub-followups.md`),
+Squash-Merge `add73e3`. GitHub-Issue #34 geschlossen. Der manuelle Abnahmeschritt
+(Brave Origin auf Zorin 18.1) bleibt offen — siehe Meilenstein 2 in
+`meilensteine-v0.8.1-v0.8.5.md`.
 
 ### Body
 
@@ -122,6 +134,11 @@ _Quelle: Implementierungsplan V0.8.X, Task 2 (Steps 3–8)._
 ## Issue 5 — [V0.8.3] deb-Depends: xdg-utils, libgtk-3-bin, libglib2.0-bin
 
 **Meilenstein:** V0.8.3 · **Labels:** `packaging`, `xdg-launcher`, `gate:verify`
+
+**Status (2026-10-23):** erledigt — `deb/DEBIAN/control:2` trägt die drei Pakete, Verify-Gate
+real gelaufen: `bash build-deb.sh` → `Built linux-assistant_0.8.0_amd64.deb`, `dpkg-deb -f …
+Depends` endet auf `xdg-utils, libgtk-3-bin, libglib2.0-bin`. GitHub-Issue #35 geschlossen.
+Nachweis: `docs/handoff/v0.8.2-xdg-browser-abschluss.md`.
 
 ### Body
 

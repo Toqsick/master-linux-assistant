@@ -18,6 +18,12 @@ Task 0+1 des V0.8.X-Plans: Memory neu fassen („Master Linux Assistant", Cockpi
 
 ## Meilenstein 2 — V0.8.2 „XDG-Browser-Fix“
 
+**Status (2026-10-23):** codeseitig erfüllt, Squash-Merge in `main` als `add73e3` (PR #118).
+Issues #33, #34, #47, #52 geschlossen. Offen bleibt der manuelle Abnahmeschritt aus dem
+Erfolgskriterium (Brave Origin auf Zorin 18.1) sowie die Checkboxen in
+`docs/design/admin-hub-followups.md` — beides braucht einen Desktop und ist aus der
+Cloud-Sandbox nicht prüfbar. Nachweis: `docs/handoff/v0.8.2-xdg-browser-abschluss.md`.
+
 **Beschreibung:**
 
 Task 2: Der `AppLauncher` folgt `preferred_browser` → XDG-Standardbrowser (`xdg-settings get default-web-browser` + .desktop-Existenzprüfung, dann detached `gtk-launch`; mit URL `xdg-open`) → Binary-Liste nur als letzter Fallback. TDD (RED→GREEN), Snackbar-Feedback in `hub_shell.dart`, Doku-Abgleich. Behebt den Live-Bug: Der Hub startete Google Chrome statt des Standardbrowsers Brave Origin.
@@ -27,6 +33,12 @@ Task 2: Der `AppLauncher` folgt `preferred_browser` → XDG-Standardbrowser (`xd
 ---
 
 ## Meilenstein 3 — V0.8.3 „Packaging: Depends & Abhängigkeitslisten“
+
+**Status (2026-10-23):** Packaging-Teil erledigt — `deb/DEBIAN/control:2` deklariert
+`xdg-utils, libgtk-3-bin, libglib2.0-bin`, Verify-Gate real gelaufen (`build-deb.sh` baut
+`linux-assistant_0.8.0_amd64.deb`, `dpkg-deb -f … Depends` endet auf den drei Paketen).
+Issue #35 geschlossen. Ob README/Getting-Started synchron sind, ist davon unberührt und
+nicht Teil dieser Abnahme. Nachweis: `docs/handoff/v0.8.2-xdg-browser-abschluss.md`.
 
 **Beschreibung:**
 

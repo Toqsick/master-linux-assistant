@@ -14,11 +14,16 @@
 
 ## Globale CI-Gates (gelten für jedes Work-Paket)
 
-- [ ] `bash tool/check-versions.sh`
-- [ ] `dart format --output=none --set-exit-if-changed lib test`
-- [ ] `flutter analyze` → 0 Findings
-- [ ] `flutter test` → grün
-- [ ] `(cd additional/python && python3 -m unittest discover -s tests -t .)`
+- [x] `bash tool/check-versions.sh`
+- [x] `dart format --output=none --set-exit-if-changed lib test`
+- [x] `flutter analyze` → 0 Findings
+- [x] `flutter test` → grün
+- [x] `(cd additional/python && python3 -m unittest discover -s tests -t .)`
+
+> Abgehakt am 2026-10-23 gegen `add73e3` (Basis-SHA der V0.8.2-Abnahme). Beleg:
+> `docs/handoff/v0.8.2-xdg-browser-abschluss.md`. Die Gates gelten unverändert für
+> jedes weitere Work-Paket — die Abhakung bezieht sich auf den Stand dieses
+> Commits, nicht auf eine pauschale Freigabe.
 
 ## Verdict-Landkarte (aus der Triage, Kurzform)
 
@@ -154,6 +159,12 @@ the command layer", „fix(hygiene): clamp folder_recursion_depth and pin analyz
 ## Einweben in V0.8.2 (AppLauncher-TDD-Umfeld)
 
 ### WP-B1 — #47: Boundary-Validation für `preferred_browser`
+
+**Status:** umgesetzt am 2026-10-23 — `app_launcher.dart` (Komplett-Ersatz im Rahmen
+V0.8.2), `sanitizePreferredBrowser()` (trim, Allowlist-Membership, `/` abgelehnt),
+4 Config-Pfad-Tests in `test/app_launcher_test.dart`. Squash-Merge in `main`:
+`add73e3` (Original-Branch-Commit `388811d` + WP-B1-Änderung `b8ace20`).
+Beleg: `docs/handoff/v0.8.2-xdg-browser-abschluss.md`.
 
 **Befund:** `_configuredBrowser()` (app_launcher.dart:122-129) liest den Config-Key ohne
 Validierung; `detectBrowser()` stellt den Wert der `kKnownBrowsers`-Allowlist voran; als Gate
