@@ -106,6 +106,7 @@ class _LinuxHealthContentState extends State<LinuxHealthContent> {
 
         final uptime = stats.uptime;
         final hasSwap = stats.memory?.hasSwap ?? false;
+        final reboot = stats.reboot;
 
         return ListView(
           shrinkWrap: true,
@@ -116,6 +117,14 @@ class _LinuxHealthContentState extends State<LinuxHealthContent> {
             ),
             if (uptime != null)
               _uptimeMessage(context, uptime.unit, uptime.value),
+            // The packages that asked for the reboot. The marker file is
+            // gone after the reboot, so this line disappears with it.
+            if (reboot != null && reboot.required)
+              WarningMessage(
+                text: reboot.packages.isEmpty
+                    ? l10n.rebootRequiredNoPackages
+                    : l10n.rebootRequiredPackages(reboot.packages.join(", ")),
+              ),
             stats.zombieCount == 0
                 ? SuccessMessage(
                     text: l10n.processesWithZombiesMessage(

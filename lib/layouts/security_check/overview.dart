@@ -9,6 +9,7 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/layouts/security_check/security_check_outcome.dart';
 import 'package:linux_assistant/layouts/security_check/security_finding.dart';
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/security_scan_cache.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_badge.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_card.dart';
@@ -44,14 +45,60 @@ class SecurityCheckOverview extends StatelessWidget {
 /// home directory permissions, it now shows the command and leaves the decision
 /// — and the execution — with the user.
 class SecurityCheckContent extends StatefulWidget {
-  const SecurityCheckContent({super.key});
+  const SecurityCheckContent({super.key, this.cache});
+
+  /// Where the last result is stored. Injectable so a test does not write
+  /// into the developer's own cache.
+  final SecurityScanCache? cache;
 
   @override
   State<SecurityCheckContent> createState() => _SecurityCheckContentState();
 }
 
 class _SecurityCheckContentState extends State<SecurityCheckContent> {
-  late Future<CommandResult> _checkerOutput = _runChecker();
+  /// The scan reaches root through pkexec. It must not start on its own: a
+  /// password dialog because someone opened a page is not an option. The
+  /// future stays null until the user presses the button.
+  Future<CommandResult>? _checkerOutput;
+
+  late final SecurityScanCache _cache = widget.cache ?? SecurityScanCache();
+
+  /// The result of the last scan, read from the cache when the page opens.
+  /// Null means: no scan has ever been run on this system.
+  SecurityScanSnapshot? _lastSnapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCachedResult();
+  }
+
+  /// Reads the cached result of the last scan.
+  ///
+  /// Only the cache is touched here — no scan is started. A page that is
+  /// opened shows what the last scan found, not a new scan.
+  Future<void> _loadCachedResult() async {
+    final SecurityScanSnapshot? snapshot = await _cache.read();
+    if (!mounted) return;
+    setState(() => _lastSnapshot = snapshot);
+  }
+
+  /// Runs the scan and stores its result in the cache.
+  ///
+  /// The write happens before the result is shown, so a scan that the user
+  /// saw is also a scan that survives a restart.
+  Future<CommandResult> _runAndStore() async {
+    final CommandResult result = await _runChecker();
+    if (classifySecurityCheck(result) == SecurityCheckOutcome.success) {
+      final SecurityScanSnapshot snapshot = SecurityScanSnapshot.fromOutput(
+        result.output,
+        timestamp: DateTime.now(),
+      );
+      await _cache.write(snapshot);
+      if (mounted) setState(() => _lastSnapshot = snapshot);
+    }
+    return result;
+  }
 
   static Future<CommandResult> _runChecker() {
     final home = "--home=${Platform.environment['HOME']}";
@@ -76,15 +123,27 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
   }
 
   void _reload() {
-    setState(() => _checkerOutput = _runChecker());
+    // Block body: an arrow function would hand the Future of
+    // _runAndStore() back to setState, which rejects a callback that returns
+    // a Future.
+    setState(() {
+      _checkerOutput = _runAndStore();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final Future<CommandResult>? running = _checkerOutput;
+
+    // No scan is running: show what the last one found, or that there was
+    // none. The button to start a scan is part of the banner below.
+    if (running == null) {
+      return _idleView(context);
+    }
 
     return FutureBuilder<CommandResult>(
-      future: _checkerOutput,
+      future: running,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return MintYLoadingPage(text: l10n.analysingSystemSecurity);
@@ -113,6 +172,59 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
     );
   }
 
+  /// The page before a scan has been started: the cached result of the last
+  /// scan, or the hint that there was none.
+  Widget _idleView(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HermesTokens.of(context);
+    final SecurityScanSnapshot? snapshot = _lastSnapshot;
+
+    return ListView(
+      padding: const EdgeInsets.all(HermesTokens.space4),
+      children: [
+        _readOnlyBanner(context),
+        const SizedBox(height: HermesTokens.space4),
+        if (snapshot == null)
+          Text(
+            l10n.securityScanNotRunYet,
+            style: TextStyle(color: t.muted, fontSize: 12, height: 1.5),
+          )
+        else ...[
+          Text(
+            l10n.securityScanLastRun(_formatAge(context, snapshot.timestamp)),
+            style: TextStyle(color: t.muted, fontSize: 12, height: 1.5),
+          ),
+          const SizedBox(height: HermesTokens.space2),
+          for (final finding in _buildFindings(context, snapshot.output))
+            SecurityFindingTile(finding: finding),
+        ],
+        const SizedBox(height: HermesTokens.space4),
+        Text(
+          l10n.securityScanRootHint,
+          style: TextStyle(color: t.muted, fontSize: 12, height: 1.5),
+        ),
+      ],
+    );
+  }
+
+  /// The age of a cached result, in the coarsest unit that still says
+  /// something ("5 min ago" rather than "5 minutes and 12 seconds ago").
+  String _formatAge(BuildContext context, DateTime timestamp) {
+    final l10n = AppLocalizations.of(context)!;
+    final SecurityScanAge age =
+        SecurityScanAge.between(timestamp, DateTime.now());
+    switch (age.unit) {
+      case SecurityScanAgeUnit.justNow:
+        return l10n.securityScanAgeJustNow;
+      case SecurityScanAgeUnit.minutes:
+        return l10n.securityScanAgeMinutes(age.count);
+      case SecurityScanAgeUnit.hours:
+        return l10n.securityScanAgeHours(age.count);
+      case SecurityScanAgeUnit.days:
+        return l10n.securityScanAgeDays(age.count);
+    }
+  }
+
   Widget _readOnlyBanner(BuildContext context) {
     final t = HermesTokens.of(context);
     final l10n = AppLocalizations.of(context)!;
@@ -131,9 +243,10 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
               ),
               const Spacer(),
               TextButton.icon(
+                key: const Key("security-scan-run"),
                 onPressed: _reload,
                 icon: const Icon(Icons.refresh, size: 14),
-                label: Text(l10n.reload),
+                label: Text(l10n.securityScanRunCheck),
               ),
             ],
           ),

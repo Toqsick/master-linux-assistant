@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:linux_assistant/layouts/hermes_tokens.dart';
@@ -6,6 +8,8 @@ import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/settings/settings_start.dart';
 import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/services/app_launcher.dart';
+import 'package:linux_assistant/services/browser_status_service.dart';
+import 'package:linux_assistant/services/failed_units_service.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
 import 'package:linux_assistant/services/theme_controller.dart';
@@ -71,7 +75,7 @@ class _HubShellState extends State<HubShell>
     // manager that reports the state change, and the Flutter lifecycle state
     // is not delivered by every desktop either.
     WidgetsBinding.instance.addObserver(this);
-    SystemStatsService().setSectionActive(hubModuleOf(_section).usesStats);
+    _syncPolling();
   }
 
   @override
@@ -87,20 +91,46 @@ class _HubShellState extends State<HubShell>
     // Leave the service in the state a non-hub screen expects.
     SystemStatsService().setSectionActive(true);
     SystemStatsService().setWindowVisible(true);
+    // The dashboard's own pollers stop with the hub.
+    FailedUnitsService().setSectionActive(false);
+    FailedUnitsService().setWindowVisible(true);
+    BrowserStatusService().setSectionActive(false);
+    BrowserStatusService().setWindowVisible(true);
     super.dispose();
+  }
+
+  /// Keeps the pollers in sync with what is on screen.
+  ///
+  /// The stats are shown by several sections, the failed units and the
+  /// browser status only by the dashboard. A poller for something nobody
+  /// sees is pure waste — and two `systemctl` calls every 30 seconds for a
+  /// hidden tile is exactly the kind of cost that only shows up as battery
+  /// drain.
+  void _syncPolling() {
+    SystemStatsService().setSectionActive(hubModuleOf(_section).usesStats);
+    final bool showsDashboard = _section == HubSection.dashboard;
+    FailedUnitsService().setSectionActive(showsDashboard);
+    BrowserStatusService().setSectionActive(showsDashboard);
+  }
+
+  /// Whether the window is on screen, for every poller that depends on it.
+  void _setWindowVisible(bool visible) {
+    SystemStatsService().setWindowVisible(visible);
+    FailedUnitsService().setWindowVisible(visible);
+    BrowserStatusService().setWindowVisible(visible);
   }
 
   // Minimizing is the case that matters: the hub keeps every visited section
   // alive, so nothing else would ever stop the three-second poll.
   @override
-  void onWindowMinimize() => SystemStatsService().setWindowVisible(false);
+  void onWindowMinimize() => _setWindowVisible(false);
 
   @override
-  void onWindowRestore() => SystemStatsService().setWindowVisible(true);
+  void onWindowRestore() => _setWindowVisible(true);
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    SystemStatsService().setWindowVisible(
+    _setWindowVisible(
       state == AppLifecycleState.resumed || state == AppLifecycleState.inactive,
     );
   }
@@ -117,7 +147,7 @@ class _HubShellState extends State<HubShell>
       _section = section;
       _screenTool = null;
     });
-    SystemStatsService().setSectionActive(hubModuleOf(section).usesStats);
+    _syncPolling();
   }
 
   /// What a screen may ask the shell to do ([HubNavigator]): the dashboard's
@@ -434,7 +464,12 @@ class _HubShellState extends State<HubShell>
               tooltip: l10n.hubSearch,
             ),
           IconButton(
-            onPressed: () => SystemStatsService().refresh(),
+            onPressed: () {
+              // The manual reload covers every number the dashboard shows.
+              unawaited(SystemStatsService().refresh());
+              unawaited(FailedUnitsService().refresh());
+              unawaited(BrowserStatusService().refresh());
+            },
             icon: const Icon(Icons.refresh, size: 18),
             color: t.muted,
             tooltip: l10n.reload,
