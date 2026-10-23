@@ -45,27 +45,48 @@ class IconLoader {
     }
     String iconPath = "not found";
 
+    // The path goes into the argv as data: no quoting around it, and no
+    // shell in between. The two belong together — the quotes existed only
+    // to survive the shell, and the Python helper had to strip them again.
+    //
+    // The shell was never a split risk (Dart quotes every argv element, so
+    // a path with a space stays one argument); it was an unnecessary
+    // intermediary, and `runInShell: false` is the pattern the rest of this
+    // file uses. What the quotes did cost: the helper had to rewrite the
+    // value it was given, which breaks a path that legitimately ends in a
+    // quote character. The helper now passes the value through unchanged,
+    // so both sides agree on the format.
+
     /// Load icon for folder
     if (appCode == "folder") {
-      iconPath = await Linux.runCommandWithCustomArguments("/usr/bin/python3", [
-        "${Linux.pythonScriptsFolder}/get_icon_path_for_file.py",
-        "--file='/tmp/'",
-      ]);
+      iconPath = await Linux.runCommandWithCustomArguments(
+          "/usr/bin/python3",
+          [
+            "${Linux.pythonScriptsFolder}/get_icon_path_for_file.py",
+            "--file=/tmp/",
+          ],
+          runInShell: false);
 
       /// Load icon for app
     } else if (appCode != "" && filePath == "") {
-      iconPath = await Linux.runCommandWithCustomArguments("/usr/bin/python3", [
-        "${Linux.pythonScriptsFolder}/get_icon_path_for_application.py",
-        "--icon=$appCode",
-        "--path-to-alternative-logos=${Linux.additionalFolder}logos/"
-      ]);
+      iconPath = await Linux.runCommandWithCustomArguments(
+          "/usr/bin/python3",
+          [
+            "${Linux.pythonScriptsFolder}/get_icon_path_for_application.py",
+            "--icon=$appCode",
+            "--path-to-alternative-logos=${Linux.additionalFolder}logos/"
+          ],
+          runInShell: false);
 
       /// Load icon for file type
     } else if (filePath != "") {
-      iconPath = await Linux.runCommandWithCustomArguments("/usr/bin/python3", [
-        "${Linux.pythonScriptsFolder}/get_icon_path_for_file.py",
-        "--file='$filePath'",
-      ]);
+      iconPath = await Linux.runCommandWithCustomArguments(
+          "/usr/bin/python3",
+          [
+            "${Linux.pythonScriptsFolder}/get_icon_path_for_file.py",
+            "--file=$filePath",
+          ],
+          runInShell: false);
     }
 
     iconPath = iconPath.trim();

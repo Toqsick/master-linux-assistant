@@ -26,7 +26,7 @@
 |---|---|---|---|
 | #49 | confirmed (Triage+Skeptiker) | **Medium — top priority** | WP-S1 (V0.8.2.5) |
 | #44 | confirmed | Medium (Defense-in-Depth) | WP-S2 (V0.8.2.5) |
-| #45 | contested — Mechanik-Prämisse entkräftet | Low pending RV-1 | WP-B2 (V0.8.2) |
+| #45 | contested — Mechanik-Prämisse entkräftet | Low pending RV-1 | WP-B2 (V0.8.2) | ✅ erledigt — `4049874` |
 | #50 | contested — Mechanik-Prämisse entkräftet | Low pending RV-1 | WP-S3 (V0.8.2.5) |
 | #42 | **rejected** (Prämisse empirisch widerlegt) | Low (Härtung+Korrektheit) | WP-S3 (V0.8.2.5) |
 | #47 | confirmed | Low | WP-B1 (V0.8.2) |
@@ -168,6 +168,13 @@ Commit fließt in den V0.8.2-Commit „fix(launcher): …" oder eigener Commit
 „fix(launcher): validate preferred_browser against the known-browsers allowlist".
 
 ### WP-B2 — #45: Icon-Loader-Quote-Shim entfernen (nur als gekoppeltes Paar)
+
+**Status:** umgesetzt am 2026-10-23 — der Pfad geht als Daten-Element ins argv
+(`--file=<pfad>`, keine eingebetteten Quotes) und ohne Shell (`runInShell: false` an allen drei
+Aufrufstellen in `lib/services/icon_loader.dart`); der Quote-Strip-Shim in
+`additional/python/get_icon_path_for_file.py` ist entfernt, der Helfer reicht den Wert unverändert
+durch. TDD: `test/icon_loader_test.dart` (7 Tests) und
+`additional/python/tests/test_icon_path_helper.py` (4 Tests). Commit `4049874`.
 
 **Befund:** Sink `icon_loader.dart:64-68` (`--file='$filePath'`, drei Aufrufe :52/:59/:64) über
 runInShell:true-Default; Quote-Strip-Shim in `additional/python/get_icon_path_for_file.py`
