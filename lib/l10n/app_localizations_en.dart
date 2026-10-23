@@ -1173,4 +1173,57 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get runFileWarning =>
       'The file will be executed as a program with your user rights. Only continue if you know what it does.';
+
+  @override
+  String browserDefaultIs(String standard) {
+    return 'Default browser: $standard';
+  }
+
+  @override
+  String get browserDefaultUnknown => 'Default browser unknown';
+
+  @override
+  String browserHandlerMismatch(String handler, String standard) {
+    return 'HTTPS links open in $handler, not in $standard';
+  }
+
+  @override
+  String get diskSwapLabel => 'Disk swap';
+
+  @override
+  String get failedServicesLabel => 'Failed services';
+
+  @override
+  String failedServicesMore(int rest) {
+    return 'and $rest more';
+  }
+
+  @override
+  String get failedServicesNone => 'none';
+
+  @override
+  String get failedServicesScopeSystem => 'System';
+
+  @override
+  String get failedServicesScopeUser => 'User';
+
+  @override
+  String get memoryPressureLabel => 'Memory pressure';
+
+  @override
+  String get memoryPressureUnavailable => 'not available';
+
+  @override
+  String get rebootRequiredBadge => 'Reboot required';
+
+  @override
+  String get rebootRequiredNoPackages => 'Reboot required (no package named)';
+
+  @override
+  String rebootRequiredPackages(String packages) {
+    return 'Reboot required after updating: $packages';
+  }
+
+  @override
+  String get zramLabel => 'zram (compressed)';
 }

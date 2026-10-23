@@ -1182,4 +1182,57 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get runFileWarning =>
       'Die Datei wird als Programm mit deinen Benutzerrechten ausgeführt. Fahre nur fort, wenn du weißt, was sie tut.';
+
+  @override
+  String browserDefaultIs(String standard) {
+    return 'Standardbrowser: $standard';
+  }
+
+  @override
+  String get browserDefaultUnknown => 'Standardbrowser unbekannt';
+
+  @override
+  String browserHandlerMismatch(String handler, String standard) {
+    return 'HTTPS-Links oeffnen in $handler, nicht in $standard';
+  }
+
+  @override
+  String get diskSwapLabel => 'Swap auf der Festplatte';
+
+  @override
+  String get failedServicesLabel => 'Fehlgeschlagene Dienste';
+
+  @override
+  String failedServicesMore(int rest) {
+    return 'und $rest weitere';
+  }
+
+  @override
+  String get failedServicesNone => 'keine';
+
+  @override
+  String get failedServicesScopeSystem => 'System';
+
+  @override
+  String get failedServicesScopeUser => 'Benutzer';
+
+  @override
+  String get memoryPressureLabel => 'Speicherdruck';
+
+  @override
+  String get memoryPressureUnavailable => 'nicht verfügbar';
+
+  @override
+  String get rebootRequiredBadge => 'Neustart nötig';
+
+  @override
+  String get rebootRequiredNoPackages => 'Neustart nötig (kein Paket genannt)';
+
+  @override
+  String rebootRequiredPackages(String packages) {
+    return 'Neustart nötig nach dem Update von: $packages';
+  }
+
+  @override
+  String get zramLabel => 'zram (komprimiert)';
 }

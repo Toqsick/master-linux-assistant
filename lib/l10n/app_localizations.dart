@@ -2147,6 +2147,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The file will be executed as a program with your user rights. Only continue if you know what it does.'**
   String get runFileWarning;
+
+  /// No description provided for @browserDefaultIs.
+  ///
+  /// In en, this message translates to:
+  /// **'Default browser: {standard}'**
+  String browserDefaultIs(String standard);
+
+  /// No description provided for @browserDefaultUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Default browser unknown'**
+  String get browserDefaultUnknown;
+
+  /// No description provided for @browserHandlerMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTPS links open in {handler}, not in {standard}'**
+  String browserHandlerMismatch(String handler, String standard);
+
+  /// No description provided for @diskSwapLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk swap'**
+  String get diskSwapLabel;
+
+  /// No description provided for @failedServicesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed services'**
+  String get failedServicesLabel;
+
+  /// No description provided for @failedServicesMore.
+  ///
+  /// In en, this message translates to:
+  /// **'and {rest} more'**
+  String failedServicesMore(int rest);
+
+  /// No description provided for @failedServicesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get failedServicesNone;
+
+  /// No description provided for @failedServicesScopeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get failedServicesScopeSystem;
+
+  /// No description provided for @failedServicesScopeUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get failedServicesScopeUser;
+
+  /// No description provided for @memoryPressureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory pressure'**
+  String get memoryPressureLabel;
+
+  /// No description provided for @memoryPressureUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'not available'**
+  String get memoryPressureUnavailable;
+
+  /// No description provided for @rebootRequiredBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Reboot required'**
+  String get rebootRequiredBadge;
+
+  /// No description provided for @rebootRequiredNoPackages.
+  ///
+  /// In en, this message translates to:
+  /// **'Reboot required (no package named)'**
+  String get rebootRequiredNoPackages;
+
+  /// No description provided for @rebootRequiredPackages.
+  ///
+  /// In en, this message translates to:
+  /// **'Reboot required after updating: {packages}'**
+  String rebootRequiredPackages(String packages);
+
+  /// No description provided for @zramLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'zram (compressed)'**
+  String get zramLabel;
 }
 
 class _AppLocalizationsDelegate

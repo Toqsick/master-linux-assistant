@@ -1318,5 +1318,99 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "browserDefaultIs": "Browser predefinito: {standard}",
+  "@browserDefaultIs": {
+    "placeholders": {
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "browserDefaultUnknown": "Browser predefinito sconosciuto",
+  "@browserDefaultUnknown": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "browserHandlerMismatch": "I link HTTPS si aprono in {handler}, non in {standard}",
+  "@browserHandlerMismatch": {
+    "placeholders": {
+      "handler": {
+        "type": "String"
+      },
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "diskSwapLabel": "Swap su disco",
+  "@diskSwapLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesLabel": "Servizi falliti",
+  "@failedServicesLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesMore": "e altri {rest}",
+  "@failedServicesMore": {
+    "placeholders": {
+      "rest": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "failedServicesNone": "nessuno",
+  "@failedServicesNone": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeSystem": "Sistema",
+  "@failedServicesScopeSystem": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeUser": "Utente",
+  "@failedServicesScopeUser": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureLabel": "Pressione sulla memoria",
+  "@memoryPressureLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureUnavailable": "non disponibile",
+  "@memoryPressureUnavailable": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredBadge": "Riavvio necessario",
+  "@rebootRequiredBadge": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredNoPackages": "Riavvio necessario (nessun pacchetto indicato)",
+  "@rebootRequiredNoPackages": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredPackages": "Riavvio necessario dopo l'aggiornamento di: {packages}",
+  "@rebootRequiredPackages": {
+    "placeholders": {
+      "packages": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "zramLabel": "zram (compresso)",
+  "@zramLabel": {
+    "placeholders": {},
+    "type": "text"
   }
 }
