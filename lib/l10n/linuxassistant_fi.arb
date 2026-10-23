@@ -903,5 +903,65 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "securityScanRunCheck": "Tarkista nyt",
+  "@securityScanRunCheck": {
+    "description": "Button that starts the security scan on demand",
+    "type": "text"
+  },
+  "securityScanNotRunYet": "Turvallisuustarkistusta ei ole vielä tehty.",
+  "@securityScanNotRunYet": {
+    "description": "Shown on the security page before the first scan",
+    "type": "text"
+  },
+  "securityScanLastRun": "Viimeisin tarkistus: {age}",
+  "@securityScanLastRun": {
+    "placeholders": {
+        "age": {
+          "type": "String"
+        }
+    },
+    "description": "When the last security check ran, with its age",
+    "type": "text"
+  },
+  "securityScanAgeJustNow": "juuri nyt",
+  "@securityScanAgeJustNow": {
+    "description": "Age of a security check that just ran",
+    "type": "text"
+  },
+  "securityScanAgeMinutes": "{count} min sitten",
+  "@securityScanAgeMinutes": {
+    "placeholders": {
+        "count": {
+          "type": "int"
+        }
+    },
+    "description": "Age of a security check in minutes",
+    "type": "text"
+  },
+  "securityScanAgeHours": "{count} t sitten",
+  "@securityScanAgeHours": {
+    "placeholders": {
+        "count": {
+          "type": "int"
+        }
+    },
+    "description": "Age of a security check in hours",
+    "type": "text"
+  },
+  "securityScanAgeDays": "{count} pv sitten",
+  "@securityScanAgeDays": {
+    "placeholders": {
+        "count": {
+          "type": "int"
+        }
+    },
+    "description": "Age of a security check in days",
+    "type": "text"
+  },
+  "securityScanRootHint": "Tarkistus tarvitsee pääkäyttäjän oikeudet, joten se kysyy salasanaasi.",
+  "@securityScanRootHint": {
+    "description": "Explains why pressing the check button asks for a password",
+    "type": "text"
   }
 }
