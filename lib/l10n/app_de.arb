@@ -1332,5 +1332,65 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "securityScanRunCheck": "Jetzt prüfen",
+  "@securityScanRunCheck": {
+    "description": "Button that starts the security scan on demand",
+    "type": "text"
+  },
+  "securityScanNotRunYet": "Es wurde noch nicht geprüft.",
+  "@securityScanNotRunYet": {
+    "description": "Shown on the security page before the first scan",
+    "type": "text"
+  },
+  "securityScanLastRun": "Letzte Prüfung: {age}",
+  "@securityScanLastRun": {
+    "placeholders": {
+        "age": {
+          "type": "String"
+        }
+    },
+    "description": "When the last security check ran, with its age",
+    "type": "text"
+  },
+  "securityScanAgeJustNow": "gerade eben",
+  "@securityScanAgeJustNow": {
+    "description": "Age of a security check that just ran",
+    "type": "text"
+  },
+  "securityScanAgeMinutes": "vor {count} Min.",
+  "@securityScanAgeMinutes": {
+    "placeholders": {
+        "count": {
+          "type": "int"
+        }
+    },
+    "description": "Age of a security check in minutes",
+    "type": "text"
+  },
+  "securityScanAgeHours": "vor {count} Std.",
+  "@securityScanAgeHours": {
+    "placeholders": {
+        "count": {
+          "type": "int"
+        }
+    },
+    "description": "Age of a security check in hours",
+    "type": "text"
+  },
+  "securityScanAgeDays": "vor {count} T.",
+  "@securityScanAgeDays": {
+    "placeholders": {
+        "count": {
+          "type": "int"
+        }
+    },
+    "description": "Age of a security check in days",
+    "type": "text"
+  },
+  "securityScanRootHint": "Die Prüfung braucht Root-Rechte und fragt deshalb nach deinem Passwort.",
+  "@securityScanRootHint": {
+    "description": "Explains why pressing the check button asks for a password",
+    "type": "text"
   }
 }
