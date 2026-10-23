@@ -903,5 +903,99 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "browserDefaultIs": "Oletusselaime: {standard}",
+  "@browserDefaultIs": {
+    "placeholders": {
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "browserDefaultUnknown": "Oletusselaime tuntematon",
+  "@browserDefaultUnknown": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "browserHandlerMismatch": "HTTPS-linkit avautuvat ohjelmassa {handler}, ei {standard}",
+  "@browserHandlerMismatch": {
+    "placeholders": {
+      "handler": {
+        "type": "String"
+      },
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "diskSwapLabel": "Levyn swap",
+  "@diskSwapLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesLabel": "Epäonnistuneet palvelut",
+  "@failedServicesLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesMore": "ja {rest} muuta",
+  "@failedServicesMore": {
+    "placeholders": {
+      "rest": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "failedServicesNone": "ei mitään",
+  "@failedServicesNone": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeSystem": "Järjestelmä",
+  "@failedServicesScopeSystem": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeUser": "Käyttäjä",
+  "@failedServicesScopeUser": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureLabel": "Muistipaine",
+  "@memoryPressureLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureUnavailable": "ei saatavilla",
+  "@memoryPressureUnavailable": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredBadge": "Uudelleenkäynnistys tarvitaan",
+  "@rebootRequiredBadge": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredNoPackages": "Uudelleenkäynnistys tarvitaan (pakettia ei nimetty)",
+  "@rebootRequiredNoPackages": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredPackages": "Uudelleenkäynnistys tarvitaan päivityksen jälkeen: {packages}",
+  "@rebootRequiredPackages": {
+    "placeholders": {
+      "packages": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "zramLabel": "zram (pakattu)",
+  "@zramLabel": {
+    "placeholders": {},
+    "type": "text"
   }
 }

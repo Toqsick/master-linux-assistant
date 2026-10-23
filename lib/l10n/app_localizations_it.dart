@@ -1191,4 +1191,58 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get runFileWarning =>
       'Il file verrà eseguito come programma con i tuoi privilegi utente. Continua solo se sai cosa fa.';
+
+  @override
+  String browserDefaultIs(String standard) {
+    return 'Browser predefinito: $standard';
+  }
+
+  @override
+  String get browserDefaultUnknown => 'Browser predefinito sconosciuto';
+
+  @override
+  String browserHandlerMismatch(String handler, String standard) {
+    return 'I link HTTPS si aprono in $handler, non in $standard';
+  }
+
+  @override
+  String get diskSwapLabel => 'Swap su disco';
+
+  @override
+  String get failedServicesLabel => 'Servizi falliti';
+
+  @override
+  String failedServicesMore(int rest) {
+    return 'e altri $rest';
+  }
+
+  @override
+  String get failedServicesNone => 'nessuno';
+
+  @override
+  String get failedServicesScopeSystem => 'Sistema';
+
+  @override
+  String get failedServicesScopeUser => 'Utente';
+
+  @override
+  String get memoryPressureLabel => 'Pressione sulla memoria';
+
+  @override
+  String get memoryPressureUnavailable => 'non disponibile';
+
+  @override
+  String get rebootRequiredBadge => 'Riavvio necessario';
+
+  @override
+  String get rebootRequiredNoPackages =>
+      'Riavvio necessario (nessun pacchetto indicato)';
+
+  @override
+  String rebootRequiredPackages(String packages) {
+    return 'Riavvio necessario dopo l\'aggiornamento di: $packages';
+  }
+
+  @override
+  String get zramLabel => 'zram (compresso)';
 }

@@ -1183,4 +1183,58 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get runFileWarning =>
       'Tiedosto suoritetaan ohjelmana käyttöoikeuksillasi. Jatka vain, jos tiedät, mitä se tekee.';
+
+  @override
+  String browserDefaultIs(String standard) {
+    return 'Oletusselaime: $standard';
+  }
+
+  @override
+  String get browserDefaultUnknown => 'Oletusselaime tuntematon';
+
+  @override
+  String browserHandlerMismatch(String handler, String standard) {
+    return 'HTTPS-linkit avautuvat ohjelmassa $handler, ei $standard';
+  }
+
+  @override
+  String get diskSwapLabel => 'Levyn swap';
+
+  @override
+  String get failedServicesLabel => 'Epäonnistuneet palvelut';
+
+  @override
+  String failedServicesMore(int rest) {
+    return 'ja $rest muuta';
+  }
+
+  @override
+  String get failedServicesNone => 'ei mitään';
+
+  @override
+  String get failedServicesScopeSystem => 'Järjestelmä';
+
+  @override
+  String get failedServicesScopeUser => 'Käyttäjä';
+
+  @override
+  String get memoryPressureLabel => 'Muistipaine';
+
+  @override
+  String get memoryPressureUnavailable => 'ei saatavilla';
+
+  @override
+  String get rebootRequiredBadge => 'Uudelleenkäynnistys tarvitaan';
+
+  @override
+  String get rebootRequiredNoPackages =>
+      'Uudelleenkäynnistys tarvitaan (pakettia ei nimetty)';
+
+  @override
+  String rebootRequiredPackages(String packages) {
+    return 'Uudelleenkäynnistys tarvitaan päivityksen jälkeen: $packages';
+  }
+
+  @override
+  String get zramLabel => 'zram (pakattu)';
 }
