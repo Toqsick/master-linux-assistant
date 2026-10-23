@@ -1298,5 +1298,99 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "browserDefaultIs": "Default browser: {standard}",
+  "@browserDefaultIs": {
+    "placeholders": {
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "browserDefaultUnknown": "Default browser unknown",
+  "@browserDefaultUnknown": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "browserHandlerMismatch": "HTTPS links open in {handler}, not in {standard}",
+  "@browserHandlerMismatch": {
+    "placeholders": {
+      "handler": {
+        "type": "String"
+      },
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "diskSwapLabel": "Disk swap",
+  "@diskSwapLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesLabel": "Failed services",
+  "@failedServicesLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesMore": "and {rest} more",
+  "@failedServicesMore": {
+    "placeholders": {
+      "rest": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "failedServicesNone": "none",
+  "@failedServicesNone": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeSystem": "System",
+  "@failedServicesScopeSystem": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeUser": "User",
+  "@failedServicesScopeUser": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureLabel": "Memory pressure",
+  "@memoryPressureLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureUnavailable": "not available",
+  "@memoryPressureUnavailable": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredBadge": "Reboot required",
+  "@rebootRequiredBadge": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredNoPackages": "Reboot required (no package named)",
+  "@rebootRequiredNoPackages": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredPackages": "Reboot required after updating: {packages}",
+  "@rebootRequiredPackages": {
+    "placeholders": {
+      "packages": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "zramLabel": "zram (compressed)",
+  "@zramLabel": {
+    "placeholders": {},
+    "type": "text"
   }
 }
