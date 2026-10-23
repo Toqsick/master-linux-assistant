@@ -7,6 +7,7 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/linux/linux_filesystem.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'dart:async';
 import 'dart:io';
 
 class CleanDiskPage extends StatelessWidget {
@@ -57,7 +58,7 @@ class CleanDiskPage extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: MintYButton(
                 onPressed: () =>
-                    Linux.openDiskSpaceAnalyzer(context, mountpoint),
+                    unawaited(Linux.openDiskSpaceAnalyzer(context, mountpoint)),
                 text: Text(AppLocalizations.of(context)!.analyseDiskspace,
                     style: MintY.heading4White),
                 color: MintY.currentColor,
