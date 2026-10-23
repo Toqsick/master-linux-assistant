@@ -1183,4 +1183,38 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get runFileWarning =>
       'Tiedosto suoritetaan ohjelmana käyttöoikeuksillasi. Jatka vain, jos tiedät, mitä se tekee.';
+
+  @override
+  String get securityScanRunCheck => 'Tarkista nyt';
+
+  @override
+  String get securityScanNotRunYet =>
+      'Turvallisuustarkistusta ei ole vielä tehty.';
+
+  @override
+  String securityScanLastRun(String age) {
+    return 'Viimeisin tarkistus: $age';
+  }
+
+  @override
+  String get securityScanAgeJustNow => 'juuri nyt';
+
+  @override
+  String securityScanAgeMinutes(int count) {
+    return '$count min sitten';
+  }
+
+  @override
+  String securityScanAgeHours(int count) {
+    return '$count t sitten';
+  }
+
+  @override
+  String securityScanAgeDays(int count) {
+    return '$count pv sitten';
+  }
+
+  @override
+  String get securityScanRootHint =>
+      'Tarkistus tarvitsee pääkäyttäjän oikeudet, joten se kysyy salasanaasi.';
 }

@@ -2147,6 +2147,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The file will be executed as a program with your user rights. Only continue if you know what it does.'**
   String get runFileWarning;
+
+  /// Button that starts the security scan on demand
+  ///
+  /// In en, this message translates to:
+  /// **'Check now'**
+  String get securityScanRunCheck;
+
+  /// Shown on the security page before the first scan
+  ///
+  /// In en, this message translates to:
+  /// **'No security check has been run yet.'**
+  String get securityScanNotRunYet;
+
+  /// When the last security check ran, with its age
+  ///
+  /// In en, this message translates to:
+  /// **'Last check: {age}'**
+  String securityScanLastRun(String age);
+
+  /// Age of a security check that just ran
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get securityScanAgeJustNow;
+
+  /// Age of a security check in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String securityScanAgeMinutes(int count);
+
+  /// Age of a security check in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h ago'**
+  String securityScanAgeHours(int count);
+
+  /// Age of a security check in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count} d ago'**
+  String securityScanAgeDays(int count);
+
+  /// Explains why pressing the check button asks for a password
+  ///
+  /// In en, this message translates to:
+  /// **'The check needs root rights, so it will ask for your password.'**
+  String get securityScanRootHint;
 }
 
 class _AppLocalizationsDelegate

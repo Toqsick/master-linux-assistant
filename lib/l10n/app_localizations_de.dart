@@ -1182,4 +1182,37 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get runFileWarning =>
       'Die Datei wird als Programm mit deinen Benutzerrechten ausgeführt. Fahre nur fort, wenn du weißt, was sie tut.';
+
+  @override
+  String get securityScanRunCheck => 'Jetzt prüfen';
+
+  @override
+  String get securityScanNotRunYet => 'Es wurde noch nicht geprüft.';
+
+  @override
+  String securityScanLastRun(String age) {
+    return 'Letzte Prüfung: $age';
+  }
+
+  @override
+  String get securityScanAgeJustNow => 'gerade eben';
+
+  @override
+  String securityScanAgeMinutes(int count) {
+    return 'vor $count Min.';
+  }
+
+  @override
+  String securityScanAgeHours(int count) {
+    return 'vor $count Std.';
+  }
+
+  @override
+  String securityScanAgeDays(int count) {
+    return 'vor $count T.';
+  }
+
+  @override
+  String get securityScanRootHint =>
+      'Die Prüfung braucht Root-Rechte und fragt deshalb nach deinem Passwort.';
 }
