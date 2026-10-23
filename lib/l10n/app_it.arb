@@ -1318,5 +1318,159 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "securityScanRunCheck": "Controlla ora",
+  "@securityScanRunCheck": {
+    "description": "Button that starts the security scan on demand",
+    "type": "text"
+  },
+  "securityScanNotRunYet": "Non è ancora stato eseguito alcun controllo di sicurezza.",
+  "@securityScanNotRunYet": {
+    "description": "Shown on the security page before the first scan",
+    "type": "text"
+  },
+  "securityScanLastRun": "Ultimo controllo: {age}",
+  "@securityScanLastRun": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    },
+    "description": "When the last security check ran, with its age",
+    "type": "text"
+  },
+  "securityScanAgeJustNow": "appena",
+  "@securityScanAgeJustNow": {
+    "description": "Age of a security check that just ran",
+    "type": "text"
+  },
+  "securityScanAgeMinutes": "{count} min fa",
+  "@securityScanAgeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Age of a security check in minutes",
+    "type": "text"
+  },
+  "securityScanAgeHours": "{count} h fa",
+  "@securityScanAgeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Age of a security check in hours",
+    "type": "text"
+  },
+  "securityScanAgeDays": "{count} g fa",
+  "@securityScanAgeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Age of a security check in days",
+    "type": "text"
+  },
+  "securityScanRootHint": "Il controllo richiede i privilegi root, quindi ti chiederà la password.",
+  "@securityScanRootHint": {
+    "description": "Explains why pressing the check button asks for a password",
+    "type": "text"
+  },
+  "browserDefaultIs": "Browser predefinito: {standard}",
+  "@browserDefaultIs": {
+    "placeholders": {
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "browserDefaultUnknown": "Browser predefinito sconosciuto",
+  "@browserDefaultUnknown": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "browserHandlerMismatch": "I link HTTPS si aprono in {handler}, non in {standard}",
+  "@browserHandlerMismatch": {
+    "placeholders": {
+      "handler": {
+        "type": "String"
+      },
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "diskSwapLabel": "Swap su disco",
+  "@diskSwapLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesLabel": "Servizi falliti",
+  "@failedServicesLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesMore": "e altri {rest}",
+  "@failedServicesMore": {
+    "placeholders": {
+      "rest": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "failedServicesNone": "nessuno",
+  "@failedServicesNone": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeSystem": "Sistema",
+  "@failedServicesScopeSystem": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeUser": "Utente",
+  "@failedServicesScopeUser": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureLabel": "Pressione sulla memoria",
+  "@memoryPressureLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureUnavailable": "non disponibile",
+  "@memoryPressureUnavailable": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredBadge": "Riavvio necessario",
+  "@rebootRequiredBadge": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredNoPackages": "Riavvio necessario (nessun pacchetto indicato)",
+  "@rebootRequiredNoPackages": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredPackages": "Riavvio necessario dopo l'aggiornamento di: {packages}",
+  "@rebootRequiredPackages": {
+    "placeholders": {
+      "packages": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "zramLabel": "zram (compresso)",
+  "@zramLabel": {
+    "placeholders": {},
+    "type": "text"
   }
 }
