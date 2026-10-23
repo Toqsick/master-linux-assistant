@@ -6,9 +6,11 @@ import 'package:flutter/foundation.dart';
 // working entry point for it (an export alone does not import).
 import 'package:la_core/la_core.dart' show MemoryInfo;
 import 'package:linux_assistant/linux/linux_filesystem.dart';
+import 'package:linux_assistant/linux/linux_memory.dart';
 import 'package:linux_assistant/linux/linux_process.dart';
 import 'package:linux_assistant/linux/linux_system.dart';
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/reboot_service.dart';
 
 export 'package:la_core/la_core.dart' show MemoryInfo;
 
@@ -19,6 +21,17 @@ class SystemStats {
   /// but can exceed 1.0 on an overloaded machine.
   final double cpuLoad;
   final MemoryInfo? memory;
+
+  /// The memory pressure the kernel reports through PSI. Null when the
+  /// kernel does not provide it — which is not the same as "no pressure".
+  final MemoryPressure? memoryPressure;
+
+  /// The zram device's accounting, if the machine has one.
+  final ZramInfo? zram;
+
+  /// Whether the system asks for a reboot, and which packages caused it.
+  final RebootStatus? reboot;
+
   final List<DeviceInfo> disks;
   final int processCount;
   final int zombieCount;
@@ -40,6 +53,9 @@ class SystemStats {
   const SystemStats({
     this.cpuLoad = 0,
     this.memory,
+    this.memoryPressure,
+    this.zram,
+    this.reboot,
     this.disks = const [],
     this.processCount = 0,
     this.zombieCount = 0,
@@ -192,6 +208,11 @@ class SystemStatsService {
         LinuxProcess.topProcessesByCpu(5),
         LinuxProcess.topProcessesByMemory(5),
         _uptimeOrNull(),
+        // File reads, no processes: the pressure, the zram accounting and
+        // the reboot marker are cheap enough for every tick.
+        LinuxMemory.memoryPressure(),
+        LinuxMemory.zramInfo(),
+        RebootService.readStatus(),
       ]);
 
       final cpuLoad = results[0] as double;
@@ -200,6 +221,10 @@ class SystemStatsService {
       stats.value = SystemStats(
         cpuLoad: cpuLoad,
         memory: memory ?? previous.memory,
+        memoryPressure:
+            results[8] as MemoryPressure? ?? previous.memoryPressure,
+        zram: results[9] as ZramInfo? ?? previous.zram,
+        reboot: results[10] as RebootStatus? ?? previous.reboot,
         disks: results[2] as List<DeviceInfo>,
         processCount: results[3] as int,
         zombieCount: results[4] as int,
@@ -218,6 +243,9 @@ class SystemStatsService {
       stats.value = SystemStats(
         cpuLoad: previous.cpuLoad,
         memory: previous.memory,
+        memoryPressure: previous.memoryPressure,
+        zram: previous.zram,
+        reboot: previous.reboot,
         disks: previous.disks,
         processCount: previous.processCount,
         zombieCount: previous.zombieCount,
