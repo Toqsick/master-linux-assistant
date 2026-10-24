@@ -18,6 +18,7 @@ import 'package:linux_assistant/models/environment.dart';
 import 'package:linux_assistant/models/linux_command.dart';
 import 'package:linux_assistant/services/action_entry_list_service.dart';
 import 'package:linux_assistant/services/config_handler.dart';
+import 'package:linux_assistant/services/folder_recursion_depth.dart';
 import 'package:linux_assistant/services/hashing.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
@@ -94,16 +95,23 @@ class Linux {
   ///
   /// If [hostOnFlatpak] is set to false, the command will be issued in the flatpak sandbox, if available.
   ///
-  /// [runInShell] defaults to true for compatibility with the existing call
-  /// sites. Turning it off halves the number of processes spawned — with it,
-  /// every call forks a shell *and* the command — and is safe whenever the
-  /// executable is an absolute path and the arguments need no shell handling.
+  /// [runInShell] defaults to false. The shell was never a split risk: Dart
+  /// quotes every argv element on its own when it builds the `sh -c` string
+  /// (`_getShellArguments()` in
+  /// sdk/lib/_internal/vm/bin/process_patch.dart), so a path with a space
+  /// stayed one argument and shell metacharacters stayed inert either way.
+  /// What the shell cost was one extra fork per call and a second parsing of
+  /// arguments the program already received verbatim.
+  ///
+  /// The precondition for running without a shell is an absolute path: a
+  /// bare name would be looked up over PATH, and [expandCommand] is what
+  /// turns "firefox" into "/usr/bin/firefox".
   static Future<String> runCommandWithCustomArguments(
       String exec, List<String> arguments,
       {bool getErrorMessages = false,
       Map<String, String>? environment,
       bool hostOnFlatpak = true,
-      bool runInShell = true}) async {
+      bool runInShell = false}) async {
     final CommandResult result = await runProcess(exec, arguments,
         environment: environment,
         hostOnFlatpak: hostOnFlatpak,
@@ -122,10 +130,14 @@ class Linux {
   /// this replaces (`contains("ii  $appCode")`, `contains(" not found.")`,
   /// `split("\n").length > 5`) answer a different question and answer it
   /// differently in every locale.
+  ///
+  /// [runInShell] defaults to false for the same reason as in
+  /// [runCommandWithCustomArguments]: the shell is an unnecessary
+  /// intermediary, not a quoting mechanism.
   static Future<CommandResult> runProcess(String exec, List<String> arguments,
       {Map<String, String>? environment,
       bool hostOnFlatpak = true,
-      bool runInShell = true,
+      bool runInShell = false,
       bool asRoot = false}) async {
     exec = expandCommand(exec);
 
@@ -918,6 +930,18 @@ class Linux {
     runCommand("/usr/bin/xdg-open $website");
   }
 
+  /// The depth the scan of the home directory descends to (#46).
+  ///
+  /// The raw value comes from the user's config file, so it is clamped into
+  /// [kMinFolderRecursionDepth]..[kMaxFolderRecursionDepth]; a value that is
+  /// not a number falls back to [kDefaultFolderRecursionDepth]. The result is
+  /// always an int in that range — it is interpolated into a `find` command
+  /// line, and it must not be able to carry anything but digits.
+  static int folderRecursionDepth() {
+    return clampFolderRecursionDepth(ConfigHandler().getValueUnsafe(
+        "folder_recursion_depth", kDefaultFolderRecursionDepth));
+  }
+
   static Future<void> getAllFolderEntriesOfUser(BuildContext context) async {
     // Resolved before the first await: the caller does not await this method,
     // so by the time the scan finishes the context may already be deactivated.
@@ -932,8 +956,12 @@ class Linux {
     // symlink to / or to an unresponsive network mount used to send this off
     // into the whole filesystem), and a quoted path (a space in the home
     // directory used to split the command apart).
-    final int depth =
-        ConfigHandler().getValueUnsafe("folder_recursion_depth", 3);
+    //
+    // The depth itself is clamped (#46): it comes from the user's config
+    // file, so it is clamped into 1..10 and falls back to 3. The old
+    // `final int` cast turned a text value into a TypeError, and the value
+    // ended up unquoted in the `find` command line.
+    final int depth = folderRecursionDepth();
     final String home = homeFolder.endsWith("/")
         ? homeFolder.substring(0, homeFolder.length - 1)
         : homeFolder;
@@ -1493,10 +1521,19 @@ class Linux {
 
     logInfo("Run privileged python script: pkexec $commandList");
 
-    // No shell: with runInShell the argv is space-joined unquoted, so a HOME
-    // like "/home/john doe" would truncate --home=… mid-path (and any shell
-    // metacharacter in it would run). expandCommand yields absolute paths,
-    // which is the documented precondition for turning the shell off.
+    // No shell — and the shell was never the split risk this comment used to
+    // claim. With `runInShell: true` Dart does NOT space-join the argv: it
+    // builds one `sh -c` string and single-quotes every element on its own
+    // (`_getShellArguments()` in
+    // sdk/lib/_internal/vm/bin/process_patch.dart, POSIX branch: each
+    // argument is written as ' <arg>', embedded quotes are escaped as
+    // '"'"'). A HOME like "/home/john doe" therefore stayed ONE argument
+    // and shell metacharacters stayed inert.
+    //
+    // What the shell did cost: one extra fork per call and a second parsing
+    // of arguments the program already received verbatim. That is the only
+    // reason this call site runs without one. expandCommand yields absolute
+    // paths, which is the documented precondition for turning the shell off.
     final result = await runProcess("pkexec", commandList,
         environment: Platform.environment, runInShell: false);
     if (result.error.isNotEmpty && getErrorMessages) {
@@ -2744,41 +2781,44 @@ class Linux {
   }
 
   /// Opens the disk space analyzer of the current environment.
-  /// If the tool is not installed, it will be installed.
-  /// Options are baobab and k4dirstat.
-  static void openDiskSpaceAnalyzer(context, path) {
-    if (currentenvironment.desktop == DESKTOPS.KDE) {
-      runCommandWithCustomArguments("k4dirstat", [path]);
-      ensureApplicationInstallation(["k4dirstat"]);
-      if (commandQueue.isEmpty) {
-        runCommandWithCustomArguments("k4dirstat", [path]);
-      } else {
-        commandQueue.add(LinuxCommand(
-          userId: currentenvironment.currentUserId,
-          argv: ["/usr/bin/k4dirstat", "$path"],
-        ));
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => RunCommandQueue(
-              title: AppLocalizations.of(context)!.installX("k4dirstat"),
-              route: MainSearchLoader()),
-        ));
-      }
-    } else {
-      ensureApplicationInstallation(["baobab"]);
-      if (commandQueue.isEmpty) {
-        runCommandWithCustomArguments("baobab", [path]);
-      } else {
-        commandQueue.add(LinuxCommand(
-          userId: currentenvironment.currentUserId,
-          argv: ["/usr/bin/baobab", "$path"],
-        ));
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => RunCommandQueue(
-              title: AppLocalizations.of(context)!.installX("baobab"),
-              route: MainSearchLoader()),
-        ));
-      }
+  ///
+  /// If the tool is not installed, it will be installed first. Options are
+  /// baobab and k4dirstat.
+  ///
+  /// The installation check comes first (it is awaited). The old code started
+  /// the analyzer unconditionally *before* the check, so a program that was
+  /// not installed was started (and failed) and then started a second time.
+  /// Now the analyzer is started exactly once, after the check.
+  static Future<void> openDiskSpaceAnalyzer(
+      BuildContext context, String path) async {
+    final String appCode =
+        currentenvironment.desktop == DESKTOPS.KDE ? "k4dirstat" : "baobab";
+
+    // The check decides whether an installation is queued. It has to be
+    // awaited, otherwise the queue below is read before the installation
+    // could have been added to it.
+    await ensureApplicationInstallation([appCode]);
+
+    if (commandQueue.isEmpty) {
+      // No shell: the mount point is one argv element and reaches the
+      // analyzer as one argument — "USB Stick" stays one path.
+      await runCommandWithCustomArguments(appCode, [path], runInShell: false);
+      return;
     }
+
+    // The context has to survive the await above.
+    if (!context.mounted) return;
+
+    // The queue entry is already argv-form with an absolute path.
+    commandQueue.add(LinuxCommand(
+      userId: currentenvironment.currentUserId,
+      argv: ["/usr/bin/$appCode", path],
+    ));
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => RunCommandQueue(
+          title: AppLocalizations.of(context)!.installX(appCode),
+          route: MainSearchLoader()),
+    ));
   }
 
   static void cleanDiskspace(context, path) {

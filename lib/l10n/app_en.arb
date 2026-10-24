@@ -1298,5 +1298,159 @@
     "placeholders": {},
     "description": "Explains what confirming the dialog above does",
     "type": "text"
+  },
+  "securityScanRunCheck": "Check now",
+  "@securityScanRunCheck": {
+    "description": "Button that starts the security scan on demand",
+    "type": "text"
+  },
+  "securityScanNotRunYet": "No security check has been run yet.",
+  "@securityScanNotRunYet": {
+    "description": "Shown on the security page before the first scan",
+    "type": "text"
+  },
+  "securityScanLastRun": "Last check: {age}",
+  "@securityScanLastRun": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    },
+    "description": "When the last security check ran, with its age",
+    "type": "text"
+  },
+  "securityScanAgeJustNow": "just now",
+  "@securityScanAgeJustNow": {
+    "description": "Age of a security check that just ran",
+    "type": "text"
+  },
+  "securityScanAgeMinutes": "{count} min ago",
+  "@securityScanAgeMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Age of a security check in minutes",
+    "type": "text"
+  },
+  "securityScanAgeHours": "{count} h ago",
+  "@securityScanAgeHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Age of a security check in hours",
+    "type": "text"
+  },
+  "securityScanAgeDays": "{count} d ago",
+  "@securityScanAgeDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "Age of a security check in days",
+    "type": "text"
+  },
+  "securityScanRootHint": "The check needs root rights, so it will ask for your password.",
+  "@securityScanRootHint": {
+    "description": "Explains why pressing the check button asks for a password",
+    "type": "text"
+  },
+  "browserDefaultIs": "Default browser: {standard}",
+  "@browserDefaultIs": {
+    "placeholders": {
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "browserDefaultUnknown": "Default browser unknown",
+  "@browserDefaultUnknown": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "browserHandlerMismatch": "HTTPS links open in {handler}, not in {standard}",
+  "@browserHandlerMismatch": {
+    "placeholders": {
+      "handler": {
+        "type": "String"
+      },
+      "standard": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "diskSwapLabel": "Disk swap",
+  "@diskSwapLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesLabel": "Failed services",
+  "@failedServicesLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesMore": "and {rest} more",
+  "@failedServicesMore": {
+    "placeholders": {
+      "rest": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "failedServicesNone": "none",
+  "@failedServicesNone": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeSystem": "System",
+  "@failedServicesScopeSystem": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "failedServicesScopeUser": "User",
+  "@failedServicesScopeUser": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureLabel": "Memory pressure",
+  "@memoryPressureLabel": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "memoryPressureUnavailable": "not available",
+  "@memoryPressureUnavailable": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredBadge": "Reboot required",
+  "@rebootRequiredBadge": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredNoPackages": "Reboot required (no package named)",
+  "@rebootRequiredNoPackages": {
+    "placeholders": {},
+    "type": "text"
+  },
+  "rebootRequiredPackages": "Reboot required after updating: {packages}",
+  "@rebootRequiredPackages": {
+    "placeholders": {
+      "packages": {
+        "type": "String"
+      }
+    },
+    "type": "text"
+  },
+  "zramLabel": "zram (compressed)",
+  "@zramLabel": {
+    "placeholders": {},
+    "type": "text"
   }
 }

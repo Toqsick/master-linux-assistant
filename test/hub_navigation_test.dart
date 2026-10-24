@@ -21,6 +21,8 @@ import 'package:linux_assistant/layouts/hub/dashboard_section.dart';
 import 'package:linux_assistant/layouts/hub/storage_section.dart';
 import 'package:linux_assistant/layouts/tools/quick_notes.dart';
 import 'package:linux_assistant/services/app_launcher.dart';
+import 'package:linux_assistant/services/failed_units_service.dart';
+import 'package:linux_assistant/services/browser_status_service.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_nav_item.dart';
 
@@ -74,11 +76,20 @@ void main() {
     // false and no Timer.periodic / ps/df/free fork ever starts.
     SystemStatsService().resetForTesting();
     SystemStatsService().setWindowVisible(false);
+    // The dashboard polls the failed units and the browser status as well.
+    // Both start a process (`systemctl`, `gio`) the moment they are polled,
+    // so they are put to sleep the same way the stats poller is.
+    FailedUnitsService().resetForTesting();
+    FailedUnitsService().setWindowVisible(false);
+    BrowserStatusService().resetForTesting();
+    BrowserStatusService().setWindowVisible(false);
   });
 
   tearDown(() {
     AppLauncher.resetOverrides();
     SystemStatsService().resetForTesting();
+    FailedUnitsService().resetForTesting();
+    BrowserStatusService().resetForTesting();
   });
 
   testWidgets('H1 sidebar shows the nine modules and settings in order',

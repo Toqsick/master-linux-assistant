@@ -1182,4 +1182,90 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get runFileWarning =>
       'Die Datei wird als Programm mit deinen Benutzerrechten ausgeführt. Fahre nur fort, wenn du weißt, was sie tut.';
+
+  @override
+  String get securityScanRunCheck => 'Jetzt prüfen';
+
+  @override
+  String get securityScanNotRunYet => 'Es wurde noch nicht geprüft.';
+
+  @override
+  String securityScanLastRun(String age) {
+    return 'Letzte Prüfung: $age';
+  }
+
+  @override
+  String get securityScanAgeJustNow => 'gerade eben';
+
+  @override
+  String securityScanAgeMinutes(int count) {
+    return 'vor $count Min.';
+  }
+
+  @override
+  String securityScanAgeHours(int count) {
+    return 'vor $count Std.';
+  }
+
+  @override
+  String securityScanAgeDays(int count) {
+    return 'vor $count T.';
+  }
+
+  @override
+  String get securityScanRootHint =>
+      'Die Prüfung braucht Root-Rechte und fragt deshalb nach deinem Passwort.';
+
+  @override
+  String browserDefaultIs(String standard) {
+    return 'Standardbrowser: $standard';
+  }
+
+  @override
+  String get browserDefaultUnknown => 'Standardbrowser unbekannt';
+
+  @override
+  String browserHandlerMismatch(String handler, String standard) {
+    return 'HTTPS-Links oeffnen in $handler, nicht in $standard';
+  }
+
+  @override
+  String get diskSwapLabel => 'Swap auf der Festplatte';
+
+  @override
+  String get failedServicesLabel => 'Fehlgeschlagene Dienste';
+
+  @override
+  String failedServicesMore(int rest) {
+    return 'und $rest weitere';
+  }
+
+  @override
+  String get failedServicesNone => 'keine';
+
+  @override
+  String get failedServicesScopeSystem => 'System';
+
+  @override
+  String get failedServicesScopeUser => 'Benutzer';
+
+  @override
+  String get memoryPressureLabel => 'Speicherdruck';
+
+  @override
+  String get memoryPressureUnavailable => 'nicht verfügbar';
+
+  @override
+  String get rebootRequiredBadge => 'Neustart nötig';
+
+  @override
+  String get rebootRequiredNoPackages => 'Neustart nötig (kein Paket genannt)';
+
+  @override
+  String rebootRequiredPackages(String packages) {
+    return 'Neustart nötig nach dem Update von: $packages';
+  }
+
+  @override
+  String get zramLabel => 'zram (komprimiert)';
 }
