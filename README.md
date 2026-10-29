@@ -23,23 +23,19 @@ hand.
 
 ## Keyboard shortcut
 
-Linux Assistant registers a global hotkey that brings the launcher to the
+Linux Assistant has a global hotkey that brings the launcher to the
 foreground. The default is `Super+Q`, except on **KDE**, **Pop!_OS**, **Ubuntu**
 and **Zorin OS**, where the desktop convention is `Alt+Q` and the app follows
 it. `lib/services/linux.dart` (`getHotkeyModifier()`) is the source of truth.
 
-Two registration paths exist and the app picks one at startup based on the
-session type:
-
-- **X11 sessions** — the app grabs the key itself via libkeybinder. The grab
-  uses the modifier above, so what the greeter tells the user matches what is
-  actually grabbed.
-- **Wayland sessions** — there is no global X11 grab, so the libkeybinder call
-  is skipped (it used to log `Binding '<Meta>q' failed!` on every start) and
-  the desktop's own gsettings shortcut is registered instead, through
-  `additional/python/setup_keybinding.py`. The entry is written once and
-  reused — the script looks for an entry whose `command` is `linux-assistant`
-  before adding a new one, so repeated starts no longer pile up duplicates.
+The desktop registers the shortcut, not the app itself: the app writes a
+custom keybinding into the session's own settings (gsettings) through
+`additional/python/setup_keybinding.py`. Because the desktop owns the binding,
+the same shortcut works under **X11** and **Wayland** alike — there is no
+separate X11-only key grab and no X11-only binding library in the dependency
+list. The entry is written once and reused — the script looks for an entry
+whose `command` is `linux-assistant` before adding a new one, so repeated
+starts no longer pile up duplicates.
 
 See [Uninstall](#uninstall) for how to remove the shortcut, which lives in the
 desktop's settings rather than in the package.
@@ -49,21 +45,21 @@ desktop's settings rather than in the package.
 To build:
 
 ```bash
-sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev
+sudo apt install ninja-build libgtk-3-dev mesa-utils
 ```
 
 To run an installed package, only the runtime libraries are needed — the `.deb`
 declares them, so `apt` pulls them in for you. The declared runtime set is
-`libgtk-3-0, libkeybinder-3.0-0, python3, python3-gi,
-gir1.2-gtk-3.0, python3-apt, mesa-utils, pkexec | policykit-1, xdg-utils,
-libgtk-3-bin, libglib2.0-bin` (see `deb/DEBIAN/control`).
+`libgtk-3-0, python3, python3-gi, gir1.2-gtk-3.0, python3-apt, mesa-utils,
+pkexec | policykit-1, xdg-utils, libgtk-3-bin, libglib2.0-bin` (see
+`deb/DEBIAN/control`).
 
 If you build with `flutter build linux` and run the bundle directly (Option 1
 under [Build](#build)), `apt` does not install those packages for you. The
 Python helpers need GObject introspection, so install them by hand first:
 
 ```bash
-sudo apt install libgtk-3-0 libkeybinder-3.0-0 python3 python3-gi \
+sudo apt install libgtk-3-0 python3 python3-gi \
      gir1.2-gtk-3.0 python3-apt mesa-utils policykit-1 \
      xdg-utils libgtk-3-bin libglib2.0-bin
 ```
@@ -71,7 +67,7 @@ sudo apt install libgtk-3-0 libkeybinder-3.0-0 python3 python3-gi \
 ## Build
 
 ```bash
-# Install keybinder, see requirements
+# Install the build dependencies, see requirements
 sudo rm /etc/apt/preferences.d/nosnap.pref # (For Linux Mint)
 sudo apt install snapd git
 sudo snap install flutter --classic
