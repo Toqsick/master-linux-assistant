@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hexcolor/hexcolor.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:linux_assistant/enums/distros.dart';
 import 'package:linux_assistant/layouts/greeter/flathub_permissions.dart';
 import 'package:linux_assistant/layouts/greeter/start_screen.dart';
@@ -32,9 +30,6 @@ void main() async {
   if (!isTheInstance) {
     exit(0);
   }
-
-  // For hot reload, `unregisterAll()` needs to be called.
-  await HotKeyManager.instance.unregisterAll();
 
   StatelessWidget firstScreen = const StartScreen();
   bool systemIsDark = false;
@@ -103,38 +98,17 @@ class MyApp extends StatefulWidget {
 
   /// Makes the "bring me up" shortcut work for the session we are in.
   ///
-  /// Two mechanisms exist and only one of them can work per session type. On
-  /// X11 the app grabs the key itself through libkeybinder. Wayland has no
-  /// global X11 grab at all, so that call can only ever fail there — it is
-  /// what wrote `Binding '<Meta>q' failed!` to the log on every invocation —
-  /// and the desktop's own shortcut is the only route that carries.
+  /// The app does not grab the key itself any more. It used to, through
+  /// libkeybinder, and that had two problems: on X11 the app's grab and the
+  /// desktop's own shortcut fired together (one press raised the window and
+  /// started a second process), and on Wayland the grab could not work at all
+  /// — it wrote `Binding '<Meta>q' failed!` to the log on every invocation.
+  ///
+  /// The desktop's own shortcut is the one route now, and it exists on both
+  /// session types. So there is no session distinction here any more: the
+  /// same registration runs under Wayland and under X11.
   static void initHotkeyToShowUp() {
-    if (Linux.currentenvironment.wayland) {
-      unawaited(_ensureDesktopShortcut());
-      return;
-    }
-    HotKey hotKey = HotKey(
-      key: PhysicalKeyboardKey.keyQ,
-      // Has to agree with what `setup_keybinding.py` writes and with what the
-      // greeter tells the user. Hardcoding meta meant the app grabbed Super+Q
-      // on Zorin, Ubuntu and Pop!_OS while advertising Alt+Q.
-      modifiers: [
-        Linux.getHotkeyModifier() == "<Alt>"
-            ? HotKeyModifier.alt
-            : HotKeyModifier.meta
-      ],
-      scope: HotKeyScope.system,
-    );
-    hotKeyManager.register(
-      hotKey,
-      keyDownHandler: (hotKey) {
-        // The app raises itself rather than asking wmctrl to do it, which is
-        // one external dependency fewer and works the same on both session
-        // types. Raising is only half the job when the hub is open: the
-        // hotkey is meant to land the user in the search box.
-        unawaited(raiseWindow());
-      },
-    );
+    unawaited(_ensureDesktopShortcut());
   }
 
   /// Registers the shortcut with the desktop itself, once.
@@ -144,6 +118,9 @@ class MyApp extends StatefulWidget {
   /// shortcuts, so the flag records that it happened. The script skips an
   /// entry it already owns as well, which covers the case where the app dies
   /// before the flag reaches disk.
+  ///
+  /// This is the only registration left: it runs under Wayland and under X11
+  /// alike, because the desktop's shortcut is the one that works on both.
   static Future<void> _ensureDesktopShortcut() async {
     final ConfigHandler configHandler = ConfigHandler();
     // Compared rather than used directly: the getter is untyped and the value
