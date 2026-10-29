@@ -2285,6 +2285,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'zram (compressed)'**
   String get zramLabel;
+
+  /// Label of the diagnostics line about the app's own keyboard shortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcut'**
+  String get hotkeyTitle;
+
+  /// Shown when the desktop does not hold the shortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'not registered'**
+  String get hotkeyNotRegistered;
+
+  /// Shown when the state of the shortcut could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get hotkeyUnknown;
+
+  /// How many leftover desktop entries still point at this app.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} orphaned entries'**
+  String hotkeyOrphanEntries(int count);
+
+  /// Button that removes the orphaned desktop entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean up'**
+  String get hotkeyCleanup;
+
+  /// Feedback after the orphaned entries were removed.
+  ///
+  /// In en, this message translates to:
+  /// **'The orphaned entries were removed.'**
+  String get hotkeyCleanupSucceeded;
+
+  /// Feedback after removing the orphaned entries failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The orphaned entries could not be removed.'**
+  String get hotkeyCleanupFailed;
 }
 
 class _AppLocalizationsDelegate

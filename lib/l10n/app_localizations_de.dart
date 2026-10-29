@@ -1268,4 +1268,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get zramLabel => 'zram (komprimiert)';
+
+  @override
+  String get hotkeyTitle => 'Tastenkürzel';
+
+  @override
+  String get hotkeyNotRegistered => 'nicht registriert';
+
+  @override
+  String get hotkeyUnknown => 'unbekannt';
+
+  @override
+  String hotkeyOrphanEntries(int count) {
+    return '$count verwaiste Einträge';
+  }
+
+  @override
+  String get hotkeyCleanup => 'Aufräumen';
+
+  @override
+  String get hotkeyCleanupSucceeded =>
+      'Die verwaisten Einträge wurden entfernt.';
+
+  @override
+  String get hotkeyCleanupFailed =>
+      'Die verwaisten Einträge konnten nicht entfernt werden.';
 }
