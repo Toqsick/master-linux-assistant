@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
@@ -47,7 +46,6 @@ class _RunCommandQueueState extends State<RunCommandQueue> {
 
   bool _commandQueueCompleted = false;
   bool _shutdownAfterwards = false;
-  HotKey? _enterHotkey;
 
   @override
   void initState() {
@@ -55,31 +53,7 @@ class _RunCommandQueueState extends State<RunCommandQueue> {
     _commands = List<LinuxCommand>.from(Linux.commandQueue);
     if (_commands.isNotEmpty) {
       _output = Linux.executeCommandQueue();
-      _registerEnterHotkey();
     }
-  }
-
-  @override
-  void dispose() {
-    final HotKey? hotkey = _enterHotkey;
-    if (hotkey != null) {
-      unawaited(hotKeyManager.unregister(hotkey));
-    }
-    super.dispose();
-  }
-
-  void _registerEnterHotkey() {
-    final HotKey enter = HotKey(
-      key: PhysicalKeyboardKey.enter,
-      scope: HotKeyScope.inapp,
-    );
-    _enterHotkey = enter;
-    unawaited(hotKeyManager.register(enter, keyDownHandler: (hotKey) {
-      if (!mounted || !_commandQueueCompleted) {
-        return;
-      }
-      _continueAfterQueue(context);
-    }));
   }
 
   /// Where "continue" leads once the queue has run.
@@ -126,175 +100,229 @@ class _RunCommandQueueState extends State<RunCommandQueue> {
       ]);
     }
 
-    return FutureBuilder<String>(
-      future: _output,
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          if (!_commandQueueCompleted) {
-            _commandQueueCompleted = true;
-            if (widget.offerShutdownAfterwards && _shutdownAfterwards) {
-              Linux.shutdown();
+    return _EnterContinuesQueue(
+      onContinue: () {
+        // Enter only continues when the queue is actually done. While it
+        // runs, the user watches the table, not the next step.
+        if (!mounted || !_commandQueueCompleted) {
+          return;
+        }
+        _continueAfterQueue(context);
+      },
+      child: FutureBuilder<String>(
+        future: _output,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            if (!_commandQueueCompleted) {
+              _commandQueueCompleted = true;
+              if (widget.offerShutdownAfterwards && _shutdownAfterwards) {
+                Linux.shutdown();
+              }
             }
-          }
-          return MintYPage(
-            title: widget.title,
-            contentElements: [
-              Text(
-                widget.message,
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              snapshot.data!.contains(
-                      "Error executing command as another user: Request dismissed")
-                  ? Column(
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.errorThisDidntWork,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(
-                          height: 16,
-                        ),
-                        MintYButton(
-                          text: Text(
-                            AppLocalizations.of(context)!.retry,
-                            style: MintY.heading4White,
+            return MintYPage(
+              title: widget.title,
+              contentElements: [
+                Text(
+                  widget.message,
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                snapshot.data!.contains(
+                        "Error executing command as another user: Request dismissed")
+                    ? Column(
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.errorThisDidntWork,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
                           ),
-                          color: MintY.currentColor,
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (context) => RunCommandQueue(
-                                        route: widget.route,
-                                        title: widget.title,
-                                        message: widget.message,
-                                        offerShutdownAfterwards:
-                                            widget.offerShutdownAfterwards,
-                                      )),
-                            );
-                          },
-                        )
-                      ],
-                    )
-                  : Text(
-                      AppLocalizations.of(context)!.complete,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          MintYButton(
+                            text: Text(
+                              AppLocalizations.of(context)!.retry,
+                              style: MintY.heading4White,
+                            ),
+                            color: MintY.currentColor,
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (context) => RunCommandQueue(
+                                          route: widget.route,
+                                          title: widget.title,
+                                          message: widget.message,
+                                          offerShutdownAfterwards:
+                                              widget.offerShutdownAfterwards,
+                                        )),
+                              );
+                            },
+                          )
+                        ],
+                      )
+                    : Text(
+                        AppLocalizations.of(context)!.complete,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+              ],
+              bottom: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  MintYButton(
+                    text: const Text(
+                      "Log",
+                      style: MintY.heading4,
                     ),
-            ],
-            bottom: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                MintYButton(
-                  text: const Text(
-                    "Log",
-                    style: MintY.heading4,
-                  ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return Dialog(
-                          backgroundColor: Colors.black,
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    icon: const Icon(
-                                      Icons.close,
-                                      size: 36,
-                                      color: Colors.white,
-                                    ),
-                                    iconSize: 36,
-                                  )
-                                ],
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: SingleChildScrollView(
-                                    child: SelectableText(
-                                      snapshot.data.toString(),
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontFamily: "Courier"),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return Dialog(
+                            backgroundColor: Colors.black,
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      icon: const Icon(
+                                        Icons.close,
+                                        size: 36,
+                                        color: Colors.white,
+                                      ),
+                                      iconSize: 36,
+                                    )
+                                  ],
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: SingleChildScrollView(
+                                      child: SelectableText(
+                                        snapshot.data.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: "Courier"),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                MintYButton(
-                  text: Text(
-                    AppLocalizations.of(context)!.next,
-                    style: MintY.heading4White,
-                  ),
-                  color: MintY.currentColor,
-                  onPressed: () => _continueAfterQueue(context),
-                ),
-              ],
-            ),
-          );
-        } else {
-          // Loading Screen
-          return MintYPage(
-            title: widget.title,
-            contentElements: [
-              Column(
-                children: [
-                  Text(
-                    widget.message,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(
-                    height: 16,
+                    width: 10,
                   ),
-                  const MintYProgressIndicatorCircle(),
-                  const SizedBox(
-                    height: 64,
+                  MintYButton(
+                    text: Text(
+                      AppLocalizations.of(context)!.next,
+                      style: MintY.heading4White,
+                    ),
+                    color: MintY.currentColor,
+                    onPressed: () => _continueAfterQueue(context),
                   ),
-                  CommandTable(
-                    tableData: tableData,
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  widget.offerShutdownAfterwards
-                      ? ShutdownCheckbox(
-                          value: _shutdownAfterwards,
-                          onChanged: (bool value) {
-                            setState(() {
-                              _shutdownAfterwards = value;
-                            });
-                          },
-                        )
-                      : Container(),
                 ],
               ),
-            ],
-          );
-        }
-      },
+            );
+          } else {
+            // Loading Screen
+            return MintYPage(
+              title: widget.title,
+              contentElements: [
+                Column(
+                  children: [
+                    Text(
+                      widget.message,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    const MintYProgressIndicatorCircle(),
+                    const SizedBox(
+                      height: 64,
+                    ),
+                    CommandTable(
+                      tableData: tableData,
+                    ),
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    widget.offerShutdownAfterwards
+                        ? ShutdownCheckbox(
+                            value: _shutdownAfterwards,
+                            onChanged: (bool value) {
+                              setState(() {
+                                _shutdownAfterwards = value;
+                              });
+                            },
+                          )
+                        : Container(),
+                  ],
+                ),
+              ],
+            );
+          }
+        },
+      ),
     );
   }
+}
+
+/// Binds the Enter key to "continue with the next step".
+///
+/// The page has no text field of its own, so nothing would have the focus and
+/// a key event would never arrive. The [Focus] widget takes the focus as
+/// soon as the page is on screen, and the shortcut below it then hears the
+/// Enter key — as long as the page is the one that is focused.
+class _EnterContinuesQueue extends StatelessWidget {
+  const _EnterContinuesQueue({
+    required this.onContinue,
+    required this.child,
+  });
+
+  /// Called when the user presses Enter.
+  final VoidCallback onContinue;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        _ContinueQueueIntent: CallbackAction<_ContinueQueueIntent>(
+          onInvoke: (_) {
+            onContinue();
+            return null;
+          },
+        ),
+      },
+      child: Shortcuts(
+        shortcuts: <ShortcutActivator, Intent>{
+          const SingleActivator(LogicalKeyboardKey.enter):
+              const _ContinueQueueIntent(),
+        },
+        child: Focus(autofocus: true, child: child),
+      ),
+    );
+  }
+}
+
+/// The intent behind the Enter key of the command queue.
+class _ContinueQueueIntent extends Intent {
+  const _ContinueQueueIntent();
 }
 
 class ShutdownCheckbox extends StatelessWidget {
