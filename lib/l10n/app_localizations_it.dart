@@ -1279,4 +1279,28 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get zramLabel => 'zram (compresso)';
+
+  @override
+  String get hotkeyTitle => 'Scorciatoia da tastiera';
+
+  @override
+  String get hotkeyNotRegistered => 'non registrata';
+
+  @override
+  String get hotkeyUnknown => 'sconosciuta';
+
+  @override
+  String hotkeyOrphanEntries(int count) {
+    return '$count voci orfane';
+  }
+
+  @override
+  String get hotkeyCleanup => 'Pulisci';
+
+  @override
+  String get hotkeyCleanupSucceeded => 'Le voci orfane sono state rimosse.';
+
+  @override
+  String get hotkeyCleanupFailed =>
+      'Non è stato possibile rimuovere le voci orfane.';
 }

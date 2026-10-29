@@ -1259,4 +1259,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get zramLabel => 'zram (compressed)';
+
+  @override
+  String get hotkeyTitle => 'Keyboard shortcut';
+
+  @override
+  String get hotkeyNotRegistered => 'not registered';
+
+  @override
+  String get hotkeyUnknown => 'unknown';
+
+  @override
+  String hotkeyOrphanEntries(int count) {
+    return '$count orphaned entries';
+  }
+
+  @override
+  String get hotkeyCleanup => 'Clean up';
+
+  @override
+  String get hotkeyCleanupSucceeded => 'The orphaned entries were removed.';
+
+  @override
+  String get hotkeyCleanupFailed =>
+      'The orphaned entries could not be removed.';
 }

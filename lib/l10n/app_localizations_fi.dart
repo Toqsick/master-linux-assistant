@@ -1271,4 +1271,27 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get zramLabel => 'zram (pakattu)';
+
+  @override
+  String get hotkeyTitle => 'Näppäinoikku';
+
+  @override
+  String get hotkeyNotRegistered => 'ei rekisteröity';
+
+  @override
+  String get hotkeyUnknown => 'tuntematon';
+
+  @override
+  String hotkeyOrphanEntries(int count) {
+    return '$count orpoitua merkintää';
+  }
+
+  @override
+  String get hotkeyCleanup => 'Siivoa';
+
+  @override
+  String get hotkeyCleanupSucceeded => 'Orpoitut merkinnät poistettiin.';
+
+  @override
+  String get hotkeyCleanupFailed => 'Orpoituja merkintöjä ei voitu poistaa.';
 }
