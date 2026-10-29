@@ -1472,5 +1472,51 @@
   "@zramLabel": {
     "placeholders": {},
     "type": "text"
+  },
+  "hotkeyTitle": "Scorciatoia da tastiera",
+  "@hotkeyTitle": {
+    "description": "Label of the diagnostics line about the app's own keyboard shortcut.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyNotRegistered": "non registrata",
+  "@hotkeyNotRegistered": {
+    "description": "Shown when the desktop does not hold the shortcut.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyUnknown": "sconosciuta",
+  "@hotkeyUnknown": {
+    "description": "Shown when the state of the shortcut could not be read.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyOrphanEntries": "{count} voci orfane",
+  "@hotkeyOrphanEntries": {
+    "description": "How many leftover desktop entries still point at this app.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "hotkeyCleanup": "Pulisci",
+  "@hotkeyCleanup": {
+    "description": "Button that removes the orphaned desktop entries.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyCleanupSucceeded": "Le voci orfane sono state rimosse.",
+  "@hotkeyCleanupSucceeded": {
+    "description": "Feedback after the orphaned entries were removed.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyCleanupFailed": "Non è stato possibile rimuovere le voci orfane.",
+  "@hotkeyCleanupFailed": {
+    "description": "Feedback after removing the orphaned entries failed.",
+    "placeholders": {},
+    "type": "text"
   }
 }
