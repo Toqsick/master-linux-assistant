@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:linux_assistant/content/top_level_domains.dart';
 import 'package:linux_assistant/enums/softwareManagers.dart';
 import 'package:linux_assistant/layouts/feature_overview/feature_overview.dart';
@@ -56,8 +55,15 @@ class MainSearch extends StatefulWidget {
   @override
   State<MainSearch> createState() => _MainSearchState();
 
+  /// Makes sure the desktop has the "bring me up" shortcut.
+  ///
+  /// The name is a leftover: the search screen used to unregister the global
+  /// hotkeys here, because the old hotkey library kept them in one
+  /// process-wide registry and the app-side grab had to be gone while the
+  /// search was on screen. That registry is gone — the shortcut belongs to the
+  /// desktop and is registered once — so all that is left is making sure the
+  /// desktop still has it.
   static void unregisterHotkeysForKeyboardUse() {
-    hotKeyManager.unregisterAll();
     MyApp.initHotkeyToShowUp();
   }
 }
@@ -84,10 +90,6 @@ class _MainSearchState extends State<MainSearch> {
   Timer? suggestionTimer;
 
   ActionEntry? suggestion;
-
-  _MainSearchState() {
-    initHotkeysForKeyboardUse();
-  }
 
   @override
   void initState() {
@@ -152,66 +154,72 @@ class _MainSearchState extends State<MainSearch> {
                               width: MediaQuery.of(context).size.width > 750
                                   ? 600
                                   : MediaQuery.of(context).size.width - 50,
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  fillColor: Theme.of(context).canvasColor,
-                                  filled: true,
-                                  // border: const OutlineInputBorder(
-                                  //     borderSide: BorderSide(color: Colors.white)),
-                                  contentPadding: _foundEntries.isEmpty
-                                      ? null
-                                      : const EdgeInsets.only(
-                                          bottom: -20.0,
-                                          left: 12,
-                                          right: 3,
-                                        ),
-                                  hintText: suggestion != null
-                                      ? suggestion!.name
-                                      : AppLocalizations.of(
-                                          context,
-                                        )!
-                                          .enterASearchTerm,
-                                  prefixIcon: _foundEntries.isEmpty
-                                      ? const Icon(
-                                          Icons.search,
-                                          color: Colors.grey,
-                                        )
-                                      : null,
-                                  suffix: _foundEntries.isEmpty
-                                      ? null
-                                      : IconButton(
-                                          iconSize: 14,
-                                          splashRadius: 14,
-                                          icon: const Icon(Icons.clear),
-                                          onPressed: () =>
-                                              clear(minimze: false),
-                                          padding: EdgeInsets.zero,
-                                          tooltip: AppLocalizations.of(
+                              child: SearchFieldShortcuts(
+                                onSelectNext: _selectNext,
+                                onSelectPrevious: _selectPrevious,
+                                onClear: _clearSearchField,
+                                onDebugShortcut: _debugShortcut,
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    fillColor: Theme.of(context).canvasColor,
+                                    filled: true,
+                                    // border: const OutlineInputBorder(
+                                    //     borderSide: BorderSide(color: Colors.white)),
+                                    contentPadding: _foundEntries.isEmpty
+                                        ? null
+                                        : const EdgeInsets.only(
+                                            bottom: -20.0,
+                                            left: 12,
+                                            right: 3,
+                                          ),
+                                    hintText: suggestion != null
+                                        ? suggestion!.name
+                                        : AppLocalizations.of(
                                             context,
                                           )!
-                                              .clear,
-                                        ),
+                                            .enterASearchTerm,
+                                    prefixIcon: _foundEntries.isEmpty
+                                        ? const Icon(
+                                            Icons.search,
+                                            color: Colors.grey,
+                                          )
+                                        : null,
+                                    suffix: _foundEntries.isEmpty
+                                        ? null
+                                        : IconButton(
+                                            iconSize: 14,
+                                            splashRadius: 14,
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () =>
+                                                clear(minimze: false),
+                                            padding: EdgeInsets.zero,
+                                            tooltip: AppLocalizations.of(
+                                              context,
+                                            )!
+                                                .clear,
+                                          ),
+                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  cursorColor: MintY.currentColor,
+                                  controller: searchBarController,
+                                  autofocus: true,
+                                  onChanged: (value) => _runFilter(value),
+                                  onSubmitted: (value) {
+                                    if (_foundEntries.isNotEmpty) {
+                                      ActionHandler.handleActionEntry(
+                                        _foundEntries[selectedIndex],
+                                        clear,
+                                        context,
+                                      );
+                                    } else if (suggestion != null) {
+                                      ActionHandler.handleActionEntry(
+                                        suggestion!,
+                                        clear,
+                                        context,
+                                      );
+                                    }
+                                  },
                                 ),
-                                style: Theme.of(context).textTheme.bodyMedium,
-                                cursorColor: MintY.currentColor,
-                                controller: searchBarController,
-                                autofocus: true,
-                                onChanged: (value) => _runFilter(value),
-                                onSubmitted: (value) {
-                                  if (_foundEntries.isNotEmpty) {
-                                    ActionHandler.handleActionEntry(
-                                      _foundEntries[selectedIndex],
-                                      clear,
-                                      context,
-                                    );
-                                  } else if (suggestion != null) {
-                                    ActionHandler.handleActionEntry(
-                                      suggestion!,
-                                      clear,
-                                      context,
-                                    );
-                                  }
-                                },
                               ),
                             ),
                             _foundEntries.isEmpty
@@ -711,75 +719,63 @@ class _MainSearchState extends State<MainSearch> {
     );
   }
 
-  void initHotkeysForKeyboardUse() {
-    HotKey down = HotKey(
-      key: PhysicalKeyboardKey.arrowDown,
-      scope: HotKeyScope.inapp,
-    );
-    hotKeyManager.register(
-      down,
-      keyDownHandler: (hotKey) {
-        // A stale instance can still receive this: the handlers are registered
-        // globally, not per widget.
-        if (mounted && selectedIndex + 1 < _foundEntries.length) {
-          setState(() {
-            selectedIndex += 1;
-            selectedIndexInView += 1;
-            if (selectedIndexInView >= visibleEntries) {
-              scrollController.jumpTo(scrollController.offset + 72);
-              selectedIndexInView -= 1;
-            }
-          });
+  /// Moves the selection one entry down in the result list.
+  ///
+  /// The same logic the global hotkey handler had, now reached through the
+  /// field's own shortcut instead of a window-wide key grab.
+  void _selectNext() {
+    if (!mounted || selectedIndex + 1 >= _foundEntries.length) {
+      return;
+    }
+    setState(() {
+      selectedIndex += 1;
+      selectedIndexInView += 1;
+      if (selectedIndexInView >= visibleEntries) {
+        // The list is only there when there is something to select, but the
+        // controller is not attached in the frame between the entries
+        // appearing and the list being built.
+        if (scrollController.hasClients) {
+          scrollController.jumpTo(scrollController.offset + 72);
         }
-      },
-    );
+        selectedIndexInView -= 1;
+      }
+    });
+  }
 
-    HotKey up = HotKey(
-      key: PhysicalKeyboardKey.arrowUp,
-      scope: HotKeyScope.inapp,
-    );
-    hotKeyManager.register(
-      up,
-      keyDownHandler: (hotKey) {
-        if (mounted && selectedIndex - 1 >= 0) {
-          setState(() {
-            selectedIndex -= 1;
-            selectedIndexInView -= 1;
-            if (selectedIndexInView < 0) {
-              scrollController.jumpTo(scrollController.offset - 72);
-              selectedIndexInView += 1;
-            }
-          });
+  /// Moves the selection one entry up in the result list.
+  void _selectPrevious() {
+    if (!mounted || selectedIndex - 1 < 0) {
+      return;
+    }
+    setState(() {
+      selectedIndex -= 1;
+      selectedIndexInView -= 1;
+      if (selectedIndexInView < 0) {
+        if (scrollController.hasClients) {
+          scrollController.jumpTo(scrollController.offset - 72);
         }
-      },
-    );
+        selectedIndexInView += 1;
+      }
+    });
+  }
 
-    HotKey escape = HotKey(
-      key: PhysicalKeyboardKey.escape,
-      scope: HotKeyScope.inapp,
-    );
-    hotKeyManager.register(
-      escape,
-      keyDownHandler: (hotKey) {
-        clear(minimze: false);
-      },
-    );
+  /// Empties the search field.
+  ///
+  /// Escape keeps the window open — the user clears the search, they do not
+  /// leave the app.
+  void _clearSearchField() {
+    clear(minimze: false);
+  }
 
-    // Debug Call
-    HotKey hotKeyDebug = HotKey(
-      key: PhysicalKeyboardKey.keyD,
-      modifiers: [HotKeyModifier.control],
-      scope: HotKeyScope.inapp,
-    );
-    hotKeyManager.register(
-      hotKeyDebug,
-      keyDownHandler: (hotKey) async {
-        // insert here function calls to debug
-        // Linux.getInstalledFlatpaks();
-        // Linux.getInstalledSnaps();
-        // Linux.getInstalledAPTPackages();
-      },
-    );
+  /// The debug hook behind Ctrl+D.
+  ///
+  /// It does nothing on purpose: it is the place where the next debugging
+  /// call goes, without the search screen having to be changed for it.
+  void _debugShortcut() {
+    // insert here function calls to debug
+    // Linux.getInstalledFlatpaks();
+    // Linux.getInstalledSnaps();
+    // Linux.getInstalledAPTPackages();
   }
 
   void _handleSuggestions() async {
@@ -798,6 +794,114 @@ class _MainSearchState extends State<MainSearch> {
       }
     }
   }
+}
+
+/// The key bindings of the search field.
+///
+/// The app used to register these through a global hotkey library, which
+/// hooked the keys into the window itself: they fired even when the search
+/// field did not have the focus, and they needed the native libkeybinder
+/// library to be present. They are plain Flutter shortcuts now, and they sit
+/// directly on the field — so they only fire while the field is focused, and
+/// the arrow keys move the selection in the result list instead of the text
+/// cursor.
+///
+/// The ordering matters: the framework maps the arrow keys to the text cursor
+/// in `DefaultTextEditingShortcuts`, which sits at the top of the app. A
+/// `Shortcuts` widget below it is asked first, so ours wins.
+class SearchFieldShortcuts extends StatelessWidget {
+  const SearchFieldShortcuts({
+    super.key,
+    required this.onSelectNext,
+    required this.onSelectPrevious,
+    required this.onClear,
+    this.onDebugShortcut,
+    required this.child,
+  });
+
+  /// Arrow down: the next entry in the result list.
+  final VoidCallback onSelectNext;
+
+  /// Arrow up: the previous entry in the result list.
+  final VoidCallback onSelectPrevious;
+
+  /// Escape: empty the search field.
+  final VoidCallback onClear;
+
+  /// Ctrl+D: the debug hook. It does nothing on purpose.
+  final VoidCallback? onDebugShortcut;
+
+  /// The search field itself.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        _SelectNextIntent: CallbackAction<_SelectNextIntent>(
+          onInvoke: (_) {
+            onSelectNext();
+            return null;
+          },
+        ),
+        _SelectPreviousIntent: CallbackAction<_SelectPreviousIntent>(
+          onInvoke: (_) {
+            onSelectPrevious();
+            return null;
+          },
+        ),
+        _ClearSearchIntent: CallbackAction<_ClearSearchIntent>(
+          onInvoke: (_) {
+            onClear();
+            return null;
+          },
+        ),
+        _DebugIntent: CallbackAction<_DebugIntent>(
+          onInvoke: (_) {
+            onDebugShortcut?.call();
+            return null;
+          },
+        ),
+      },
+      child: Shortcuts(
+        shortcuts: <ShortcutActivator, Intent>{
+          const SingleActivator(LogicalKeyboardKey.arrowDown):
+              const _SelectNextIntent(),
+          const SingleActivator(LogicalKeyboardKey.arrowUp):
+              const _SelectPreviousIntent(),
+          const SingleActivator(LogicalKeyboardKey.escape):
+              const _ClearSearchIntent(),
+          const SingleActivator(LogicalKeyboardKey.keyD, control: true):
+              const _DebugIntent(),
+        },
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Intents of the search field's own shortcuts.
+///
+/// Own types on purpose: the framework's text editing intents map the arrow
+/// keys to the cursor movement, and a shortcut of ours has to win over them.
+/// That only works if it does not reuse their intents.
+class _SelectNextIntent extends Intent {
+  const _SelectNextIntent();
+}
+
+/// Arrow up in the result list.
+class _SelectPreviousIntent extends Intent {
+  const _SelectPreviousIntent();
+}
+
+/// Escape: empty the search field.
+class _ClearSearchIntent extends Intent {
+  const _ClearSearchIntent();
+}
+
+/// Ctrl+D: the debug hook.
+class _DebugIntent extends Intent {
+  const _DebugIntent();
 }
 
 class FeedbackButton extends StatelessWidget {

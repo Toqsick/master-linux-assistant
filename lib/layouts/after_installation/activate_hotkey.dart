@@ -49,12 +49,14 @@ class ActivateHotkeyQuestion extends StatelessWidget {
             // registration and navigate away in the same frame, so a failure
             // was invisible — and a second press queued a second run.
             onPressedFuture: () async {
-              // Mirror of main.dart: on X11 the app itself grabs the key via
-              // libkeybinder, and a desktop shortcut on top of that fires
-              // twice per press (raise plus a second process).
-              final bool ok = Linux.currentenvironment.wayland
-                  ? await Linux.activateSystemHotkeyForLinuxAssistant()
-                  : true;
+              // The desktop's own shortcut is registered in both sessions.
+              // It used to be skipped on X11, because the app grabbed the key
+              // itself there (libkeybinder) and the desktop shortcut on top of
+              // that fired twice per press — raise plus a second process. The
+              // app-side grab is gone, so the desktop shortcut is the only
+              // mechanism left, and it has to be there under X11 as well.
+              final bool ok =
+                  await Linux.activateSystemHotkeyForLinuxAssistant();
               // Only remember it when it worked. main.dart skips the
               // registration on later starts based on this flag, so writing
               // it unconditionally would make a failed setup permanent.

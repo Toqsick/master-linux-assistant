@@ -1057,5 +1057,51 @@
   "@zramLabel": {
     "placeholders": {},
     "type": "text"
+  },
+  "hotkeyTitle": "Näppäinoikku",
+  "@hotkeyTitle": {
+    "description": "Label of the diagnostics line about the app's own keyboard shortcut.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyNotRegistered": "ei rekisteröity",
+  "@hotkeyNotRegistered": {
+    "description": "Shown when the desktop does not hold the shortcut.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyUnknown": "tuntematon",
+  "@hotkeyUnknown": {
+    "description": "Shown when the state of the shortcut could not be read.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyOrphanEntries": "{count} orpoitua merkintää",
+  "@hotkeyOrphanEntries": {
+    "description": "How many leftover desktop entries still point at this app.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "hotkeyCleanup": "Siivoa",
+  "@hotkeyCleanup": {
+    "description": "Button that removes the orphaned desktop entries.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyCleanupSucceeded": "Orpoitut merkinnät poistettiin.",
+  "@hotkeyCleanupSucceeded": {
+    "description": "Feedback after the orphaned entries were removed.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyCleanupFailed": "Orpoituja merkintöjä ei voitu poistaa.",
+  "@hotkeyCleanupFailed": {
+    "description": "Feedback after removing the orphaned entries failed.",
+    "placeholders": {},
+    "type": "text"
   }
 }

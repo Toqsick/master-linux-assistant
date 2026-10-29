@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/linux/linux_filesystem.dart';
+import 'package:linux_assistant/services/hotkey_diagnostics.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
 import 'package:linux_assistant/widgets/success_message.dart';
@@ -55,16 +56,47 @@ class LinuxHealthContent extends StatefulWidget {
 class _LinuxHealthContentState extends State<LinuxHealthContent> {
   final SystemStatsService _service = SystemStatsService();
 
+  /// What the desktop knows about this app's own keyboard shortcut.
+  ///
+  /// Started next to the stats poll, not inside the poll: the report is a
+  /// read of the desktop's settings, and the health page is about the
+  /// machine. It must not delay the page, and it must not make the page
+  /// flicker either — which is why the row keeps its place while the report
+  /// is on its way.
+  late Future<HotkeyReport> _hotkeyReport;
+
   @override
   void initState() {
     super.initState();
     _service.acquire();
+    _hotkeyReport = const HotkeyDiagnostics().loadReport();
   }
 
   @override
   void dispose() {
     _service.release();
     super.dispose();
+  }
+
+  /// Reads the report again.
+  ///
+  /// The future is created outside of the `setState` callback: a callback
+  /// that returns a future would be a mistake in a state change, and this
+  /// one would also be started twice.
+  void _reloadHotkeyReport() {
+    final Future<HotkeyReport> report = const HotkeyDiagnostics().loadReport();
+    setState(() {
+      _hotkeyReport = report;
+    });
+  }
+
+  /// Removes the orphaned desktop entries and reads the report again.
+  Future<bool> _cleanupHotkeyOrphans() async {
+    final bool ok = await const HotkeyDiagnostics().cleanupOrphans();
+    if (ok && mounted) {
+      _reloadHotkeyReport();
+    }
+    return ok;
   }
 
   @override
@@ -111,6 +143,10 @@ class _LinuxHealthContentState extends State<LinuxHealthContent> {
         return ListView(
           shrinkWrap: true,
           children: [
+            HotkeyStatusRow(
+              report: _hotkeyReport,
+              onCleanup: _cleanupHotkeyOrphans,
+            ),
             Text(
               l10n.runtime,
               style: Theme.of(context).textTheme.headlineLarge,
@@ -207,5 +243,121 @@ class _LinuxHealthContentState extends State<LinuxHealthContent> {
     return warn
         ? WarningMessage(text: l10n.uptimeWarning(value, unitText))
         : SuccessMessage(text: l10n.uptimePass(value, unitText));
+  }
+}
+
+/// One line about this app's own keyboard shortcut.
+///
+/// The desktop's settings are the only place that knows whether the shortcut
+/// is really registered — the app does not grab the key itself any more, so
+/// it cannot know what the desktop did with it. A report that cannot be read
+/// must not take the page down with it: the line then says "unknown" and the
+/// page stays where it was.
+class HotkeyStatusRow extends StatefulWidget {
+  const HotkeyStatusRow({
+    super.key,
+    required this.report,
+    required this.onCleanup,
+  });
+
+  /// The report as it is now. A new future means: read it again.
+  final Future<HotkeyReport> report;
+
+  /// Removes the orphaned entries. Returns whether it worked.
+  final Future<bool> Function() onCleanup;
+
+  @override
+  State<HotkeyStatusRow> createState() => _HotkeyStatusRowState();
+}
+
+class _HotkeyStatusRowState extends State<HotkeyStatusRow> {
+  bool _cleaning = false;
+  bool? _cleanupFailed;
+
+  Future<void> _cleanup() async {
+    if (_cleaning) {
+      return;
+    }
+    setState(() {
+      _cleaning = true;
+      _cleanupFailed = null;
+    });
+    final bool ok = await widget.onCleanup();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _cleaning = false;
+      _cleanupFailed = ok ? null : true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return FutureBuilder<HotkeyReport>(
+      future: widget.report,
+      builder: (context, snapshot) {
+        final HotkeyReport? report = snapshot.data;
+        final int orphanCount = report?.orphans.length ?? 0;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "${l10n.hotkeyTitle}: ${_stateText(report)}",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              if (report != null && !report.hasError)
+                Text(
+                  "${report.desktop} · ${report.session}",
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (orphanCount > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.hotkeyOrphanEntries(orphanCount),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                MintYButton(
+                  text: Text(
+                    l10n.hotkeyCleanup,
+                    style: MintY.heading4,
+                  ),
+                  color: MintY.currentColor,
+                  onPressed: _cleaning ? null : _cleanup,
+                ),
+              ],
+              if (_cleanupFailed == true)
+                WarningMessage(text: l10n.hotkeyCleanupFailed),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// What the line says about the shortcut.
+  String _stateText(HotkeyReport? report) {
+    final l10n = AppLocalizations.of(context)!;
+    if (report == null) {
+      // The report is still on its way. The line keeps its place, so nothing
+      // jumps when the answer arrives.
+      return "…";
+    }
+    if (report.hasError) {
+      return l10n.hotkeyUnknown;
+    }
+    if (!report.registered) {
+      return l10n.hotkeyNotRegistered;
+    }
+    if (report.binding.isEmpty) {
+      return l10n.hotkeyUnknown;
+    }
+    return report.binding;
   }
 }
