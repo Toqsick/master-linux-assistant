@@ -2558,6 +2558,41 @@ class Linux {
     return result.success;
   }
 
+  /// Asks the keybinding script what the desktop knows about our shortcut.
+  ///
+  /// Read-only: the report mode of `setup_keybinding.py` only reads the
+  /// desktop's settings, it never writes to them. The JSON is parsed by
+  /// `HotkeyDiagnostics`, so this stays the plain process call every other
+  /// caller in here does — a script path and its arguments, never a shell
+  /// string.
+  static Future<CommandResult> getHotkeyReport() async {
+    return runProcess(
+      "python3",
+      [
+        "${pythonScriptsFolder}setup_keybinding.py",
+        "--report",
+      ],
+      environment: Platform.environment,
+    );
+  }
+
+  /// Removes the orphaned `custom*` entries of our own shortcut.
+  ///
+  /// The counterpart of [getHotkeyReport]. What counts as an orphan is
+  /// decided by the script, never by the app: it is the only place that
+  /// knows the desktop's own layout, and an entry that belongs to another app
+  /// is untouchable there.
+  static Future<CommandResult> cleanupHotkeyOrphans() async {
+    return runProcess(
+      "python3",
+      [
+        "${pythonScriptsFolder}setup_keybinding.py",
+        "--cleanup",
+      ],
+      environment: Platform.environment,
+    );
+  }
+
   static String getHotkeyModifier() {
     if (currentenvironment.desktop == DESKTOPS.KDE) {
       return "<Alt>";

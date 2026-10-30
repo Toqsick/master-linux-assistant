@@ -1452,5 +1452,51 @@
   "@zramLabel": {
     "placeholders": {},
     "type": "text"
+  },
+  "hotkeyTitle": "Keyboard shortcut",
+  "@hotkeyTitle": {
+    "description": "Label of the diagnostics line about the app's own keyboard shortcut.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyNotRegistered": "not registered",
+  "@hotkeyNotRegistered": {
+    "description": "Shown when the desktop does not hold the shortcut.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyUnknown": "unknown",
+  "@hotkeyUnknown": {
+    "description": "Shown when the state of the shortcut could not be read.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyOrphanEntries": "{count} orphaned entries",
+  "@hotkeyOrphanEntries": {
+    "description": "How many leftover desktop entries still point at this app.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "type": "text"
+  },
+  "hotkeyCleanup": "Clean up",
+  "@hotkeyCleanup": {
+    "description": "Button that removes the orphaned desktop entries.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyCleanupSucceeded": "The orphaned entries were removed.",
+  "@hotkeyCleanupSucceeded": {
+    "description": "Feedback after the orphaned entries were removed.",
+    "placeholders": {},
+    "type": "text"
+  },
+  "hotkeyCleanupFailed": "The orphaned entries could not be removed.",
+  "@hotkeyCleanupFailed": {
+    "description": "Feedback after removing the orphaned entries failed.",
+    "placeholders": {},
+    "type": "text"
   }
 }
